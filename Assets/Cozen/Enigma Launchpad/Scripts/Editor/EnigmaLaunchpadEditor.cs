@@ -132,6 +132,7 @@ namespace Cozen
         private const string RemoteVersionUrl = "https://raw.githubusercontent.com/Cozen-Official/Enigma-Launchpad-OS/refs/heads/main/Assets/Cozen/Enigma%20Launchpad/VERSION";
         private const string RepoUrl = "https://github.com/Cozen-Official/Enigma-Launchpad-OS";
         private const string FallbackVersion = "0.9";
+        private const string UnknownVersion = "Unknown";
         private string localVersion;
         private string remoteVersion;
         private bool versionCheckInProgress = false;
@@ -1081,7 +1082,7 @@ namespace Cozen
             // Display update notification if available
             // Only show if we have a valid local version to compare
             if (updateAvailable && !string.IsNullOrEmpty(remoteVersion) && 
-                !string.IsNullOrEmpty(localVersion) && localVersion != "Unknown")
+                !string.IsNullOrEmpty(localVersion) && localVersion != UnknownVersion)
             {
                 GUILayout.Space(8);
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -2689,13 +2690,13 @@ namespace Cozen
                 }
                 else
                 {
-                    localVersion = "Unknown";
+                    localVersion = UnknownVersion;
                     Debug.LogWarning($"[EnigmaLaunchpad Editor] VERSION file not found at {VersionFilePath}");
                 }
             }
             catch (Exception ex)
             {
-                localVersion = "Unknown";
+                localVersion = UnknownVersion;
                 Debug.LogError($"[EnigmaLaunchpad Editor] Error reading VERSION file: {ex.Message}");
             }
         }
@@ -2776,11 +2777,11 @@ namespace Cozen
         private int CompareVersions(string version1, string version2)
         {
             // Handle Unknown/empty versions - don't show update if we can't determine local version
-            if (string.IsNullOrEmpty(version1) || version1 == "Unknown")
+            if (string.IsNullOrEmpty(version1) || version1 == UnknownVersion)
             {
                 return 0; // Consider equal to avoid false update notifications
             }
-            if (string.IsNullOrEmpty(version2) || version2 == "Unknown")
+            if (string.IsNullOrEmpty(version2) || version2 == UnknownVersion)
             {
                 return 0; // Consider equal if remote version is unknown
             }
