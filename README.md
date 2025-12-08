@@ -17,9 +17,9 @@ The Launchpad prefab consists of a **9×9 grid of buttons** with displays, a **f
 • **Folder Types** implementing different behaviors, including optional **exclusivity** (only one toggle active per folder).  
 • **Whitelist system** with optional third-party integrations. Supports manual names, **OhGeezCmon Access Control** (not included).  
 • **Editor-side preview foldout** that simulates the Launchpad UI to visualize folder/page layout.  
-• **Fader system** for modifying shader properties using hand-collider-driven faders with display feedback. Supports dynamic fader assignment based on enabled toggles in folders.
-• Built-in support for popular shader sets like **Mochie Screen FX** and **June Shaders** (must be imported separetely).
-• Integrates with popular tools like ProTV, VideoTXL, Access Control, AutoLink, etc.
+• **Fader system** for modifying shader properties using hand-collider-driven faders with display feedback. Supports dynamic fader assignment based on enabled toggles in folders.  
+• Built-in support for popular shader sets like **Mochie Screen FX** and **June Shaders** (must be imported separetely).  
+• Integrates with popular tools like ProTV, VideoTXL, Access Control, AutoLink, etc.  
 
 ---
 
@@ -62,16 +62,16 @@ Create an unlimited amount of dynamic faders, which populate on empty fader slot
 ## **DEPENDENCIES**
 Install these dependencies before importing the Enigma Launchpad package.
 
-Launchpad Prefab:
+Launchpad Prefab:  
 • AudioLink (Install from Creator Companion)
 
-Mixer Prefab:
-• AudioLink (Install from Creator Companion)
-• AutoLink (go to repo https://github.com/lackofbindings/AutoLink and add the VCC, then install from Creator Companion)
+Mixer Prefab:  
+• AudioLink (Install from Creator Companion)  
+• AutoLink (go to repo https://github.com/lackofbindings/AutoLink and add the VCC, then install from Creator Companion)  
 
-Optional Dependencies(for a sepecifc folder or feature):
-• Mochie Screen FX (Enables basic Mochie layout using free Screen FX https://github.com/MochiesCode/Mochies-Unity-Shaders, or extended layout using Patreon version at https://www.patreon.com/c/mochieshaders/posts)
-• June Shaders (Enables June Folder type, purchase from https://kleineluka.gumroad.com/l/june and compelete the install process). Support for the free version will be added soon, if you would like to use the free version, use the Shaders folder instead.
-• ProTV (From https://protv.dev/, add the VCC and import from creator companion.)
-• VideoTXL (From https://github.com/vrctxl/VideoTXL, add the VCC and import from creator companion.)
+Optional Dependencies(for a sepecifc folder or feature):  
+• Mochie Screen FX (Enables basic Mochie layout using free Screen FX https://github.com/MochiesCode/Mochies-Unity-Shaders, or extended layout using Patreon version at https://www.patreon.com/c/mochieshaders/posts)  
+• June Shaders (Enables June Folder type, purchase from https://kleineluka.gumroad.com/l/june and compelete the install process). Support for the free version will be added soon, if you would like to use the free version, use the Shaders folder instead.  
+• ProTV (From https://protv.dev/, add the VCC and import from creator companion.)  
+• VideoTXL (From https://github.com/vrctxl/VideoTXL, add the VCC and import from creator companion.)  
 • OhGeezCmon Access Control (for adding users to the whitelist at runtime, install the package from https://github.com/OhGeezCmon/VRC-AccessControl)
