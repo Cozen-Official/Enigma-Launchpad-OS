@@ -131,6 +131,7 @@ namespace Cozen
         private const string VersionFilePath = "Assets/Cozen/Enigma Launchpad/VERSION";
         private const string RemoteVersionUrl = "https://raw.githubusercontent.com/Cozen-Official/Enigma-Launchpad-OS/refs/heads/main/Assets/Cozen/Enigma%20Launchpad/VERSION";
         private const string RepoUrl = "https://github.com/Cozen-Official/Enigma-Launchpad-OS";
+        private const string FallbackVersion = "0.9";
         private string localVersion;
         private string remoteVersion;
         private bool versionCheckInProgress = false;
@@ -1069,7 +1070,7 @@ namespace Cozen
             {
                 GUILayout.Label("ENIGMA LAUNCHPAD OS", headerTitleStyle);
                 GUILayout.Label("Developed by Cozen", headerSubtitleStyle);
-                string versionDisplay = string.IsNullOrEmpty(localVersion) ? "V0.9" : $"V{localVersion}";
+                string versionDisplay = string.IsNullOrEmpty(localVersion) ? $"V{FallbackVersion}" : $"V{localVersion}";
                 GUILayout.Label(versionDisplay, headerSubtitleStyle);
             }
             else
@@ -1078,7 +1079,9 @@ namespace Cozen
             }
             
             // Display update notification if available
-            if (updateAvailable && !string.IsNullOrEmpty(remoteVersion))
+            // Only show if we have a valid local version to compare
+            if (updateAvailable && !string.IsNullOrEmpty(remoteVersion) && 
+                !string.IsNullOrEmpty(localVersion) && localVersion != "Unknown")
             {
                 GUILayout.Space(8);
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -2705,10 +2708,25 @@ namespace Cozen
             }
             
             versionCheckInProgress = true;
-            versionCheckRequest = UnityWebRequest.Get(RemoteVersionUrl);
             
-            var operation = versionCheckRequest.SendWebRequest();
-            operation.completed += OnVersionCheckComplete;
+            try
+            {
+                versionCheckRequest = UnityWebRequest.Get(RemoteVersionUrl);
+                if (versionCheckRequest == null)
+                {
+                    versionCheckInProgress = false;
+                    Debug.LogWarning("[EnigmaLaunchpad Editor] Failed to create version check request");
+                    return;
+                }
+                
+                var operation = versionCheckRequest.SendWebRequest();
+                operation.completed += OnVersionCheckComplete;
+            }
+            catch (Exception ex)
+            {
+                versionCheckInProgress = false;
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] Error initiating version check: {ex.Message}");
+            }
         }
         
         private void OnVersionCheckComplete(UnityEngine.AsyncOperation op)
@@ -2747,10 +2765,25 @@ namespace Cozen
             Repaint();
         }
         
+        /// <summary>
+        /// Compares two version strings using semantic versioning rules.
+        /// Supports numeric version parts only (e.g., "1.0", "1.2.3").
+        /// Pre-release identifiers (e.g., "1.0-alpha") are not supported.
+        /// </summary>
+        /// <param name="version1">First version string to compare</param>
+        /// <param name="version2">Second version string to compare</param>
+        /// <returns>-1 if version1 < version2, 0 if equal, 1 if version1 > version2</returns>
         private int CompareVersions(string version1, string version2)
         {
-            if (string.IsNullOrEmpty(version1) || version1 == "Unknown") return -1;
-            if (string.IsNullOrEmpty(version2) || version2 == "Unknown") return 1;
+            // Handle Unknown/empty versions - don't show update if we can't determine local version
+            if (string.IsNullOrEmpty(version1) || version1 == "Unknown")
+            {
+                return 0; // Consider equal to avoid false update notifications
+            }
+            if (string.IsNullOrEmpty(version2) || version2 == "Unknown")
+            {
+                return 0; // Consider equal if remote version is unknown
+            }
             
             // Parse version numbers (e.g., "0.9" -> [0, 9])
             var parts1 = version1.Split('.');
@@ -2763,14 +2796,23 @@ namespace Cozen
                 int num1 = 0;
                 int num2 = 0;
                 
+                // Try to parse numeric parts, default to 0 if non-numeric
                 if (i < parts1.Length)
                 {
-                    int.TryParse(parts1[i], out num1);
+                    if (!int.TryParse(parts1[i], out num1))
+                    {
+                        // Non-numeric version part, treat as 0
+                        num1 = 0;
+                    }
                 }
                 
                 if (i < parts2.Length)
                 {
-                    int.TryParse(parts2[i], out num2);
+                    if (!int.TryParse(parts2[i], out num2))
+                    {
+                        // Non-numeric version part, treat as 0
+                        num2 = 0;
+                    }
                 }
                 
                 if (num1 < num2) return -1;
