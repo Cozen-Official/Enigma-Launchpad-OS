@@ -1,10 +1,12 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using VRC.SDKBase;
 using UdonSharp;
 using AudioLink;
@@ -125,6 +127,17 @@ namespace Cozen
         private GUIStyle dragZoneStyle;
         private bool stylesReady = false;
         
+        // Version checking
+        private const string VersionFilePath = "Assets/Cozen/Enigma Launchpad/VERSION";
+        private const string RemoteVersionUrl = "https://raw.githubusercontent.com/Cozen-Official/Enigma-Launchpad-OS/refs/heads/main/Assets/Cozen/Enigma%20Launchpad/VERSION";
+        private const string RepoUrl = "https://github.com/Cozen-Official/Enigma-Launchpad-OS";
+        private string localVersion;
+        private string remoteVersion;
+        private bool versionCheckInProgress = false;
+        private bool versionCheckComplete = false;
+        private bool updateAvailable = false;
+        private UnityEditor.Networking.UnityWebRequest versionCheckRequest;
+        
         private struct DuplicateMessage
         {
             public readonly string message;
@@ -219,11 +232,23 @@ namespace Cozen
             EnsureFolderArrayParity();
             RefreshFolderFoldouts();
             LoadPreviewState();
+            
+            // Load version and check for updates
+            LoadLocalVersion();
+            CheckForUpdates();
         }
 
         private void OnDisable()
         {
             SavePersistedFoldoutStates();
+            
+            // Clean up version check request if still in progress
+            if (versionCheckRequest != null && !versionCheckRequest.isDone)
+            {
+                versionCheckRequest.Abort();
+                versionCheckRequest.Dispose();
+                versionCheckRequest = null;
+            }
         }
 
         private string GetFoldoutStateKey()
@@ -1044,11 +1069,34 @@ namespace Cozen
             {
                 GUILayout.Label("ENIGMA LAUNCHPAD OS", headerTitleStyle);
                 GUILayout.Label("Developed by Cozen", headerSubtitleStyle);
-                GUILayout.Label("V0.9", headerSubtitleStyle);
+                string versionDisplay = string.IsNullOrEmpty(localVersion) ? "V0.9" : $"V{localVersion}";
+                GUILayout.Label(versionDisplay, headerSubtitleStyle);
             }
             else
             {
                 EditorGUILayout.LabelField("ENIGMA LAUNCHPAD OS (initializing styles...)", EditorStyles.boldLabel);
+            }
+            
+            // Display update notification if available
+            if (updateAvailable && !string.IsNullOrEmpty(remoteVersion))
+            {
+                GUILayout.Space(8);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Space(4);
+                
+                EditorGUILayout.LabelField($"Update Available: V{remoteVersion}", EditorStyles.boldLabel);
+                
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("View Update on GitHub", GUILayout.Width(180)))
+                {
+                    Application.OpenURL(RepoUrl);
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                
+                GUILayout.Space(4);
+                EditorGUILayout.EndVertical();
             }
         }
         
@@ -2622,6 +2670,114 @@ namespace Cozen
                     }
                 }
             }
+        }
+        
+        #endregion
+        
+        #region Version Checking
+        
+        private void LoadLocalVersion()
+        {
+            try
+            {
+                if (File.Exists(VersionFilePath))
+                {
+                    localVersion = File.ReadAllText(VersionFilePath).Trim();
+                }
+                else
+                {
+                    localVersion = "Unknown";
+                    Debug.LogWarning($"[EnigmaLaunchpad Editor] VERSION file not found at {VersionFilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                localVersion = "Unknown";
+                Debug.LogError($"[EnigmaLaunchpad Editor] Error reading VERSION file: {ex.Message}");
+            }
+        }
+        
+        private void CheckForUpdates()
+        {
+            if (versionCheckInProgress || versionCheckComplete)
+            {
+                return;
+            }
+            
+            versionCheckInProgress = true;
+            versionCheckRequest = UnityWebRequest.Get(RemoteVersionUrl);
+            
+            var operation = versionCheckRequest.SendWebRequest();
+            operation.completed += OnVersionCheckComplete;
+        }
+        
+        private void OnVersionCheckComplete(UnityEngine.AsyncOperation op)
+        {
+            versionCheckInProgress = false;
+            versionCheckComplete = true;
+            
+            if (versionCheckRequest == null)
+            {
+                return;
+            }
+            
+            #if UNITY_2020_1_OR_NEWER
+            if (versionCheckRequest.result == UnityWebRequest.Result.Success)
+            #else
+            if (!versionCheckRequest.isNetworkError && !versionCheckRequest.isHttpError)
+            #endif
+            {
+                remoteVersion = versionCheckRequest.downloadHandler.text.Trim();
+                updateAvailable = CompareVersions(localVersion, remoteVersion) < 0;
+                
+                if (updateAvailable)
+                {
+                    Debug.Log($"[EnigmaLaunchpad Editor] Update available! Local: {localVersion}, Remote: {remoteVersion}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] Failed to check for updates: {versionCheckRequest.error}");
+            }
+            
+            versionCheckRequest.Dispose();
+            versionCheckRequest = null;
+            
+            // Request a repaint to show the update notification
+            Repaint();
+        }
+        
+        private int CompareVersions(string version1, string version2)
+        {
+            if (string.IsNullOrEmpty(version1) || version1 == "Unknown") return -1;
+            if (string.IsNullOrEmpty(version2) || version2 == "Unknown") return 1;
+            
+            // Parse version numbers (e.g., "0.9" -> [0, 9])
+            var parts1 = version1.Split('.');
+            var parts2 = version2.Split('.');
+            
+            int maxLength = Math.Max(parts1.Length, parts2.Length);
+            
+            for (int i = 0; i < maxLength; i++)
+            {
+                int num1 = 0;
+                int num2 = 0;
+                
+                if (i < parts1.Length)
+                {
+                    int.TryParse(parts1[i], out num1);
+                }
+                
+                if (i < parts2.Length)
+                {
+                    int.TryParse(parts2[i], out num2);
+                }
+                
+                if (num1 < num2) return -1;
+                if (num1 > num2) return 1;
+            }
+            
+            return 0; // Versions are equal
         }
         
         #endregion
