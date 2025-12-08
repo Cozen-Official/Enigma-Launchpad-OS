@@ -1,0 +1,321 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Mochie Screen FX X
+  m_Shader: {fileID: 4800000, guid: 59e95fd81cd9e734f838e83e6faf1482, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _AUDIOLINK_ON
+  - _BLUR_PIXEL_ON
+  - _COLOR_ON
+  - _DISTORTION_ON
+  - _FOG_ON
+  - _IMAGE_OVERLAY_ON
+  - _NOISE_ON
+  - _OUTLINE_ON
+  - _SHAKE_ON
+  - _SOBEL_FILTER_ON
+  - _TRIPLANAR_ON
+  m_InvalidKeywords:
+  - _SHAPE_BOX
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 89819f8cb0b9e5d418f6e90ca96ac9c3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineBackgroundCube:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineCube:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineCubeAlt:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ScreenTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ShakeNoiseTex:
+        m_Texture: {fileID: 2800000, guid: b8d1261e60bcece48b7708cac8798bfc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TPNoiseTex:
+        m_Texture: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TPTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: -1, y: -1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Amplitude: 0
+    - _AudioLinkBlurBand: 0
+    - _AudioLinkBlurMax: 1
+    - _AudioLinkBlurMin: 0
+    - _AudioLinkBlurStrength: 1
+    - _AudioLinkDistortionBand: 0
+    - _AudioLinkDistortionMax: 1
+    - _AudioLinkDistortionMin: 0
+    - _AudioLinkDistortionStrength: 1
+    - _AudioLinkFilteringBand: 0
+    - _AudioLinkFilteringMax: 1
+    - _AudioLinkFilteringMin: 0
+    - _AudioLinkFilteringStrength: 1
+    - _AudioLinkFogBand: 0
+    - _AudioLinkFogMax: 1
+    - _AudioLinkFogMin: 0
+    - _AudioLinkFogOpacity: 0
+    - _AudioLinkFogRadius: 0
+    - _AudioLinkMax: 1
+    - _AudioLinkMin: 0
+    - _AudioLinkMiscBand: 0
+    - _AudioLinkMiscMax: 1
+    - _AudioLinkMiscMin: 0
+    - _AudioLinkMiscStrength: 1
+    - _AudioLinkNoiseBand: 0
+    - _AudioLinkNoiseMax: 1
+    - _AudioLinkNoiseMin: 0
+    - _AudioLinkNoiseStrength: 1
+    - _AudioLinkOutlineBand: 0
+    - _AudioLinkOutlineColBand: 0
+    - _AudioLinkOutlineColMax: 1
+    - _AudioLinkOutlineColMin: 0
+    - _AudioLinkOutlineColStrength: 0
+    - _AudioLinkOutlineMax: 1
+    - _AudioLinkOutlineMin: 0
+    - _AudioLinkOutlineMixBand: 0
+    - _AudioLinkOutlineMixMax: 1
+    - _AudioLinkOutlineMixMin: 0
+    - _AudioLinkOutlineMixStrength: 0
+    - _AudioLinkOutlineStrength: 1
+    - _AudioLinkSSTBand: 0
+    - _AudioLinkSSTMax: 1
+    - _AudioLinkSSTMin: 0
+    - _AudioLinkSSTStrength: 1
+    - _AudioLinkShakeBand: 0
+    - _AudioLinkShakeMax: 1
+    - _AudioLinkShakeMin: 0
+    - _AudioLinkShakeStrength: 1
+    - _AudioLinkStrength: 1
+    - _AudioLinkToggle: 1
+    - _AudioLinkTriplanarBand: 0
+    - _AudioLinkTriplanarMax: 1
+    - _AudioLinkTriplanarMin: 0
+    - _AudioLinkTriplanarOpacity: 1
+    - _AudioLinkTriplanarRadius: 0
+    - _AudioLinkZoomBand: 0
+    - _AudioLinkZoomMax: 1
+    - _AudioLinkZoomMin: 0
+    - _AudioLinkZoomStrength: 1
+    - _AuraFade: 0.5
+    - _AuraSampleCount: 43
+    - _AuraStr: 0.15
+    - _AutoRotate: 0
+    - _AutoRotateAlt: 0
+    - _AutoRotateBG: 0
+    - _AutoShift: 0
+    - _AutoShiftSpeed: 0.25
+    - _BlendMode: 0
+    - _BlurMaxRange: 15
+    - _BlurMinRange: 8
+    - _BlurModel: 1
+    - _BlurOpacity: 1
+    - _BlurRadius: 1
+    - _BlurSamples: 10
+    - _BlurStr: 0
+    - _BlurUseGlobal: 1
+    - _BlurY: 0
+    - _Brightness: 1
+    - _ClampMax: 1
+    - _ClampToggle: 0
+    - _ColorMaxRange: 15
+    - _ColorMinRange: 8
+    - _ColorUseGlobal: 1
+    - _Contrast: 1
+    - _CrushBlur: 0
+    - _DBOpacity: 0
+    - _DeepFry: 0
+    - _DepthBufferToggle: 1
+    - _DisplayGlobalGizmo: 0
+    - _DistortionFade: 1
+    - _DistortionMaxRange: 15
+    - _DistortionMinRange: 8
+    - _DistortionModel: 1
+    - _DistortionP2O: 1
+    - _DistortionRadius: 2
+    - _DistortionSpeed: 0.03
+    - _DistortionStr: 0
+    - _DistortionUseGlobal: 1
+    - _DoF: 0
+    - _DoFFade: 1
+    - _DoFP2O: 1
+    - _DoFRadius: 2
+    - _DstBlend: 0
+    - _FilterModel: 1
+    - _FilterStrength: 1
+    - _Flavor: 0
+    - _Fog: 1
+    - _FogFade: 10
+    - _FogHeightMax: 4
+    - _FogHeightMin: 2
+    - _FogMaxRange: 20
+    - _FogMinRange: 15
+    - _FogP2O: 0.5
+    - _FogRadius: 0
+    - _FogSafeMaxRange: 7
+    - _FogSafeOpacity: 0
+    - _FogSafeRadius: 7
+    - _FogSafeZone: 1
+    - _FogUseGlobal: 1
+    - _HDR: 0
+    - _Heat: 0
+    - _HeightFalloff: 0
+    - _Hue: 0
+    - _HueMode: 0
+    - _Invert: 0
+    - _InvertB: 0
+    - _InvertG: 0
+    - _InvertR: 0
+    - _InvertX: 0
+    - _InvertY: 0
+    - _Letterbox: 0
+    - _LetterboxStr: 0
+    - _ManualScrub: 0
+    - _MaxRange: 15
+    - _MinRange: 8
+    - _MonoTint: 0
+    - _NMFOpacity: 0
+    - _NMFToggle: 1
+    - _Noise: 0
+    - _NoiseMaxRange: 15
+    - _NoiseMinRange: 8
+    - _NoiseMode: 1
+    - _NoiseStrength: 1
+    - _NoiseUseGlobal: 0
+    - _NormalMapFilter: 0.99
+    - _OLMaxRange: 15
+    - _OLMinRange: 8
+    - _OLUseGlobal: 1
+    - _Opacity: 1
+    - _OutlineAltEnable: 0
+    - _OutlineCubeToggle: 0
+    - _OutlineHueShift: 0
+    - _OutlineHueShiftAuto: 0
+    - _OutlineHueShiftSpeed: 1
+    - _OutlineThiccN: 0.5
+    - _OutlineThiccS: 0.49
+    - _OutlineThresh: 20
+    - _OutlineThreshAlt: 100
+    - _OutlineType: 0
+    - _PixelBlurSamples: 43
+    - _PixelationStr: 0
+    - _Pulse: 0
+    - _PulseColor: 0
+    - _PulseSpeed: 1
+    - _RGBSplit: 0
+    - _RippleGridStr: 0
+    - _Rounding: 1
+    - _RoundingOpacity: 0
+    - _RoundingToggle: 1
+    - _SST: 2
+    - _SSTAnimatedDist: 0
+    - _SSTAnimationSpeed: 3
+    - _SSTBlend: 0
+    - _SSTColumnsX: 7
+    - _SSTFrameSizeXN: 0
+    - _SSTFrameSizeXP: 1
+    - _SSTFrameSizeYN: 0
+    - _SSTFrameSizeYP: 1
+    - _SSTHeight: 0.08
+    - _SSTLR: 0
+    - _SSTMaxRange: 15
+    - _SSTMinRange: 8
+    - _SSTRowsY: 1
+    - _SSTScale: 78
+    - _SSTUD: 0.08
+    - _SSTUseGlobal: 1
+    - _SSTWidth: 1
+    - _Saturation: 1
+    - _SaturationB: 1
+    - _SaturationG: 1
+    - _SaturationR: 1
+    - _ScanLine: 0
+    - _ScanLineSpeed: 0.3
+    - _ScanLineThick: 0.82
+    - _ScrubPos: 0
+    - _ShakeMaxRange: 15
+    - _ShakeMinRange: 8
+    - _ShakeModel: 1
+    - _ShakeSpeedX: 0.2
+    - _ShakeSpeedXY: 5
+    - _ShakeSpeedY: 0.14
+    - _ShakeUseGlobal: 1
+    - _Shift: 0
+    - _ShiftX: 0
+    - _ShiftY: 0
+    - _Sizzle: 0
+    - _SobelClearInner: 0
+    - _SobelFilterOpacity: 0
+    - _SobelFilterToggle: 1
+    - _SrcBlend: 1
+    - _TPFade: 0.5
+    - _TPMaxRange: 15
+    - _TPMinRange: 8
+    - _TPNoise: 0
+    - _TPP2O: 1
+    - _TPRadius: 4.74
+    - _TPScanFade: 0.08
+    - _TPThickness: 2.25
+    - _TPUseGlobal: 1
+    - _Triplanar: 2
+    - _UseZoomFalloff: 0
+    - _Value: 0
+    - _WaveForm: 1
+    - _Zoom: 0
+    - _ZoomMaxRange: 4.5
+    - _ZoomMinRange: 3
+    - _ZoomStr: 0.579
+    - _ZoomStrB: 0
+    - _ZoomStrG: 0
+    - _ZoomStrR: 0
+    - _ZoomUseGlobal: 0
+    m_Colors:
+    - _BackgroundCol: {r: 0, g: 0, b: 0, a: 0}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _CubeRotate: {r: 180, g: 0, b: 0, a: 0}
+    - _CubeRotateAlt: {r: 180, g: 0, b: 0, a: 0}
+    - _CubeRotateBG: {r: 180, g: 0, b: 0, a: 0}
+    - _DBColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FogColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
+    - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
+    - _OutlineCol: {r: 0, g: 0.8202615, b: 1, a: 1}
+    - _OutlineColAlt: {r: 1, g: 1, b: 1, a: 1}
+    - _RGB: {r: 1, g: 1, b: 1, a: 0}
+    - _SSTColor: {r: 1, g: 1, b: 1, a: 0}
+    - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+    - _SobelFilterColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TPColor: {r: 1, g: 1, b: 1, a: 0}
+    - _TPNoiseScroll: {r: 0, g: 0, b: 0, a: 0}
+    - _TPScroll: {r: 0, g: -0.15, b: 0.15, a: 0}
+  m_BuildTextureStacks: []

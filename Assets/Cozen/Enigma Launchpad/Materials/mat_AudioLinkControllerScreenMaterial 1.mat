@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: mat_AudioLinkControllerScreenMaterial 1
+  m_Shader: {fileID: 4800000, guid: d50c01b711e64ed49fe162d1feacf7ff, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AutoGainTexture:
+        m_Texture: {fileID: 2800000, guid: d20528bd9392339408450a69451ccbfe, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GainTexture:
+        m_Texture: {fileID: 2800000, guid: f364a319a125fe84ba48382c6e101e8f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PowerTexture:
+        m_Texture: {fileID: 2800000, guid: 725c7650202758c4d928893f6dd17dc1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ResetTexture:
+        m_Texture: {fileID: 2800000, guid: a677a443f9020c745adaa75422d4e108, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AutoGain: 0
+    - _Autogain: 0
+    - _CornerRadius: 0.0526
+    - _ElementMargin: 0.03
+    - _ExpFalloff: 0.75
+    - _FadeSliderHeight: 0.19
+    - _FrameMargin: 0.03
+    - _Gain: 0.34457532
+    - _GainSliderHeight: 0.13
+    - _HandleRadius: 0.011
+    - _HighMidThreshold: 0.5
+    - _HighThreshold: 0.5
+    - _HitFade: 0.25
+    - _Hue: 0.15338646
+    - _LowMidThreshold: 0.5
+    - _LowThreshold: 0.5
+    - _OutlineWidth: 0.00457
+    - _Power: 1
+    - _Saturation: 0.9843137
+    - _SelectedColor: 0
+    - _ThemeColorMode: 0
+    - _Threshold0: 0.45446652
+    - _Threshold1: 0.60626763
+    - _Threshold2: 0.7907809
+    - _Threshold3: 0.48561
+    - _TopAreaHeight: 0.35
+    - _Value: 1
+    - _VerticalScale: 0.79
+    - _X0: 0
+    - _X1: 0.25
+    - _X2: 0.5
+    - _X3: 0.75
+    m_Colors:
+    - _ActiveColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+    - _BassColorBg: {r: 0.63522005, g: 0.06591899, b: 0.6060252, a: 1}
+    - _BassColorFg: {r: 0.5765, g: 0.15289995, b: 0.5608, a: 1}
+    - _BassColorMg: {r: 0.836478, g: 0, b: 0.8034592, a: 1}
+    - _CustomColor0: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    - _CustomColor1: {r: 0, g: 0, b: 1, a: 1}
+    - _CustomColor2: {r: 1, g: 0, b: 0, a: 1}
+    - _CustomColor3: {r: 0, g: 1, b: 0, a: 1}
+    - _ForegroundColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HighColorBg: {r: 0.114216104, g: 0.50433135, b: 0.6603774, a: 1}
+    - _HighColorFg: {r: 0.16079995, g: 0.6706, b: 0.8863, a: 1}
+    - _HighMidColorBg: {r: 0.40573707, g: 0.72327036, b: 0, a: 1}
+    - _InactiveColor: {r: 0.23270428, g: 0.23270428, b: 0.23270428, a: 1}
+    - _LowMidColorBg: {r: 0.67295593, g: 0.4656764, b: 0.1502511, a: 1}
+  m_BuildTextureStacks: []
