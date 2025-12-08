@@ -136,7 +136,7 @@ namespace Cozen
         private bool versionCheckInProgress = false;
         private bool versionCheckComplete = false;
         private bool updateAvailable = false;
-        private UnityEditor.Networking.UnityWebRequest versionCheckRequest;
+        private UnityWebRequest versionCheckRequest;
         
         private struct DuplicateMessage
         {
