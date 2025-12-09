@@ -232,6 +232,7 @@ namespace Cozen
                 case ToggleFolderType.Materials:
                 case ToggleFolderType.Properties:
                 case ToggleFolderType.Skybox:
+                case ToggleFolderType.Shaders:
                 case ToggleFolderType.Mochie:
                 case ToggleFolderType.June:
                     return true;

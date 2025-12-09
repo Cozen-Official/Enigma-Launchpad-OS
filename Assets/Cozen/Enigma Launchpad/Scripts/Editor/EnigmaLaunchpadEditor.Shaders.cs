@@ -300,6 +300,27 @@ namespace Cozen
                     EditorGUILayout.PropertyField(matElement, new GUIContent($"Material {i}"));
                     EditorGUILayout.EndVertical();
 
+                    // Up arrow
+                    GUI.enabled = i > 0;
+                    if (GUILayout.Button("▲", GUILayout.Width(22)))
+                    {
+                        MoveShaderEntry(handlerObject, i, i - 1);
+                        structural = true;
+                        handlerObject.ApplyModifiedProperties();
+                        break;
+                    }
+                    
+                    // Down arrow
+                    GUI.enabled = !structural && i < shaderMaterialsProp.arraySize - 1;
+                    if (GUILayout.Button("▼", GUILayout.Width(22)))
+                    {
+                        MoveShaderEntry(handlerObject, i, i + 1);
+                        structural = true;
+                        handlerObject.ApplyModifiedProperties();
+                        break;
+                    }
+                    GUI.enabled = true;
+
                     if (GUILayout.Button("X", GUILayout.Width(24)))
                     {
                         // Check if material slot has a reference before deleting
@@ -633,6 +654,28 @@ namespace Cozen
             }
 
             return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0, materials.ToArray());
+        }
+
+        private void MoveShaderEntry(SerializedObject handlerObject, int fromIndex, int toIndex)
+        {
+            if (handlerObject == null) return;
+
+            SerializedProperty shaderMaterialsProp = handlerObject.FindProperty("shaderMaterials");
+            SerializedProperty shaderNamesProp = handlerObject.FindProperty("shaderNames");
+            SerializedProperty shaderGameObjectsProp = handlerObject.FindProperty("shaderGameObjects");
+
+            if (shaderMaterialsProp == null || shaderNamesProp == null || shaderGameObjectsProp == null)
+                return;
+
+            if (fromIndex < 0 || fromIndex >= shaderMaterialsProp.arraySize || 
+                toIndex < 0 || toIndex >= shaderMaterialsProp.arraySize || 
+                fromIndex == toIndex)
+                return;
+
+            // Move arrays using MoveArrayElement
+            shaderMaterialsProp.MoveArrayElement(fromIndex, toIndex);
+            shaderNamesProp.MoveArrayElement(fromIndex, toIndex);
+            shaderGameObjectsProp.MoveArrayElement(fromIndex, toIndex);
         }
     }
 }

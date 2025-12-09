@@ -422,6 +422,8 @@ namespace Cozen
             {
                 case ToggleFolderType.Skybox:
                     return GetPreviewSkyboxLabel(localIndex);
+                case ToggleFolderType.Shaders:
+                    return GetPreviewShaderLabel(folderIdx, localIndex);
                 case ToggleFolderType.Stats:
                     return GetPreviewStatsLabel(folderIdx, localIndex);
                 case ToggleFolderType.Presets:
@@ -558,6 +560,27 @@ namespace Cozen
                 return string.Empty;
 
             return ButtonHandler.FormatName(FormatSkyboxName(material.name));
+        }
+
+        private string GetPreviewShaderLabel(int folderIdx, int localIndex)
+        {
+            SerializedObject handlerObj = GetShaderHandlerObjectForFolder(folderIdx);
+            if (handlerObj == null)
+                return string.Empty;
+
+            SerializedProperty shaderNamesProperty = handlerObj.FindProperty("shaderNames");
+            if (shaderNamesProperty == null || !shaderNamesProperty.isArray)
+                return string.Empty;
+
+            if (localIndex < 0 || localIndex >= shaderNamesProperty.arraySize)
+                return string.Empty;
+
+            SerializedProperty nameElement = shaderNamesProperty.GetArrayElementAtIndex(localIndex);
+            string name = nameElement != null ? nameElement.stringValue : string.Empty;
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
+
+            return ButtonHandler.FormatName(name);
         }
 
         private string GetPreviewObjectLabel(int folderIdx, int localIndex)
@@ -795,6 +818,8 @@ namespace Cozen
             {
                 case ToggleFolderType.Skybox:
                     return (skyboxMaterials != null && skyboxMaterials.isArray) ? skyboxMaterials.arraySize : 0;
+                case ToggleFolderType.Shaders:
+                    return GetShaderFolderEntryCount(folderIdx);
                 case ToggleFolderType.Mochie:
                     return 0;
                 case ToggleFolderType.June:
@@ -878,6 +903,16 @@ namespace Cozen
 
             SerializedProperty countProp = folderEntryCountsProperty.GetArrayElementAtIndex(folderIdx);
             return countProp != null ? countProp.intValue : 0;
+        }
+
+        private int GetShaderFolderEntryCount(int folderIdx)
+        {
+            SerializedObject handlerObj = GetShaderHandlerObjectForFolder(folderIdx);
+            if (handlerObj == null)
+                return 0;
+
+            SerializedProperty entriesProperty = handlerObj.FindProperty("shaderNames");
+            return (entriesProperty != null && entriesProperty.isArray) ? entriesProperty.arraySize : 0;
         }
 
         private int GetItemsPerPageValue()

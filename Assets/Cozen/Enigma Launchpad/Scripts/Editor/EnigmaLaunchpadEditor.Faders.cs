@@ -681,6 +681,13 @@ namespace Cozen
                 return;
             }
 
+            // Check if a property has been selected
+            string propertyName = GetStaticFaderPropertyName(faderIndex);
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return;
+            }
+
             // Check if this is a color property (propertyType == 2)
             int propertyType = GetStaticFaderPropertyType(faderIndex);
             bool isColorProperty = (propertyType == 2);
@@ -1208,6 +1215,13 @@ namespace Cozen
         private void DrawDynamicFaderValueRangeFields(int index)
         {
             if (dynamicFaderMinValues == null || dynamicFaderMaxValues == null || dynamicFaderDefaultValues == null)
+            {
+                return;
+            }
+
+            // Check if a property has been selected
+            string propertyName = GetDynamicFaderPropertyName(index);
+            if (string.IsNullOrEmpty(propertyName))
             {
                 return;
             }
