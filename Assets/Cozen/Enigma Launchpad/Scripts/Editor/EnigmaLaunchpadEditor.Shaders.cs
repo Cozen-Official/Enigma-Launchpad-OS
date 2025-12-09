@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -456,7 +457,7 @@ namespace Cozen
                 else
                 {
                     // Create a new duplicate of the template
-                    shaderGO = Object.Instantiate(templateGO);
+                    shaderGO = UnityEngine.Object.Instantiate(templateGO);
                     
                     // Set to Untagged (not EditorOnly like the template)
                     shaderGO.tag = "Untagged";
@@ -488,7 +489,7 @@ namespace Cozen
             {
                 if (leftover != null)
                 {
-                    Object.DestroyImmediate(leftover);
+                    UnityEngine.Object.DestroyImmediate(leftover);
                 }
             }
 
@@ -547,10 +548,91 @@ namespace Cozen
                 GameObject go = goProp.objectReferenceValue as GameObject;
                 if (go != null)
                 {
-                    Object.DestroyImmediate(go);
+                    UnityEngine.Object.DestroyImmediate(go);
                 }
             }
             shaderGameObjectsProp.arraySize = 0;
+        }
+
+        private List<ToggleOption> BuildShaderToggleOptions(int folderIndex)
+        {
+            List<ToggleOption> options = new List<ToggleOption>();
+
+            SerializedObject handlerObject = GetShaderHandlerObjectForFolder(folderIndex);
+            if (handlerObject == null)
+            {
+                return options;
+            }
+
+            SerializedProperty shaderNamesProp = handlerObject.FindProperty("shaderNames");
+            if (shaderNamesProp == null || !shaderNamesProp.isArray)
+            {
+                return options;
+            }
+
+            int count = shaderNamesProp.arraySize;
+            for (int i = 0; i < count; i++)
+            {
+                SerializedProperty nameElement = shaderNamesProp.GetArrayElementAtIndex(i);
+                string label = nameElement != null ? nameElement.stringValue : string.Empty;
+                
+                if (string.IsNullOrEmpty(label))
+                {
+                    label = $"Shader {i + 1}";
+                }
+                else
+                {
+                    label = ButtonHandler.FormatName(label);
+                }
+
+                options.Add(new ToggleOption
+                {
+                    Value = i,
+                    Label = label
+                });
+            }
+
+            return options;
+        }
+
+        private FaderShaderTarget BuildShadersFolderShaderTarget(int folderIndex, int toggleIndex)
+        {
+            SerializedObject handlerObject = GetShaderHandlerObjectForFolder(folderIndex);
+            if (handlerObject == null)
+            {
+                return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0);
+            }
+
+            SerializedProperty shaderMaterialsProp = handlerObject.FindProperty("shaderMaterials");
+            if (shaderMaterialsProp == null || !shaderMaterialsProp.isArray)
+            {
+                return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0);
+            }
+
+            // If toggleIndex is specified, only use that single shader material
+            if (toggleIndex >= 0 && toggleIndex < shaderMaterialsProp.arraySize)
+            {
+                SerializedProperty matProp = shaderMaterialsProp.GetArrayElementAtIndex(toggleIndex);
+                Material mat = matProp != null ? matProp.objectReferenceValue as Material : null;
+                if (mat != null)
+                {
+                    return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0, new[] { mat });
+                }
+            }
+
+            // Otherwise, use all shader materials for property inspection
+            List<Material> materials = new List<Material>();
+            for (int i = 0; i < shaderMaterialsProp.arraySize; i++)
+            {
+                SerializedProperty matProp = shaderMaterialsProp.GetArrayElementAtIndex(i);
+                Material mat = matProp != null ? matProp.objectReferenceValue as Material : null;
+                if (mat != null)
+                {
+                    materials.Add(mat);
+                }
+            }
+
+            return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0, materials.ToArray());
         }
     }
 }

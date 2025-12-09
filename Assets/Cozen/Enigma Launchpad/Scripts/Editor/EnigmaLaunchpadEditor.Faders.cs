@@ -525,7 +525,8 @@ namespace Cozen
                         option.Type == ToggleFolderType.Properties ||
                         option.Type == ToggleFolderType.Mochie ||
                         option.Type == ToggleFolderType.Skybox ||
-                        option.Type == ToggleFolderType.June)
+                        option.Type == ToggleFolderType.June ||
+                        option.Type == ToggleFolderType.Shaders)
                     .ToList();
 
                 for (int faderIndex = 0; faderIndex < staticCount; faderIndex++)
@@ -1503,6 +1504,9 @@ namespace Cozen
                 case ToggleFolderType.June:
                     return BuildJuneToggleOptions(folderIndex);
 
+                case ToggleFolderType.Shaders:
+                    return BuildShaderToggleOptions(folderIndex);
+
                 default:
                     return options;
             }
@@ -2383,6 +2387,9 @@ namespace Cozen
                 case ToggleFolderType.June:
                     return BuildJuneFolderShaderTarget(folderIndex);
 
+                case ToggleFolderType.Shaders:
+                    return BuildShadersFolderShaderTarget(folderIndex, toggleIndex);
+
                 default:
                     return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0);
             }
@@ -2472,6 +2479,9 @@ namespace Cozen
 
                 case ToggleFolderType.June:
                     return BuildJuneFolderShaderTarget(folderIndex);
+
+                case ToggleFolderType.Shaders:
+                    return BuildShadersFolderShaderTarget(folderIndex, -1);
 
                 default:
                     return PrepareFaderShaderTarget(Array.Empty<Renderer>(), materialIndex);

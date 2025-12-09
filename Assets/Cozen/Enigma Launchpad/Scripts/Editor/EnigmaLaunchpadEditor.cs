@@ -2309,6 +2309,14 @@ namespace Cozen
             
             ModifyFolderObjectCount(folderIdx, oldCount + addCount);
             
+            // Re-fetch the property after array expansion to get the updated array size
+            folderEntriesProperty = GetFolderEntriesProperty(folderIdx);
+            if (folderEntriesProperty == null)
+            {
+                Debug.LogError($"[EnigmaLaunchpadEditor] Could not re-fetch handler property for folder {folderIdx}");
+                return false;
+            }
+            
             // Add entries to the per-handler array
             for (int i = 0; i < addCount; i++)
             {
