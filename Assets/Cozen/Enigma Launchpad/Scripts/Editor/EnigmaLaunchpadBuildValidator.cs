@@ -75,6 +75,9 @@ namespace Cozen
                 
                 // Prepare June material with optimized module keywords
                 PrepareJuneMaterialModules(entry.launchpad, entry.context, errors);
+                
+                // Prepare shader folder GameObjects before build
+                PrepareShaderFolders(entry.launchpad, entry.context, errors);
             }
             
             if (errors.Count > 0)
@@ -524,6 +527,79 @@ namespace Cozen
             
             // Use the same preparation logic as the build validator
             PrepareJuneMaterialModules(launchpad, null, errors ?? new List<string>());
+        }
+        
+        /// <summary>
+        /// Prepares shader folder GameObjects before build by ensuring:
+        /// 1. All shader GameObjects are tagged as "Untagged"
+        /// 2. Only the default shader GameObject is enabled (all others disabled)
+        /// This ensures proper runtime behavior for shader folders.
+        /// </summary>
+        private static void PrepareShaderFolders(EnigmaLaunchpad launchpad, string context, List<string> errors)
+        {
+            if (launchpad == null)
+                return;
+            
+            ShaderHandler[] handlers = launchpad.shaderHandlers;
+            if (handlers == null || handlers.Length == 0)
+                return;
+            
+            foreach (ShaderHandler handler in handlers)
+            {
+                if (handler == null)
+                    continue;
+                
+                GameObject[] shaderGameObjects = handler.shaderGameObjects;
+                if (shaderGameObjects == null || shaderGameObjects.Length == 0)
+                    continue;
+                
+                int defaultShaderIndex = handler.defaultShaderIndex;
+                int tagChanges = 0;
+                int stateChanges = 0;
+                
+                for (int i = 0; i < shaderGameObjects.Length; i++)
+                {
+                    GameObject shaderGO = shaderGameObjects[i];
+                    if (shaderGO == null)
+                        continue;
+                    
+                    // Ensure the GameObject is tagged as "Untagged"
+                    if (shaderGO.tag != "Untagged")
+                    {
+                        Undo.RecordObject(shaderGO, "Set Shader GameObject Tag");
+                        shaderGO.tag = "Untagged";
+                        EditorUtility.SetDirty(shaderGO);
+                        tagChanges++;
+                    }
+                    
+                    // Ensure only the default shader is enabled
+                    bool shouldBeActive = (defaultShaderIndex >= 0 && i == defaultShaderIndex);
+                    if (shaderGO.activeSelf != shouldBeActive)
+                    {
+                        Undo.RecordObject(shaderGO, "Set Shader GameObject Active State");
+                        shaderGO.SetActive(shouldBeActive);
+                        EditorUtility.SetDirty(shaderGO);
+                        stateChanges++;
+                    }
+                }
+                
+                if (tagChanges > 0 || stateChanges > 0)
+                {
+                    int folderIndex = handler.folderIndex;
+                    string folderName = launchpad.GetFolderLabelForIndex(folderIndex, false);
+                    if (string.IsNullOrEmpty(folderName))
+                    {
+                        folderName = $"Shader Folder {folderIndex}";
+                    }
+                    
+                    string defaultInfo = defaultShaderIndex >= 0 
+                        ? $"default shader at index {defaultShaderIndex}" 
+                        : "no default shader (all disabled)";
+                    
+                    Debug.Log($"[EnigmaLaunchpadBuildValidator] Prepared shader folder '{folderName}': " +
+                              $"Updated {tagChanges} tag(s) to 'Untagged', adjusted {stateChanges} active state(s) ({defaultInfo})");
+                }
+            }
         }
         
         private static IEnumerable<(EnigmaLaunchpad launchpad, string context)> EnumerateLaunchpads()

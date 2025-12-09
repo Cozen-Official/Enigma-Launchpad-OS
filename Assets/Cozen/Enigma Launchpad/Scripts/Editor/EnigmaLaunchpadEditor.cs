@@ -2177,35 +2177,9 @@ namespace Cozen
                 return false;
             }
             
-            if (newCount > oldCount)
-            {
-                int toAdd = newCount - oldCount;
-                for (int i = 0; i < toAdd; i++)
-                {
-                    folderEntriesProperty.InsertArrayElementAtIndex(folderEntriesProperty.arraySize);
-                    var elem = folderEntriesProperty.GetArrayElementAtIndex(folderEntriesProperty.arraySize - 1);
-                    if (elem.propertyType == SerializedPropertyType.ObjectReference)
-                    {
-                        elem.objectReferenceValue = null;
-                    }
-                    else if (elem.propertyType == SerializedPropertyType.String)
-                    {
-                        elem.stringValue = string.Empty;
-                    }
-                }
-            }
-            else
-            {
-                int toRemove = oldCount - newCount;
-                for (int i = 0; i < toRemove; i++)
-                {
-                    int removeAt = folderEntriesProperty.arraySize - 1;
-                    if (removeAt >= 0)
-                    {
-                        folderEntriesProperty.DeleteArrayElementAtIndex(removeAt);
-                    }
-                }
-            }
+            // Directly set array size instead of using Insert/Delete in a loop
+            // This ensures all new elements are properly initialized to null/empty
+            folderEntriesProperty.arraySize = newCount;
             countProp.intValue = newCount;
             return true;
         }

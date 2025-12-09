@@ -50016,7 +50016,7 @@ MonoBehaviour:
   rightHandCollider: {fileID: 8333130523828386635}
   dynamicFaderCount: 0
   staticFaderNames:
-  - Color
+  - 
   - Offset
   - 
   - 
@@ -50026,7 +50026,7 @@ MonoBehaviour:
   - 
   - 
   staticFaderTargetFolders: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-  staticFaderTargetsCustom: 010100000000000000
+  staticFaderTargetsCustom: 000100000000000000
   staticFaderMaterialIndices: 000000000000000000000000000000000000000000000000000000000000000000000000
   staticFaderPropertyNames:
   - _EmissionColor
@@ -50039,36 +50039,8 @@ MonoBehaviour:
   - 
   - 
   staticFaderPropertyTypes: 020000000100000001000000000000000000000000000000000000000000000000000000
-  staticFaderRendererCounts: 1c0000000100000000000000000000000000000000000000000000000000000000000000
+  staticFaderRendererCounts: 000000000100000000000000000000000000000000000000000000000000000000000000
   staticFaderRenderers:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
   - {fileID: 0}
   staticFaderMinValues:
   - 0
@@ -50101,7 +50073,7 @@ MonoBehaviour:
   - 0
   - 0
   staticFaderDefaultColors:
-  - {r: 0, g: 1.640523, b: 2, a: 1}
+  - {r: 0.101960786, g: 0, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
@@ -50110,7 +50082,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
-  staticFaderColorIndicatorsEnabled: 010100000000000000
+  staticFaderColorIndicatorsEnabled: 000100000000000000
   staticFaderIndicatorColors:
   - {r: 0, g: 1.2287838, b: 1.4980392, a: 1}
   - {r: 0, g: 0.13034344, b: 1, a: 1}
@@ -50122,19 +50094,26 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
   staticFaderIndicatorConditional: 000000000000000000
-  dynamicFaderNames: []
-  dynamicFaderFolders: 
-  dynamicFaderToggles: 
-  dynamicFaderMaterialIndices: 
-  dynamicFaderPropertyNames: []
-  dynamicFaderPropertyTypes: 
-  dynamicFaderMinValues: []
-  dynamicFaderMaxValues: []
-  dynamicFaderDefaultValues: []
-  dynamicFaderDefaultColors: []
-  dynamicFaderColorIndicatorsEnabled: 
-  dynamicFaderIndicatorColors: []
-  dynamicFaderIndicatorConditional: 
+  dynamicFaderNames:
+  - 
+  dynamicFaderFolders: ffffffff
+  dynamicFaderToggles: ffffffff
+  dynamicFaderMaterialIndices: 00000000
+  dynamicFaderPropertyNames:
+  - 
+  dynamicFaderPropertyTypes: 00000000
+  dynamicFaderMinValues:
+  - 0
+  dynamicFaderMaxValues:
+  - 1
+  dynamicFaderDefaultValues:
+  - 0
+  dynamicFaderDefaultColors:
+  - {r: 1, g: 1, b: 1, a: 1}
+  dynamicFaderColorIndicatorsEnabled: 00
+  dynamicFaderIndicatorColors:
+  - {r: 1, g: 1, b: 1, a: 1}
+  dynamicFaderIndicatorConditional: 00
 --- !u!114 &4327640446109349890
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86636,7 +86615,7 @@ GameObject:
   - component: {fileID: 7999713130279830532}
   m_Layer: 0
   m_Name: Enigma Launchpad Mixer
-  m_TagString: Untagged
+  m_TagString: EditorOnly
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -102621,7 +102600,7 @@ SpriteRenderer:
   m_Size: {x: 20, y: 10}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &8890367347798672184

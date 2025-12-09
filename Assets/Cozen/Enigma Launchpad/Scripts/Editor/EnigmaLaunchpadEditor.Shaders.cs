@@ -104,23 +104,8 @@ namespace Cozen
                 }
             }
 
-            for (int i = 0; i < assigned.Length; i++)
-            {
-                if (assigned[i] == null && unused.Count > 0)
-                {
-                    assigned[i] = unused[0];
-                    unused.RemoveAt(0);
-                }
-            }
-
-            foreach (ShaderHandler unusedHandler in unused)
-            {
-                if (unusedHandler != null)
-                {
-                    DestroyImmediate(unusedHandler);
-                }
-            }
-
+            // Don't reuse handlers from unused pool - each handler is specific to its folder
+            // Create new handlers for any missing assignments
             for (int i = 0; i < assigned.Length; i++)
             {
                 int folderIdx = shaderFolders[i];
@@ -128,16 +113,47 @@ namespace Cozen
 
                 if (handler == null)
                 {
-                    GameObject handlerGO = new GameObject($"ShaderHandler_Folder{folderIdx}");
+                    string handlerName = GetExpectedShaderHandlerName(folderIdx);
+                    GameObject handlerGO = new GameObject(handlerName);
                     handlerGO.transform.SetParent(foldersTransform, false);
                     handler = handlerGO.AddComponent<ShaderHandler>();
                     handler.hideFlags = HandlerHideFlags;
                     assigned[i] = handler;
                 }
+                else
+                {
+                    // Update name if it doesn't match expected pattern
+                    string expectedName = GetExpectedShaderHandlerName(folderIdx);
+                    if (handler.gameObject.name != expectedName)
+                    {
+                        handler.gameObject.name = expectedName;
+                        EditorUtility.SetDirty(handler.gameObject);
+                    }
+                }
 
                 handler.folderIndex = folderIdx;
                 handler.launchpad = launchpad;
                 EditorUtility.SetDirty(handler);
+            }
+
+            // Clean up any unused handlers
+            foreach (ShaderHandler unusedHandler in unused)
+            {
+                if (unusedHandler != null)
+                {
+                    // Clean up shader GameObjects before destroying the handler
+                    SerializedObject unusedHandlerObj = new SerializedObject(unusedHandler);
+                    SerializedProperty shaderGameObjectsProp = unusedHandlerObj.FindProperty("shaderGameObjects");
+                    if (shaderGameObjectsProp != null)
+                    {
+                        ClearShaderGameObjects(shaderGameObjectsProp);
+                        unusedHandlerObj.ApplyModifiedProperties();
+                    }
+                    
+                    // Destroy the handler's GameObject (not just the component)
+                    GameObject handlerGO = unusedHandler.gameObject;
+                    DestroyImmediate(handlerGO);
+                }
             }
 
             shaderHandlers.arraySize = assigned.Length;
@@ -275,6 +291,9 @@ namespace Cozen
                             }
                             handlerObject.ApplyModifiedProperties();
                             countProp.intValue = shaderMaterialsProp.arraySize;
+                            
+                            // Synchronize GameObjects immediately after adding materials
+                            SynchronizeShaderGameObjects(handlerObject);
                         }
                         evt.Use();
                     }
@@ -307,6 +326,9 @@ namespace Cozen
                         MoveShaderEntry(handlerObject, i, i - 1);
                         structural = true;
                         handlerObject.ApplyModifiedProperties();
+                        
+                        // Synchronize GameObjects immediately after reordering
+                        SynchronizeShaderGameObjects(handlerObject);
                         break;
                     }
                     
@@ -317,6 +339,9 @@ namespace Cozen
                         MoveShaderEntry(handlerObject, i, i + 1);
                         structural = true;
                         handlerObject.ApplyModifiedProperties();
+                        
+                        // Synchronize GameObjects immediately after reordering
+                        SynchronizeShaderGameObjects(handlerObject);
                         break;
                     }
                     GUI.enabled = true;
@@ -354,6 +379,9 @@ namespace Cozen
                         structural = true;
                         handlerObject.ApplyModifiedProperties();
                         countProp.intValue = shaderMaterialsProp.arraySize;
+                        
+                        // Synchronize GameObjects immediately after deleting material
+                        SynchronizeShaderGameObjects(handlerObject);
                         break;
                     }
 
@@ -390,6 +418,9 @@ namespace Cozen
             {
                 defaultShaderIndexProp.intValue = newSelectedIndex - 1; // -1 to convert back from dropdown index
                 handlerObject.ApplyModifiedProperties();
+                
+                // Synchronize GameObjects to update their active states based on new default
+                SynchronizeShaderGameObjects(handlerObject);
             }
 
             handlerObject.ApplyModifiedProperties();
@@ -676,6 +707,13 @@ namespace Cozen
             shaderMaterialsProp.MoveArrayElement(fromIndex, toIndex);
             shaderNamesProp.MoveArrayElement(fromIndex, toIndex);
             shaderGameObjectsProp.MoveArrayElement(fromIndex, toIndex);
+        }
+
+        private string GetExpectedShaderHandlerName(int folderIndex)
+        {
+            string folderName = GetResolvedFolderName(folderIndex);
+            string sanitizedFolderName = SanitizeForHandlerName(folderName);
+            return $"ShaderHandler_{sanitizedFolderName}";
         }
     }
 }

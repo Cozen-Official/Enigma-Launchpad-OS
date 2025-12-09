@@ -65,8 +65,11 @@ namespace Cozen
         {
             if (launchpad == null)
             {
+                Debug.LogError($"[ShaderHandler] Launchpad reference is null for folder {folderIndex}");
                 return;
             }
+            
+            Debug.Log($"[ShaderHandler] Initializing folder {folderIndex} with {(shaderGameObjects != null ? shaderGameObjects.Length : 0)} shader GameObjects");
             
             InitializeHandler();
             CaptureInitialState();
@@ -74,12 +77,21 @@ namespace Cozen
         
         private void InitializeHandler()
         {
+            // Don't initialize shaderGameObjects to empty array if null - that would hide configuration issues
+            // The array should be populated by the editor
             if (shaderGameObjects == null)
             {
+                Debug.LogWarning($"[ShaderHandler] shaderGameObjects is null for folder {folderIndex}. Shader folder may not be configured correctly.");
                 shaderGameObjects = new GameObject[0];
             }
             
             int count = shaderGameObjects.Length;
+            
+            if (count == 0)
+            {
+                Debug.LogWarning($"[ShaderHandler] No shader GameObjects found for folder {folderIndex}. Make sure you've assigned a template and added materials in the editor.");
+            }
+            
             if (entryStates == null || entryStates.Length != count)
             {
                 entryStates = new bool[count];
@@ -257,7 +269,8 @@ namespace Cozen
                 return string.Empty;
             }
             
-            if (launchpad.GetFolderTypeForIndex(folderIndex) != ToggleFolderType.Shaders)
+            ToggleFolderType folderType = launchpad.GetFolderTypeForIndex(folderIndex);
+            if (folderType != ToggleFolderType.Shaders)
             {
                 return string.Empty;
             }
