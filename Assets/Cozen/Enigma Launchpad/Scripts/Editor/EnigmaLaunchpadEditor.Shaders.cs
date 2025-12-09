@@ -457,7 +457,7 @@ namespace Cozen
                 else
                 {
                     // Create a new duplicate of the template
-                    shaderGO = Object.Instantiate(templateGO);
+                    shaderGO = UnityEngine.Object.Instantiate(templateGO);
                     
                     // Set to Untagged (not EditorOnly like the template)
                     shaderGO.tag = "Untagged";
@@ -489,7 +489,7 @@ namespace Cozen
             {
                 if (leftover != null)
                 {
-                    Object.DestroyImmediate(leftover);
+                    UnityEngine.Object.DestroyImmediate(leftover);
                 }
             }
 
@@ -548,7 +548,7 @@ namespace Cozen
                 GameObject go = goProp.objectReferenceValue as GameObject;
                 if (go != null)
                 {
-                    Object.DestroyImmediate(go);
+                    UnityEngine.Object.DestroyImmediate(go);
                 }
             }
             shaderGameObjectsProp.arraySize = 0;
