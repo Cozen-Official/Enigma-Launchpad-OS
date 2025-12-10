@@ -681,6 +681,14 @@ namespace Cozen
                 return;
             }
 
+            // Check if a renderer or material target is configured
+            FaderShaderTarget target = BuildStaticFaderShaderTarget(faderIndex);
+            if ((target.renderers == null || target.renderers.Length == 0) &&
+                (target.directMaterials == null || target.directMaterials.Length == 0))
+            {
+                return;
+            }
+
             // Check if a property has been selected
             string propertyName = GetStaticFaderPropertyName(faderIndex);
             if (string.IsNullOrEmpty(propertyName))
@@ -1215,6 +1223,22 @@ namespace Cozen
         private void DrawDynamicFaderValueRangeFields(int index)
         {
             if (dynamicFaderMinValues == null || dynamicFaderMaxValues == null || dynamicFaderDefaultValues == null)
+            {
+                return;
+            }
+
+            // Check if a folder and toggle are configured
+            int folderIndex = GetDynamicFaderFolderIndex(index);
+            int toggleIndex = GetDynamicFaderToggleIndex(index);
+            if (folderIndex < 0 || toggleIndex < 0)
+            {
+                return;
+            }
+
+            ToggleFolderType folderType = GetFolderType(folderIndex);
+            FaderShaderTarget target = BuildDynamicFaderShaderTarget(folderType, folderIndex, toggleIndex, index);
+            if ((target.renderers == null || target.renderers.Length == 0) &&
+                (target.directMaterials == null || target.directMaterials.Length == 0))
             {
                 return;
             }
@@ -2301,23 +2325,23 @@ namespace Cozen
             }
 
             string currentName = GetDynamicFaderPropertyName(index);
-            int currentIndex = propertyNames.IndexOf(currentName);
-            if (currentIndex < 0)
+            
+            // Draw property selection with search button on single line
+            // Match the layout behavior of EditorGUILayout.Popup to maintain consistent width
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel(new GUIContent("Property"));
+            string displayName = string.IsNullOrEmpty(currentName) ? "(None)" : currentName;
+            GUILayout.Label(displayName, EditorStyles.textField);
+            if (GUILayout.Button("Search", GUILayout.Width(60)))
             {
-                currentIndex = 0;
+                OpenPropertySearchWindow(target, propertyNames, propertyTypes, (selectedName, selectedType) =>
+                {
+                    SetDynamicFaderPropertyName(index, selectedName);
+                    SetDynamicFaderPropertyType(index, ShaderPropertyTypeToPropertyType(selectedType));
+                    AutofillDynamicFaderValues(index, selectedName, selectedType, target);
+                });
             }
-
-            int newIndex = EditorGUILayout.Popup(new GUIContent("Property To Modify"), currentIndex, propertyNames.ToArray());
-            if (newIndex != currentIndex || string.IsNullOrEmpty(currentName))
-            {
-                string selectedName = propertyNames[newIndex];
-                ShaderPropertyType selectedType = propertyTypes[newIndex];
-                SetDynamicFaderPropertyName(index, selectedName);
-                SetDynamicFaderPropertyType(index, ShaderPropertyTypeToPropertyType(selectedType));
-
-                // Autofill min/max/default values from the material
-                AutofillDynamicFaderValues(index, selectedName, selectedType, target);
-            }
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawStaticFaderPropertyField(int faderIndex)
@@ -2358,23 +2382,23 @@ namespace Cozen
             }
 
             string currentName = GetStaticFaderPropertyName(faderIndex);
-            int currentIndex = propertyNames.IndexOf(currentName);
-            if (currentIndex < 0)
+            
+            // Draw property selection with search button on single line
+            // Match the layout behavior of EditorGUILayout.Popup to maintain consistent width
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel(new GUIContent("Property"));
+            string displayName = string.IsNullOrEmpty(currentName) ? "(None)" : currentName;
+            GUILayout.Label(displayName, EditorStyles.textField);
+            if (GUILayout.Button("Search", GUILayout.Width(60)))
             {
-                currentIndex = 0;
+                OpenPropertySearchWindow(target, propertyNames, propertyTypes, (selectedName, selectedType) =>
+                {
+                    SetStaticFaderPropertyName(faderIndex, selectedName);
+                    SetStaticFaderPropertyType(faderIndex, ShaderPropertyTypeToPropertyType(selectedType));
+                    AutofillStaticFaderValues(faderIndex, selectedName, selectedType, target);
+                });
             }
-
-            int newIndex = EditorGUILayout.Popup(new GUIContent("Property To Modify"), currentIndex, propertyNames.ToArray());
-            if (newIndex != currentIndex || string.IsNullOrEmpty(currentName))
-            {
-                string selectedName = propertyNames[newIndex];
-                ShaderPropertyType selectedType = propertyTypes[newIndex];
-                SetStaticFaderPropertyName(faderIndex, selectedName);
-                SetStaticFaderPropertyType(faderIndex, ShaderPropertyTypeToPropertyType(selectedType));
-
-                // Autofill min/max/default values from the material
-                AutofillStaticFaderValues(faderIndex, selectedName, selectedType, target);
-            }
+            EditorGUILayout.EndHorizontal();
         }
 
         // ==================== Shader Target Building ====================
@@ -2965,6 +2989,131 @@ namespace Cozen
             }
 
             return sharedProperties;
+        }
+
+        // ==================== Property Search Window ====================
+
+        /// <summary>
+        /// Opens a search window for selecting shader properties with hierarchical organization
+        /// </summary>
+        private void OpenPropertySearchWindow(
+            FaderShaderTarget target,
+            List<string> propertyNames,
+            List<ShaderPropertyType> propertyTypes,
+            Action<string, ShaderPropertyType> onSelect)
+        {
+            var searchWindow = new PropertySearchWindow("Shader Properties");
+            var mainGroup = searchWindow.GetMainGroup();
+            
+            // Build property map for quick lookup
+            var propertyMap = new Dictionary<string, ShaderPropertyType>();
+            for (int i = 0; i < propertyNames.Count && i < propertyTypes.Count; i++)
+            {
+                propertyMap[propertyNames[i]] = propertyTypes[i];
+            }
+
+            // Since propertyNames already contains only shared properties,
+            // we don't need to group by renderer/material - just show them directly
+            // Get a representative material to extract property descriptions
+            Material representativeMaterial = null;
+            if (target.directMaterials != null && target.directMaterials.Length > 0)
+            {
+                representativeMaterial = target.directMaterials[0];
+            }
+            else if (target.renderers != null && target.renderers.Length > 0)
+            {
+                int matIndex = target.materialIndices != null && target.materialIndices.Length > 0 
+                    ? target.materialIndices[0] 
+                    : 0;
+                representativeMaterial = ResolveTargetMaterial(target.renderers[0], matIndex, out _);
+            }
+
+            if (representativeMaterial != null)
+            {
+                AddPropertiesFromMaterial(mainGroup, representativeMaterial, propertyMap);
+            }
+
+            searchWindow.Open(propName => {
+                if (propertyMap.TryGetValue(propName, out ShaderPropertyType propType))
+                {
+                    onSelect(propName, propType);
+                    // Apply changes immediately and force repaint
+                    if (faderHandlerObject != null)
+                    {
+                        faderHandlerObject.ApplyModifiedProperties();
+                    }
+                    Repaint();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Adds properties from a material to a search window group, organized by shader description sections
+        /// </summary>
+        private void AddPropertiesFromMaterial(
+            PropertySearchWindow.Group group,
+            Material material,
+            Dictionary<string, ShaderPropertyType> propertyMap)
+        {
+            if (material == null || material.shader == null) return;
+            
+            Shader shader = material.shader;
+            int propCount = shader.GetPropertyCount();
+            
+            for (int i = 0; i < propCount; i++)
+            {
+                string propName = shader.GetPropertyName(i);
+                
+                // Only include properties that are in the available property map
+                if (!propertyMap.ContainsKey(propName)) continue;
+                
+                ShaderPropertyType propType = shader.GetPropertyType(i);
+                string description = shader.GetPropertyDescription(i);
+                
+                // Skip hidden properties
+                var flags = shader.GetPropertyFlags(i);
+                if ((flags & UnityEngine.Rendering.ShaderPropertyFlags.HideInInspector) != 0)
+                    continue;
+                
+                // Use description as display name if available, otherwise use property name
+                string displayName = string.IsNullOrEmpty(description) ? propName : description;
+                
+                // Create full entry with property name suffix for clarity
+                string entryName = displayName == propName 
+                    ? propName 
+                    : $"{displayName} ({propName})";
+                
+                // Add type indicator
+                string typeIndicator = GetPropertyTypeIndicator(propType);
+                if (!string.IsNullOrEmpty(typeIndicator))
+                {
+                    entryName += $" [{typeIndicator}]";
+                }
+                
+                group.Add(entryName, propName);
+            }
+        }
+
+        /// <summary>
+        /// Gets a short indicator string for the property type
+        /// </summary>
+        private string GetPropertyTypeIndicator(ShaderPropertyType propType)
+        {
+            switch (propType)
+            {
+                case ShaderPropertyType.Color:
+                    return "Color";
+                case ShaderPropertyType.Vector:
+                    return "Vector";
+                case ShaderPropertyType.Float:
+                    return "Float";
+                case ShaderPropertyType.Range:
+                    return "Range";
+                case ShaderPropertyType.Texture:
+                    return "Texture";
+                default:
+                    return "";
+            }
         }
 
         // ==================== Property Name/Type Accessors ====================

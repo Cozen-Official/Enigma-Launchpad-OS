@@ -510,36 +510,47 @@ namespace Cozen
 
             SerializedProperty propertyNameProp = GetArrayElement(propertyNamesProp, entryIndex);
             string currentPropName = propertyNameProp != null ? propertyNameProp.stringValue : string.Empty;
-            int currentIndex = propertyNames.IndexOf(currentPropName);
-            if (currentIndex < 0)
+            
+            // Draw property selection with search button on single line
+            // Match the layout behavior of EditorGUILayout.Popup to maintain consistent width
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel(new GUIContent("Property"));
+            string displayName = string.IsNullOrEmpty(currentPropName) ? "(None)" : currentPropName;
+            GUILayout.Label(displayName, EditorStyles.textField);
+            if (GUILayout.Button("Search", GUILayout.Width(60)))
             {
-                currentIndex = 0;
-            }
-
-            int newIndex = EditorGUILayout.Popup(new GUIContent("Property"), currentIndex, propertyNames.ToArray());
-            if (newIndex != currentIndex || string.IsNullOrEmpty(currentPropName))
-            {
-                string selectedName = propertyNames[newIndex];
-                if (propertyNameProp != null)
+                // Build target structure for search window
+                FaderShaderTarget target = new FaderShaderTarget
                 {
-                    propertyNameProp.stringValue = selectedName;
-                }
-
-                SerializedProperty propertyTypeProp = GetArrayElement(propertyTypesProp, entryIndex);
-                if (propertyTypeProp != null && newIndex >= 0 && newIndex < propertyTypes.Count)
+                    renderers = rendererArray,
+                    materialIndices = materialIndices,
+                    directMaterials = null
+                };
+                
+                OpenPropertySearchWindowForPropertyFolder(target, propertyNames, propertyTypes, (selectedName, selectedType) =>
                 {
-                    propertyTypeProp.intValue = ShaderPropertyTypeToPropertyType(propertyTypes[newIndex]);
-                }
-
-                if (displayNameProp != null)
-                {
-                    string currentDisplay = displayNameProp.stringValue;
-                    if (string.IsNullOrEmpty(currentDisplay) || currentDisplay == currentPropName)
+                    if (propertyNameProp != null)
                     {
-                        displayNameProp.stringValue = selectedName;
+                        propertyNameProp.stringValue = selectedName;
                     }
-                }
+                    
+                    SerializedProperty propertyTypeProp = GetArrayElement(propertyTypesProp, entryIndex);
+                    if (propertyTypeProp != null)
+                    {
+                        propertyTypeProp.intValue = ShaderPropertyTypeToPropertyType(selectedType);
+                    }
+                    
+                    if (displayNameProp != null)
+                    {
+                        string currentDisplay = displayNameProp.stringValue;
+                        if (string.IsNullOrEmpty(currentDisplay) || currentDisplay == currentPropName)
+                        {
+                            displayNameProp.stringValue = selectedName;
+                        }
+                    }
+                });
             }
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawPropertyValueField(
@@ -800,6 +811,141 @@ namespace Cozen
         {
             string folderName = GetResolvedFolderName(folderIndex);
             return $"PropertyHandler_{folderName}";
+        }
+
+        // ==================== Property Search Window ====================
+
+        /// <summary>
+        /// Opens a search window for selecting shader properties for the Property folder
+        /// </summary>
+        private void OpenPropertySearchWindowForPropertyFolder(
+            FaderShaderTarget target,
+            List<string> propertyNames,
+            List<ShaderPropertyType> propertyTypes,
+            Action<string, ShaderPropertyType> onSelect)
+        {
+            var searchWindow = new PropertySearchWindow("Shader Properties");
+            var mainGroup = searchWindow.GetMainGroup();
+            
+            // Build property map for quick lookup
+            // Note: propertyMap uses UnityEngine.Rendering.ShaderPropertyType because shader.GetPropertyType() returns that type
+            var propertyMap = new Dictionary<string, UnityEngine.Rendering.ShaderPropertyType>();
+            for (int i = 0; i < propertyNames.Count && i < propertyTypes.Count; i++)
+            {
+                propertyMap[propertyNames[i]] = (UnityEngine.Rendering.ShaderPropertyType)(int)propertyTypes[i];
+            }
+
+            // Since propertyNames already contains only shared properties,
+            // we don't need to group by renderer - just show them directly
+            // Get a representative material to extract property descriptions
+            Material representativeMaterial = null;
+            if (target.renderers != null && target.renderers.Length > 0)
+            {
+                int matIndex = target.materialIndices != null && target.materialIndices.Length > 0 
+                    ? target.materialIndices[0] 
+                    : 0;
+                representativeMaterial = GetRendererMaterial(target.renderers[0], matIndex);
+            }
+
+            if (representativeMaterial != null)
+            {
+                AddPropertiesFromMaterialForPropertyFolder(mainGroup, representativeMaterial, propertyMap);
+            }
+
+            searchWindow.Open(propName => {
+                if (propertyMap.TryGetValue(propName, out UnityEngine.Rendering.ShaderPropertyType propType))
+                {
+                    onSelect(propName, (ShaderPropertyType)(int)propType);
+                    // Apply changes immediately and force repaint
+                    serializedObject.ApplyModifiedProperties();
+                    Repaint();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Adds properties from a material to a search window group for Property folder
+        /// </summary>
+        private void AddPropertiesFromMaterialForPropertyFolder(
+            PropertySearchWindow.Group group,
+            Material material,
+            Dictionary<string, UnityEngine.Rendering.ShaderPropertyType> propertyMap)
+        {
+            if (material == null || material.shader == null) return;
+            
+            Shader shader = material.shader;
+            int propCount = shader.GetPropertyCount();
+            
+            for (int i = 0; i < propCount; i++)
+            {
+                string propName = shader.GetPropertyName(i);
+                
+                // Only include properties that are in the available property map
+                if (!propertyMap.ContainsKey(propName)) continue;
+                
+                UnityEngine.Rendering.ShaderPropertyType propType = shader.GetPropertyType(i);
+                string description = shader.GetPropertyDescription(i);
+                
+                // Skip hidden properties
+                var flags = shader.GetPropertyFlags(i);
+                if ((flags & UnityEngine.Rendering.ShaderPropertyFlags.HideInInspector) != 0)
+                    continue;
+                
+                // Use description as display name if available, otherwise use property name
+                string displayName = string.IsNullOrEmpty(description) ? propName : description;
+                
+                // Create full entry with property name suffix for clarity
+                string entryName = displayName == propName 
+                    ? propName 
+                    : $"{displayName} ({propName})";
+                
+                // Add type indicator
+                string typeIndicator = GetPropertyTypeIndicatorForPropertyFolder(propType);
+                if (!string.IsNullOrEmpty(typeIndicator))
+                {
+                    entryName += $" [{typeIndicator}]";
+                }
+                
+                group.Add(entryName, propName);
+            }
+        }
+
+        /// <summary>
+        /// Gets a short indicator string for the property type for Property folder
+        /// </summary>
+        private string GetPropertyTypeIndicatorForPropertyFolder(UnityEngine.Rendering.ShaderPropertyType propType)
+        {
+            switch (propType)
+            {
+                case UnityEngine.Rendering.ShaderPropertyType.Color:
+                    return "Color";
+                case UnityEngine.Rendering.ShaderPropertyType.Vector:
+                    return "Vector";
+                case UnityEngine.Rendering.ShaderPropertyType.Float:
+                    return "Float";
+                case UnityEngine.Rendering.ShaderPropertyType.Range:
+                    return "Range";
+                case UnityEngine.Rendering.ShaderPropertyType.Texture:
+                    return "Texture";
+                default:
+                    return "";
+            }
+        }
+
+        /// <summary>
+        /// Helper to get material from renderer at specific index
+        /// </summary>
+        private Material GetRendererMaterial(Renderer renderer, int materialIndex)
+        {
+            if (renderer == null) return null;
+            
+            Material[] materials = renderer.sharedMaterials;
+            if (materials == null || materialIndex < 0 || materialIndex >= materials.Length)
+            {
+                return null;
+            }
+            
+            return materials[materialIndex];
         }
     }
 }
