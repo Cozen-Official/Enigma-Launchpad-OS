@@ -22,11 +22,21 @@ namespace Cozen
         [SerializeField]
         private int[] includedFolderIndices;
         
+        [Tooltip("If true, fader positions are included when capturing presets.")]
+        [SerializeField]
+        private bool includeFaders = true;
+        
         [SerializeField, HideInInspector]
         private bool folderSelectionInitialized = false;
         
         // Preset slot header layout: [Save] [Load] [Delete] [Preset 1] [Preset 2] ... [Preset N]
         private const int PresetHeaderEntries = 3;
+        
+        // Maximum number of faders supported (matches FaderSystemHandler.MaxFaders)
+        private const int MaxFaderCount = 9;
+        
+        // Number of AudioLink strength values in Mochie presets
+        private const int MochieAudioLinkStrengthCount = 9;
         
         // PlayerData key prefix for preset persistence
         private const string PlayerDataKeyPrefix = "EnigmaPreset_";
@@ -40,7 +50,9 @@ namespace Cozen
         private const int PresetMaskShaders = 1 << (int)ToggleFolderType.Shaders;
         private const int PresetMaskMochie = 1 << (int)ToggleFolderType.Mochie;
         private const int PresetMaskJune = 1 << (int)ToggleFolderType.June;
-        private const int PresetDefaultMask = PresetMaskSkybox | PresetMaskObjects | PresetMaskMaterials | PresetMaskProperties | PresetMaskShaders | PresetMaskMochie | PresetMaskJune;
+        // Faders are not a folder type, so use a separate bit (bit 9 = 512)
+        private const int PresetMaskFaders = 1 << 9;
+        private const int PresetDefaultMask = PresetMaskSkybox | PresetMaskObjects | PresetMaskMaterials | PresetMaskProperties | PresetMaskShaders | PresetMaskMochie | PresetMaskJune | PresetMaskFaders;
         
         // ============================================================================
         // SIMPLIFIED SYNCED DATA - Only 4 synced variables total
@@ -67,6 +79,7 @@ namespace Cozen
         //   [9] mochieAudioBand
         //   [10-15] Mochie +/- steps: Saturation, Rounding, FogSafe, Brightness, HDR, Contrast
         //   [16-24] AudioLink strengths (as steps): Filter, Shake, Blur, Distort, Noise, Fog, Outline, Image, Misc
+        //   [25-33] Fader position steps (9 faders, -1 = unassigned, 0-31 = step position)
         private const int PV_HAS_SNAPSHOT = 0;
         private const int PV_SKYBOX_INDEX = 1;
         private const int PV_JUNE_AL_BAND = 2;
@@ -94,7 +107,17 @@ namespace Cozen
         private const int PV_MOCHIE_AL_OUTLINE = 22;
         private const int PV_MOCHIE_AL_IMAGE = 23;
         private const int PV_MOCHIE_AL_MISC = 24;
-        private const int PRESET_VALUES_STRIDE = 25;
+        // Fader position steps (9 faders, -1 = unassigned, 0-31 = position step)
+        private const int PV_FADER_0 = 25;
+        private const int PV_FADER_1 = 26;
+        private const int PV_FADER_2 = 27;
+        private const int PV_FADER_3 = 28;
+        private const int PV_FADER_4 = 29;
+        private const int PV_FADER_5 = 30;
+        private const int PV_FADER_6 = 31;
+        private const int PV_FADER_7 = 32;
+        private const int PV_FADER_8 = 33;
+        private const int PRESET_VALUES_STRIDE = 34;
         [UdonSynced] private int[] syncedPresetValues;
         
         // Computed at runtime - number of ints needed per preset for toggle bitmasks
@@ -545,6 +568,12 @@ namespace Cozen
             {
                 SetToggleBit(presetIndex, i, false);
             }
+            
+            // Reset fader values to -1 (unassigned)
+            for (int f = 0; f < MaxFaderCount; f++)
+            {
+                SetPresetValue(presetIndex, PV_FADER_0 + f, -1);
+            }
         }
         
         #endregion
@@ -739,6 +768,12 @@ namespace Cozen
                 }
             }
             
+            // Add fader mask if includeFaders is enabled
+            if (includeFaders)
+            {
+                mask |= PresetMaskFaders;
+            }
+            
             if (mask == 0 && !folderSelectionInitialized)
             {
                 return PresetDefaultMask;
@@ -803,12 +838,17 @@ namespace Cozen
             // Resize values array
             ResizeArray(ref syncedPresetValues, presetCount * PRESET_VALUES_STRIDE);
             
-            // Initialize skybox index to -1 for empty presets
+            // Initialize skybox index and fader values to -1 for empty presets
             for (int i = 0; i < presetCount; i++)
             {
                 if (!GetPresetHasSnapshot(i))
                 {
                     SetPresetValue(i, PV_SKYBOX_INDEX, -1);
+                    // Initialize fader values to -1 (unassigned)
+                    for (int f = 0; f < MaxFaderCount; f++)
+                    {
+                        SetPresetValue(i, PV_FADER_0 + f, -1);
+                    }
                 }
             }
         }
@@ -948,6 +988,11 @@ namespace Cozen
             if ((mask & PresetMaskMochie) != 0)
             {
                 captured |= CaptureMochieSnapshot(presetIndex);
+            }
+            
+            if ((mask & PresetMaskFaders) != 0)
+            {
+                captured |= CaptureFaderSnapshot(presetIndex);
             }
             
             if (captured)
@@ -1158,12 +1203,37 @@ namespace Cozen
             }
             
             // Capture AudioLink strengths (9 values)
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < MochieAudioLinkStrengthCount; i++)
             {
                 SetPresetValue(presetIndex, PV_MOCHIE_AL_FILTER + i, handler.GetAudioLinkStep(i));
             }
             
             return true;
+        }
+        
+        private bool CaptureFaderSnapshot(int presetIndex)
+        {
+            FaderSystemHandler faderHandler = launchpad.GetFaderHandler();
+            if (faderHandler == null) return false;
+            
+            if (syncedPresetValues == null) return false;
+            
+            int faderCount = faderHandler.GetFaderCount();
+            bool captured = false;
+            
+            // Capture position steps for all 9 fader slots
+            for (int i = 0; i < MaxFaderCount; i++)
+            {
+                int step = -1; // -1 indicates unassigned fader
+                if (i < faderCount && faderHandler.IsFaderAssigned(i))
+                {
+                    step = faderHandler.GetFaderPositionStep(i);
+                    captured = true;
+                }
+                SetPresetValue(presetIndex, PV_FADER_0 + i, step);
+            }
+            
+            return captured;
         }
         
         #endregion
@@ -1187,6 +1257,8 @@ namespace Cozen
             
             bool changed = false;
             
+            // Apply toggle states FIRST (Objects, Materials, Properties, Shaders, June, Mochie)
+            // This ensures dynamic faders get assigned before we try to set their positions
             if ((mask & (PresetMaskObjects | PresetMaskMaterials)) != 0)
             {
                 changed |= ApplyObjectStates(presetIndex, mask);
@@ -1215,6 +1287,13 @@ namespace Cozen
             if ((mask & PresetMaskMochie) != 0)
             {
                 changed |= ApplyMochieSnapshot(presetIndex);
+            }
+            
+            // Apply faders LAST, after toggle states have been applied
+            // This ensures dynamic faders are properly assigned before we set their positions
+            if ((mask & PresetMaskFaders) != 0)
+            {
+                changed |= ApplyFaderSnapshot(presetIndex);
             }
             
             return changed;
@@ -1483,7 +1562,7 @@ namespace Cozen
             }
             
             // Apply AudioLink strengths (9 values)
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < MochieAudioLinkStrengthCount; i++)
             {
                 handler.SetAudioLinkFromStep(i, GetPresetValue(presetIndex, PV_MOCHIE_AL_FILTER + i));
             }
@@ -1493,6 +1572,31 @@ namespace Cozen
             handler.RequestSerialization();
             
             return true;
+        }
+        
+        private bool ApplyFaderSnapshot(int presetIndex)
+        {
+            FaderSystemHandler faderHandler = launchpad.GetFaderHandler();
+            if (faderHandler == null) return false;
+            
+            if (syncedPresetValues == null) return false;
+            
+            int faderCount = faderHandler.GetFaderCount();
+            bool changed = false;
+            
+            // Apply position steps for all 9 fader slots
+            for (int i = 0; i < MaxFaderCount && i < faderCount; i++)
+            {
+                int step = GetPresetValue(presetIndex, PV_FADER_0 + i);
+                // SetFaderPositionFromStep handles -1 (unassigned) by doing nothing
+                if (step >= 0 && faderHandler.IsFaderAssigned(i))
+                {
+                    faderHandler.SetFaderPositionFromStep(i, step);
+                    changed = true;
+                }
+            }
+            
+            return changed;
         }
         
         #endregion
@@ -1549,6 +1653,14 @@ namespace Cozen
             if ((mask & PresetMaskMochie) != 0)
             {
                 if (!DoesMochieMatch(presetIndex))
+                {
+                    return false;
+                }
+            }
+            
+            if ((mask & PresetMaskFaders) != 0)
+            {
+                if (!DoesFaderMatch(presetIndex))
                 {
                     return false;
                 }
@@ -1745,10 +1857,46 @@ namespace Cozen
             }
             
             // Compare AudioLink strengths (9 values)
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < MochieAudioLinkStrengthCount; i++)
             {
                 if (handler.GetAudioLinkStep(i) != GetPresetValue(presetIndex, PV_MOCHIE_AL_FILTER + i))
                     return false;
+            }
+            
+            return true;
+        }
+        
+        private bool DoesFaderMatch(int presetIndex)
+        {
+            FaderSystemHandler faderHandler = launchpad.GetFaderHandler();
+            if (faderHandler == null) return true;
+            
+            if (syncedPresetValues == null) return true;
+            
+            int faderCount = faderHandler.GetFaderCount();
+            
+            // Compare position steps for all 9 fader slots
+            for (int i = 0; i < MaxFaderCount && i < faderCount; i++)
+            {
+                int savedStep = GetPresetValue(presetIndex, PV_FADER_0 + i);
+                
+                // If saved step is -1 (unassigned when captured), skip comparison
+                if (savedStep < 0)
+                {
+                    continue;
+                }
+                
+                // If fader is not currently assigned, it doesn't match
+                if (!faderHandler.IsFaderAssigned(i))
+                {
+                    return false;
+                }
+                
+                int currentStep = faderHandler.GetFaderPositionStep(i);
+                if (currentStep != savedStep)
+                {
+                    return false;
+                }
             }
             
             return true;
@@ -1930,6 +2078,15 @@ namespace Cozen
             {
                 string[] valuesParts = valuesData.Split(',');
                 int baseIndex = presetIndex * PRESET_VALUES_STRIDE;
+                
+                // Initialize fader values to -1 (unassigned) first for backward compatibility
+                // Old presets won't have fader data, so they should be marked as unassigned
+                for (int f = 0; f < MaxFaderCount; f++)
+                {
+                    SetPresetValue(presetIndex, PV_FADER_0 + f, -1);
+                }
+                
+                // Load all values that exist in the saved data
                 for (int i = 0; i < valuesParts.Length && i < PRESET_VALUES_STRIDE && baseIndex + i < syncedPresetValues.Length; i++)
                 {
                     if (int.TryParse(valuesParts[i], out int val))

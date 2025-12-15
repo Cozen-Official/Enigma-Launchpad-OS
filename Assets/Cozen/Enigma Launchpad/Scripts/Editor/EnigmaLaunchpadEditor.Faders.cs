@@ -805,17 +805,33 @@ namespace Cozen
                 return;
             }
 
-            SerializedProperty colorProp = staticFaderIndicatorColors.GetArrayElementAtIndex(faderIndex);
-            if (colorProp != null)
+            // Check if this is a color property (propertyType == 2)
+            int propertyType = GetStaticFaderPropertyType(faderIndex);
+            bool isColorProperty = propertyType == 2;
+
+            if (isColorProperty)
             {
-                Color updatedColor = EditorGUILayout.ColorField(
-                    new GUIContent("Color"), 
-                    colorProp.colorValue, 
-                    true,  // showEyedropper
-                    true,  // showAlpha
-                    true   // hdr
+                // For color properties, show informational note instead of color picker
+                EditorGUILayout.HelpBox(
+                    "The indicator will display the color currently applied by this fader.",
+                    MessageType.Info
                 );
-                colorProp.colorValue = updatedColor;
+            }
+            else
+            {
+                // For non-color properties, show the color picker
+                SerializedProperty colorProp = staticFaderIndicatorColors.GetArrayElementAtIndex(faderIndex);
+                if (colorProp != null)
+                {
+                    Color updatedColor = EditorGUILayout.ColorField(
+                        new GUIContent("Color"), 
+                        colorProp.colorValue, 
+                        true,  // showEyedropper
+                        true,  // showAlpha
+                        true   // hdr
+                    );
+                    colorProp.colorValue = updatedColor;
+                }
             }
 
             SerializedProperty conditionalProp = staticFaderIndicatorConditional.GetArrayElementAtIndex(faderIndex);
@@ -1364,19 +1380,35 @@ namespace Cozen
                 return;
             }
 
-            if (index < dynamicFaderIndicatorColors.arraySize)
+            // Check if this is a color property (propertyType == 2)
+            int propertyType = GetDynamicFaderPropertyType(index);
+            bool isColorProperty = propertyType == 2;
+
+            if (isColorProperty)
             {
-                SerializedProperty colorProp = dynamicFaderIndicatorColors.GetArrayElementAtIndex(index);
-                if (colorProp != null)
+                // For color properties, show informational note instead of color picker
+                EditorGUILayout.HelpBox(
+                    "The indicator will display the color currently applied by this fader.",
+                    MessageType.Info
+                );
+            }
+            else
+            {
+                // For non-color properties, show the color picker
+                if (index < dynamicFaderIndicatorColors.arraySize)
                 {
-                    Color updatedColor = EditorGUILayout.ColorField(
-                        new GUIContent("Color"), 
-                        colorProp.colorValue, 
-                        true,  // showEyedropper
-                        true,  // showAlpha
-                        true   // hdr
-                    );
-                    colorProp.colorValue = updatedColor;
+                    SerializedProperty colorProp = dynamicFaderIndicatorColors.GetArrayElementAtIndex(index);
+                    if (colorProp != null)
+                    {
+                        Color updatedColor = EditorGUILayout.ColorField(
+                            new GUIContent("Color"), 
+                            colorProp.colorValue, 
+                            true,  // showEyedropper
+                            true,  // showAlpha
+                            true   // hdr
+                        );
+                        colorProp.colorValue = updatedColor;
+                    }
                 }
             }
 

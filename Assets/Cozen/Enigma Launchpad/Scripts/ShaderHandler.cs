@@ -201,6 +201,25 @@ namespace Cozen
             }
         }
         
+        // Helper Methods
+        
+        private bool IsReady()
+        {
+            return launchpad != null;
+        }
+        
+        private int GetPageCount()
+        {
+            if (launchpad == null || shaderGameObjects == null)
+            {
+                return 1;
+            }
+            
+            int count = shaderGameObjects.Length;
+            int itemsPerPage = launchpad.GetItemsPerPage();
+            return Mathf.Max(1, Mathf.CeilToInt((float)count / itemsPerPage));
+        }
+        
         // Handler Interface Methods (called by EnigmaLaunchpad)
         
         public string GetLabel(int buttonIndex)
@@ -234,7 +253,7 @@ namespace Cozen
             
             if (buttonIndex == 9)
             {
-                return configured && GetTotalPages() > 1;
+                return configured && GetPageCount() > 1;
             }
             
             if (!configured)
@@ -336,20 +355,9 @@ namespace Cozen
                 return "0/0";
             }
             
-            int totalPages = GetTotalPages();
+            int totalPages = GetPageCount();
             int displayPage = Mathf.Clamp(currentPage, 0, Mathf.Max(0, totalPages - 1));
             return $"{displayPage + 1}/{Mathf.Max(1, totalPages)}";
-        }
-        
-        private int GetTotalPages()
-        {
-            if (launchpad == null || shaderGameObjects == null)
-            {
-                return 1;
-            }
-            
-            int count = shaderGameObjects.Length;
-            return Mathf.Max(1, Mathf.CeilToInt((float)count / launchpad.GetItemsPerPage()));
         }
         
         public void OnSelect(int buttonIndex)
@@ -421,41 +429,29 @@ namespace Cozen
         
         public void OnPageChange(int direction)
         {
-            if (launchpad == null)
+            if (!IsReady())
             {
                 return;
             }
             
-            if (launchpad.GetFolderTypeForIndex(folderIndex) != ToggleFolderType.Shaders)
+            if (!launchpad.CanLocalUserInteract())
             {
                 return;
             }
-
+            
             EnsureLocalOwnership();
-            UpdatePage(direction);
-        }
-        
-        private void UpdatePage(int direction)
-        {
-            if (shaderGameObjects == null)
-            {
-                return;
-            }
             
-            int totalPages = GetTotalPages();
-            if (totalPages <= 1)
-            {
-                return;
-            }
-            
+            int totalPages = GetPageCount();
             currentPage = (currentPage + direction + totalPages) % totalPages;
+            
+            RequestSerialization();
         }
         
         private void EnsureLocalOwnership()
         {
-            if (launchpad != null)
+            if (!Networking.IsOwner(gameObject))
             {
-                launchpad.EnsureLocalOwnership();
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
             }
         }
         

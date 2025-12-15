@@ -86,6 +86,10 @@ namespace Cozen
         private bool _leftGrabPermitted;
         private bool _rightGrabPermitted;
 
+        // Stores the current computed color for color properties (propertyType == 2)
+        // This is used by FaderSystemHandler to update the indicator color
+        private Color _currentComputedColor = Color.white;
+
         public override void OnDeserialization()
         {
             if (currentValue != _lastValue)
@@ -95,6 +99,12 @@ namespace Cozen
                 if (_sliderObject != null)
                 {
                     _sliderObject.transform.localPosition = syncedSliderPosition;
+                }
+                
+                // Notify FaderSystemHandler to update indicator if this is a color property
+                if (propertyType == 2 && faderSystemHandler != null)
+                {
+                    faderSystemHandler.OnFaderColorChanged(faderIndex);
                 }
             }
         }
@@ -316,6 +326,9 @@ namespace Cozen
             Color shiftedColor = Color.HSVToRGB(newHue, s, v);
             shiftedColor.a = defaultColor.a; // Preserve alpha
             
+            // Store the computed color for the indicator
+            _currentComputedColor = shiftedColor;
+            
             // Apply to all target materials
             for (int i = 0; i < count; i++)
             {
@@ -446,6 +459,66 @@ namespace Cozen
         public bool IsInTrigger(bool isRightHand)
         {
             return isRightHand ? _inRightTrigger : _inLeftTrigger;
+        }
+
+        /// <summary>
+        /// Gets the current computed color for color property faders.
+        /// For non-color properties, returns Color.white.
+        /// </summary>
+        public Color GetCurrentComputedColor()
+        {
+            return _currentComputedColor;
+        }
+
+        /// <summary>
+        /// Number of discrete steps used for fader position snapshotting.
+        /// Using 32 steps (0-31) provides good precision while staying efficient for storage.
+        /// </summary>
+        public const int FaderStepCount = 32;
+
+        /// <summary>
+        /// Gets the current fader position as a discrete step index (0 to FaderStepCount-1).
+        /// This is used for preset snapshotting to avoid storing exact float values.
+        /// </summary>
+        public int GetPositionStep()
+        {
+            float normalizedValue = valueMax != valueMin ? (currentValue - valueMin) / (valueMax - valueMin) : 0f;
+            normalizedValue = Mathf.Clamp01(normalizedValue);
+            int step = Mathf.RoundToInt(normalizedValue * (FaderStepCount - 1));
+            return Mathf.Clamp(step, 0, FaderStepCount - 1);
+        }
+
+        /// <summary>
+        /// Sets the fader position from a discrete step index (0 to FaderStepCount-1).
+        /// This is used when applying preset snapshots.
+        /// </summary>
+        public void SetPositionFromStep(int step)
+        {
+            step = Mathf.Clamp(step, 0, FaderStepCount - 1);
+            float normalizedValue = (float)step / (FaderStepCount - 1);
+            currentValue = Mathf.Lerp(valueMin, valueMax, normalizedValue);
+            
+            // Update the physical slider position
+            float t = valueMax != valueMin ? (currentValue - valueMin) / (valueMax - valueMin) : 0f;
+            float axisPos = _bottomLimit + (_topLimit - _bottomLimit) * t;
+            GameObject slider = _sliderObject != null ? _sliderObject : gameObject;
+            Vector3 newPosition = SetAxisValue(slider.transform.localPosition, axisPos);
+            syncedSliderPosition = newPosition;
+            _sliderObject = slider;
+            if (_sliderObject != null)
+            {
+                _sliderObject.transform.localPosition = newPosition;
+            }
+            UpdateTargetFloat(currentValue);
+            _lastValue = currentValue;
+        }
+
+        /// <summary>
+        /// Checks if this fader has a valid assignment (has a property to control).
+        /// </summary>
+        public bool IsAssigned()
+        {
+            return !string.IsNullOrEmpty(materialPropertyId);
         }
     }
 }

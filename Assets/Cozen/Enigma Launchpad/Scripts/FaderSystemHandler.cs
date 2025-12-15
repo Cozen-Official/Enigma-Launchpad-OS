@@ -458,6 +458,62 @@ namespace Cozen
             return Vector3.zero;
         }
 
+        /// <summary>
+        /// Called by FaderHandler when a color property value changes.
+        /// Updates the indicator color to match the newly computed color.
+        /// </summary>
+        /// <param name="faderIndex">Index of the fader whose color changed</param>
+        public void OnFaderColorChanged(int faderIndex)
+        {
+            if (faders == null || faderIndex < 0 || faderIndex >= faders.Length)
+            {
+                return;
+            }
+
+            FaderHandler fader = faders[faderIndex];
+            if (fader == null || fader.propertyType != 2)
+            {
+                return;
+            }
+
+            // Check if indicator is enabled for this fader
+            bool isStatic = faderStaticAssignments != null && faderIndex < faderStaticAssignments.Length && faderStaticAssignments[faderIndex];
+            int dynamicSource = faderDynamicSources != null && faderIndex < faderDynamicSources.Length ? faderDynamicSources[faderIndex] : -1;
+
+            bool indicatorEnabled = false;
+            bool indicatorConditional = false;
+            float threshold = 0f;
+
+            if (isStatic)
+            {
+                indicatorEnabled = IsStaticFaderIndicatorEnabled(faderIndex);
+                indicatorConditional = IsStaticFaderIndicatorConditional(faderIndex);
+                threshold = GetStaticFaderMinValue(faderIndex);
+            }
+            else if (dynamicSource >= 0)
+            {
+                indicatorEnabled = IsDynamicFaderIndicatorEnabled(dynamicSource);
+                indicatorConditional = IsDynamicFaderIndicatorConditional(dynamicSource);
+                threshold = GetDynamicFaderMinValue(dynamicSource);
+            }
+
+            if (!indicatorEnabled)
+            {
+                return;
+            }
+
+            // Get the current computed color from the fader
+            Color indicatorColor = fader.GetCurrentComputedColor();
+            float currentValue = fader.currentValue;
+
+            // Apply the indicator update
+            bool active = !indicatorConditional || currentValue > threshold;
+            Color targetColor = active ? indicatorColor : (launchpad != null ? launchpad.inactiveColor : Color.black);
+            float emission = active ? 1f : 0f;
+
+            ApplyFaderIndicator(faderIndex, targetColor, emission);
+        }
+
         private void UpdateHandColliderPositions()
         {
             // Only update hand colliders if the player is authorized
@@ -761,6 +817,7 @@ namespace Cozen
                 Color indicatorColor = inactiveColor;
                 float threshold = 0f;
                 float currentValue = 0f;
+                int propertyType = 0;
 
                 if (isStatic)
                 {
@@ -768,6 +825,7 @@ namespace Cozen
                     indicatorConditional = IsStaticFaderIndicatorConditional(i);
                     indicatorColor = GetStaticFaderIndicatorColor(i);
                     threshold = GetStaticFaderMinValue(i);
+                    propertyType = GetStaticFaderPropertyType(i);
                 }
                 else if (dynamicSource >= 0)
                 {
@@ -775,6 +833,7 @@ namespace Cozen
                     indicatorConditional = IsDynamicFaderIndicatorConditional(dynamicSource);
                     indicatorColor = GetDynamicFaderIndicatorColor(dynamicSource);
                     threshold = GetDynamicFaderMinValue(dynamicSource);
+                    propertyType = GetDynamicFaderPropertyType(dynamicSource);
                 }
 
                 if (indicatorEnabled && i < faderCount)
@@ -783,6 +842,12 @@ namespace Cozen
                     if (fader != null)
                     {
                         currentValue = fader.currentValue;
+                        
+                        // For color properties (propertyType == 2), use the computed color from the fader
+                        if (propertyType == 2)
+                        {
+                            indicatorColor = fader.GetCurrentComputedColor();
+                        }
                     }
                 }
 
@@ -1637,5 +1702,84 @@ namespace Cozen
                    Mathf.Approximately(a.b, b.b) &&
                    Mathf.Approximately(a.a, b.a);
         }
+
+        #region Fader Snapshot Support
+
+        /// <summary>
+        /// Gets the number of fader slots available.
+        /// </summary>
+        public int GetFaderCount()
+        {
+            return faders != null ? Mathf.Min(MaxFaders, faders.Length) : 0;
+        }
+
+        /// <summary>
+        /// Checks if a fader at the given index is currently assigned (has a property to control).
+        /// Static faders with a property and dynamic faders with an active source are considered assigned.
+        /// </summary>
+        public bool IsFaderAssigned(int faderIndex)
+        {
+            if (faders == null || faderIndex < 0 || faderIndex >= faders.Length)
+            {
+                return false;
+            }
+
+            FaderHandler fader = faders[faderIndex];
+            if (fader == null)
+            {
+                return false;
+            }
+
+            return fader.IsAssigned();
+        }
+
+        /// <summary>
+        /// Gets the current position of a fader as a discrete step (0 to FaderStepCount-1).
+        /// Returns -1 if the fader is not assigned or invalid.
+        /// </summary>
+        public int GetFaderPositionStep(int faderIndex)
+        {
+            if (faders == null || faderIndex < 0 || faderIndex >= faders.Length)
+            {
+                return -1;
+            }
+
+            FaderHandler fader = faders[faderIndex];
+            if (fader == null || !fader.IsAssigned())
+            {
+                return -1;
+            }
+
+            return fader.GetPositionStep();
+        }
+
+        /// <summary>
+        /// Sets a fader's position from a discrete step (0 to FaderStepCount-1).
+        /// Does nothing if the fader is not assigned or invalid, or if step is -1 (unassigned marker).
+        /// </summary>
+        public void SetFaderPositionFromStep(int faderIndex, int step)
+        {
+            if (step < 0)
+            {
+                // -1 means the fader wasn't assigned when the preset was captured
+                return;
+            }
+
+            if (faders == null || faderIndex < 0 || faderIndex >= faders.Length)
+            {
+                return;
+            }
+
+            FaderHandler fader = faders[faderIndex];
+            if (fader == null || !fader.IsAssigned())
+            {
+                return;
+            }
+
+            fader.SetPositionFromStep(step);
+            fader.RequestSerialization();
+        }
+
+        #endregion
     }
 }

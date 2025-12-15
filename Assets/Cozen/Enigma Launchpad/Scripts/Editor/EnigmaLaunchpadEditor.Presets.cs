@@ -14,6 +14,7 @@ namespace Cozen
         private SerializedProperty presetSlotCount;
         private SerializedProperty presetIncludedFolderIndices;
         private SerializedProperty presetFolderSelectionInitialized;
+        private SerializedProperty presetIncludeFaders;
 
         private void BindPresetHandlerSerializedObject()
         {
@@ -21,6 +22,7 @@ namespace Cozen
             presetSlotCount = null;
             presetIncludedFolderIndices = null;
             presetFolderSelectionInitialized = null;
+            presetIncludeFaders = null;
 
             if (presetHandlerProperty == null || presetHandlerProperty.objectReferenceValue == null)
             {
@@ -31,6 +33,7 @@ namespace Cozen
             presetSlotCount = presetHandlerObject.FindProperty("presetPages");
             presetIncludedFolderIndices = presetHandlerObject.FindProperty("includedFolderIndices");
             presetFolderSelectionInitialized = presetHandlerObject.FindProperty("folderSelectionInitialized");
+            presetIncludeFaders = presetHandlerObject.FindProperty("includeFaders");
         }
 
         private void EnsurePresetHandlerParity()
@@ -171,30 +174,43 @@ namespace Cozen
             if (eligibleOptions.Count == 0)
             {
                 EditorGUILayout.HelpBox("Add Objects, Materials, Properties, Skybox, Mochie, or June folders to capture in presets.", MessageType.Info);
-                EditorGUI.indentLevel--;
-                return;
             }
-
-            foreach (FolderOption option in eligibleOptions)
+            else
             {
-                bool selected = IsPresetFolderIndexSelected(option.Index);
-                EditorGUI.BeginChangeCheck();
-                bool newValue = EditorGUILayout.ToggleLeft(option.Label, selected);
-                if (EditorGUI.EndChangeCheck())
+                foreach (FolderOption option in eligibleOptions)
                 {
-                    if (newValue)
+                    bool selected = IsPresetFolderIndexSelected(option.Index);
+                    EditorGUI.BeginChangeCheck();
+                    bool newValue = EditorGUILayout.ToggleLeft(option.Label, selected);
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        AddPresetFolderSelection(option.Index);
-                    }
-                    else
-                    {
-                        RemovePresetFolderSelection(option.Index);
+                        if (newValue)
+                        {
+                            AddPresetFolderSelection(option.Index);
+                        }
+                        else
+                        {
+                            RemovePresetFolderSelection(option.Index);
+                        }
                     }
                 }
             }
 
+            // Fader checkbox (separate from folder types)
+            if (presetIncludeFaders != null)
+            {
+                GUILayout.Space(4);
+                EditorGUI.BeginChangeCheck();
+                bool includeFaders = EditorGUILayout.ToggleLeft("Faders", presetIncludeFaders.boolValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    presetIncludeFaders.boolValue = includeFaders;
+                }
+            }
+
             int selectionCount = presetIncludedFolderIndices.arraySize;
-            if (selectionCount == 0)
+            bool hasFaders = presetIncludeFaders != null && presetIncludeFaders.boolValue;
+            if (selectionCount == 0 && !hasFaders)
             {
                 bool initialized = presetFolderSelectionInitialized != null && presetFolderSelectionInitialized.boolValue;
                 string message = initialized
