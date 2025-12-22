@@ -104,3 +104,6 @@ Optional Dependencies(for a sepecifc folder or feature):
 • VideoTXL (From https://github.com/vrctxl/VideoTXL, add the VCC and import from creator companion.)  
 • OhGeezCmon Access Control (for adding users to the whitelist at runtime, install the package from https://github.com/OhGeezCmon/VRC-AccessControl)
 • Flatine Open Decks Manager (https://lavysworlds.gumroad.com/l/flatline) for whitelist integration and event hosting.
+
+## **SUPPORT**
+For support message "cozen." on Discord or join the [Enigma Discord](https://discord.gg/fvCdcpFedP).
