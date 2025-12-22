@@ -61,6 +61,32 @@ Set each fader to a property and globally modify values at runtime. Supports int
 ### **Dynamic Faders**
 Create an unlimited amount of dynamic faders, which populate on empty fader slots when a linked toggle from another folder is set. This allows you to individually control the properties for each active effect without needing to make hundreds of individual sliders.
 
+## **Documentation**
+
+For complete documentation, visit our [Documentation Site](https://cozen-official.github.io/Enigma-Launchpad-OS/).
+
+**Quick Links:**
+- [Getting Started Guide](https://cozen-official.github.io/Enigma-Launchpad-OS/)
+- [Dependencies](https://cozen-official.github.io/Enigma-Launchpad-OS/dependencies.html)
+- [Setting up Prefab](https://cozen-official.github.io/Enigma-Launchpad-OS/setting-up-prefab.html)
+- [Setting up Screen Shaders](https://cozen-official.github.io/Enigma-Launchpad-OS/setting-up-screen-shaders.html)
+- [Setting up Fader System](https://cozen-official.github.io/Enigma-Launchpad-OS/setting-up-fader-system.html)
+- [Setting up Whitelist](https://cozen-official.github.io/Enigma-Launchpad-OS/setting-up-whitelist.html)
+
+**Folder Types:**
+- [Folder Types Overview](https://cozen-official.github.io/Enigma-Launchpad-OS/folder-types.html)
+- [Objects Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/objects-folder.html)
+- [Materials Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/materials-folder.html)
+- [Properties Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/properties-folder.html)
+- [Shaders Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/shaders-folder.html)
+- [Skybox Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/skybox-folder.html)
+- [Mochie Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/mochie-folder.html)
+- [June Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/june-folder.html)
+- [Presets Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/presets-folder.html)
+- [Stats Folder](https://cozen-official.github.io/Enigma-Launchpad-OS/stats-folder.html)
+
+---
+
 ## **DEPENDENCIES**
 Install these dependencies before importing the Enigma Launchpad package.
 
