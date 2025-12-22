@@ -581,15 +581,17 @@ namespace Cozen
                 return;
             }
 
+            int arraySizeBefore = array.arraySize;
             array.DeleteArrayElementAtIndex(index);
+            int arraySizeAfter = array.arraySize;
 
-            if (index < array.arraySize)
+            // Unity's DeleteArrayElementAtIndex behavior for ObjectReference arrays:
+            // - If element was non-null: first call only nulls it out (no size change)
+            // - If element was null: first call actually removes it (size decreases)
+            // We only need a second delete if the size didn't change (element was just nulled)
+            if (arraySizeAfter == arraySizeBefore && index < array.arraySize)
             {
-                SerializedProperty element = array.GetArrayElementAtIndex(index);
-                if (element != null && element.propertyType == SerializedPropertyType.ObjectReference && element.objectReferenceValue == null)
-                {
-                    array.DeleteArrayElementAtIndex(index);
-                }
+                array.DeleteArrayElementAtIndex(index);
             }
         }
         
@@ -2482,15 +2484,17 @@ namespace Cozen
             
             if (localIndex >= 0 && localIndex < folderEntriesProperty.arraySize)
             {
+                int arraySizeBefore = folderEntriesProperty.arraySize;
                 folderEntriesProperty.DeleteArrayElementAtIndex(localIndex);
-                if (localIndex < folderEntriesProperty.arraySize)
+                int arraySizeAfter = folderEntriesProperty.arraySize;
+                
+                // Unity's DeleteArrayElementAtIndex behavior for ObjectReference arrays:
+                // - If element was non-null: first call only nulls it out (no size change)
+                // - If element was null: first call actually removes it (size decreases)
+                // We only need a second delete if the size didn't change (element was just nulled)
+                if (arraySizeAfter == arraySizeBefore && localIndex < folderEntriesProperty.arraySize)
                 {
-                    var prop = folderEntriesProperty.GetArrayElementAtIndex(localIndex);
-                    if (prop.propertyType == SerializedPropertyType.ObjectReference &&
-                    prop.objectReferenceValue == null)
-                    {
-                        folderEntriesProperty.DeleteArrayElementAtIndex(localIndex);
-                    }
+                    folderEntriesProperty.DeleteArrayElementAtIndex(localIndex);
                 }
             }
             countProp.intValue = count - 1;
