@@ -1,3 +1,5 @@
+<img width="974" height="571" alt="image" src="https://github.com/user-attachments/assets/18bcf20e-bb02-4ba7-8d41-5608a7c81c42" />
+
 # **Enigma Launchpad OS**
 
 Enigma Launchpad OS is a modular control system designed for VRChat worlds. It provides a unified interface for toggling objects and materials, modifying shader properties, controlling screen shaders, displaying analytics, creating persistent presets, changing skyboxes, and more, all inside a cohesive, synced UdonSharp controller. The Launchpad is built to handle complex world and shader setups and substantially simplifies world UI creation across a wide variety of tasks. Two prefab versions are included: **Enigma Launchpad** (buttons only) and **Enigma Mixer** (buttons plus a fader system).
@@ -71,7 +73,8 @@ Mixer Prefab:
 
 Optional Dependencies(for a sepecifc folder or feature):  
 • Mochie Screen FX (Enables basic Mochie layout using free Screen FX https://github.com/MochiesCode/Mochies-Unity-Shaders, or extended layout using Patreon version at https://www.patreon.com/c/mochieshaders/posts)  
-• June Shaders (Enables June Folder type, purchase from https://kleineluka.gumroad.com/l/june and compelete the install process). Support for the free version will be added soon, if you would like to use the free version, use the Shaders folder instead.  
+• June Shaders (Enables June Folder type, purchase from https://kleineluka.gumroad.com/l/june and compelete the install process). Support for the free version will be added soon, if you would like to use the free version, use the Shaders folder instead.
 • ProTV (From https://protv.dev/, add the VCC and import from creator companion.)  
 • VideoTXL (From https://github.com/vrctxl/VideoTXL, add the VCC and import from creator companion.)  
 • OhGeezCmon Access Control (for adding users to the whitelist at runtime, install the package from https://github.com/OhGeezCmon/VRC-AccessControl)
+• Flatine Open Decks Manager (https://lavysworlds.gumroad.com/l/flatline) for whitelist integration and event hosting.
