@@ -136,6 +136,9 @@ namespace Cozen
         private int _leftHandGrabbedFaderIndex = -1;
         private int _rightHandGrabbedFaderIndex = -1;
 
+        // Tracks whether pickup mode is enabled (true = VRC Pickup, false = hand collider)
+        private bool _pickupModeEnabled = false;
+
         public void Awake()
         {
             if (launchpad == null)
@@ -578,6 +581,52 @@ namespace Cozen
                     Debug.Log("[FaderSystemHandler] Hand collider position updates DISABLED for unauthorized player");
                 }
             }
+        }
+
+        /// <summary>
+        /// Toggles between VRC Pickup mode and Hand Collider mode for fader control.
+        /// Called by a UI toggle button. This is LOCAL only - each player controls their own mode.
+        /// </summary>
+        public void TogglePickupMode()
+        {
+            SetPickupModeEnabled(!_pickupModeEnabled);
+        }
+
+        /// <summary>
+        /// Sets the pickup mode for all faders.
+        /// When enabled, faders can be grabbed and moved using VRC Pickup.
+        /// When disabled, faders are controlled via hand collider tracking.
+        /// This is LOCAL only - each player controls their own mode.
+        /// </summary>
+        /// <param name="usePickupMode">True to enable VRC Pickup mode, false for hand collider mode.</param>
+        public void SetPickupModeEnabled(bool usePickupMode)
+        {
+            if (faders == null) return;
+
+            _pickupModeEnabled = usePickupMode;
+
+            for (int i = 0; i < faders.Length; i++)
+            {
+                FaderHandler fader = faders[i];
+                if (fader == null) continue;
+
+                // Toggle the VRC Pickup and Rigidbody settings on each fader
+                fader.SetPickupMode(usePickupMode);
+            }
+
+            // Disable hand collider updates when in pickup mode (local only)
+            // Hand collider updates are enabled only when NOT in pickup mode AND the user is authorized
+            handColliderUpdatesEnabled = !usePickupMode && launchpad != null && launchpad.CanLocalUserInteract();
+
+            Debug.Log($"[FaderSystemHandler] Pickup mode {(usePickupMode ? "ENABLED" : "DISABLED")}. Hand collider updates: {handColliderUpdatesEnabled}");
+        }
+
+        /// <summary>
+        /// Returns whether pickup mode is currently enabled.
+        /// </summary>
+        public bool IsPickupModeEnabled()
+        {
+            return _pickupModeEnabled;
         }
 
         private bool IsValidBonePosition(Vector3 position)

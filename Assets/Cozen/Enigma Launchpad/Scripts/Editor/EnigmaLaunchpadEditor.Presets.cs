@@ -197,15 +197,18 @@ namespace Cozen
             }
 
             // Fader checkbox (separate from folder types)
+            // Only enable if FaderSystemHandler is assigned and has faders configured
             if (presetIncludeFaders != null)
             {
                 GUILayout.Space(4);
+                GUI.enabled = ShouldShowFadersSection();
                 EditorGUI.BeginChangeCheck();
                 bool includeFaders = EditorGUILayout.ToggleLeft("Faders", presetIncludeFaders.boolValue);
                 if (EditorGUI.EndChangeCheck())
                 {
                     presetIncludeFaders.boolValue = includeFaders;
                 }
+                GUI.enabled = true;
             }
 
             int selectionCount = presetIncludedFolderIndices.arraySize;
@@ -332,6 +335,67 @@ namespace Cozen
             {
                 presetFolderSelectionInitialized.boolValue = value;
             }
+        }
+
+        /// <summary>
+        /// Updates preset included folder indices after a folder move operation.
+        /// This preserves which folders are included in preset captures when folders are reordered.
+        /// </summary>
+        /// <param name="from">Original folder index</param>
+        /// <param name="to">New folder index</param>
+        private void UpdatePresetIncludedFolderIndices(int from, int to)
+        {
+            // Ensure we have a valid preset handler and serialized object
+            if (presetHandlerProperty == null || presetHandlerProperty.objectReferenceValue == null)
+            {
+                return;
+            }
+
+            // If presetHandlerObject is null, bind it
+            if (presetHandlerObject == null)
+            {
+                BindPresetHandlerSerializedObject();
+            }
+
+            if (presetIncludedFolderIndices == null || presetIncludedFolderIndices.arraySize == 0)
+            {
+                return;
+            }
+
+            // Update the serialized object to get latest values
+            presetHandlerObject.Update();
+
+            // Update each folder index in the included folders array
+            for (int i = 0; i < presetIncludedFolderIndices.arraySize; i++)
+            {
+                SerializedProperty folderIndexProp = presetIncludedFolderIndices.GetArrayElementAtIndex(i);
+                if (folderIndexProp == null) continue;
+
+                int currentFolderIndex = folderIndexProp.intValue;
+                
+                // Only update valid folder indices (>= 0)
+                if (currentFolderIndex < 0) continue;
+
+                // Apply the same transformation as defaultFolderIndex
+                if (currentFolderIndex == from)
+                {
+                    // The folder that was included was moved
+                    folderIndexProp.intValue = to;
+                }
+                else if (from < to && currentFolderIndex > from && currentFolderIndex <= to)
+                {
+                    // Folders between from and to shift down
+                    folderIndexProp.intValue--;
+                }
+                else if (from > to && currentFolderIndex >= to && currentFolderIndex < from)
+                {
+                    // Folders between to and from shift up
+                    folderIndexProp.intValue++;
+                }
+            }
+
+            // Apply changes to the preset handler
+            presetHandlerObject.ApplyModifiedProperties();
         }
     }
 }

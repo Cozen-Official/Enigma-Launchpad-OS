@@ -17,7 +17,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 3998
   stringTagMap: {}
   disabledShaderPasses:
   - ALWAYS
@@ -27,6 +27,18 @@ Material:
     m_TexEnvs:
     - _NormalMap:
         m_Texture: {fileID: 2800000, guid: 89819f8cb0b9e5d418f6e90ca96ac9c3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineBackgroundCube:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineCube:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineCubeAlt:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ScreenTex:
@@ -76,8 +88,16 @@ Material:
     - _AudioLinkNoiseMin: 0
     - _AudioLinkNoiseStrength: 0
     - _AudioLinkOutlineBand: 0
+    - _AudioLinkOutlineColBand: 0
+    - _AudioLinkOutlineColMax: 1
+    - _AudioLinkOutlineColMin: 0
+    - _AudioLinkOutlineColStrength: 0
     - _AudioLinkOutlineMax: 1
     - _AudioLinkOutlineMin: 0
+    - _AudioLinkOutlineMixBand: 0
+    - _AudioLinkOutlineMixMax: 1
+    - _AudioLinkOutlineMixMin: 0
+    - _AudioLinkOutlineMixStrength: 0
     - _AudioLinkOutlineStrength: 0
     - _AudioLinkSSTBand: 0
     - _AudioLinkSSTMax: 1
@@ -101,6 +121,9 @@ Material:
     - _AuraFade: 0.5
     - _AuraSampleCount: 43
     - _AuraStr: 0.25
+    - _AutoRotate: 0
+    - _AutoRotateAlt: 0
+    - _AutoRotateBG: 0
     - _AutoShift: 0
     - _AutoShiftSpeed: 0.25
     - _BlendMode: 0
@@ -114,6 +137,8 @@ Material:
     - _BlurUseGlobal: 1
     - _BlurY: 0
     - _Brightness: 1
+    - _ClampMax: 1
+    - _ClampToggle: 0
     - _ColorMaxRange: 15
     - _ColorMinRange: 8
     - _ColorUseGlobal: 1
@@ -142,6 +167,8 @@ Material:
     - _Flavor: 0
     - _Fog: 0
     - _FogFade: 1
+    - _FogHeightMax: 4
+    - _FogHeightMin: 2
     - _FogMaxRange: 20
     - _FogMinRange: 15
     - _FogP2O: 0
@@ -153,7 +180,9 @@ Material:
     - _FogUseGlobal: 0
     - _HDR: 0
     - _Heat: 0
+    - _HeightFalloff: 0
     - _Hue: 0
+    - _HueMode: 0
     - _Invert: 0
     - _InvertB: 0
     - _InvertG: 0
@@ -163,8 +192,9 @@ Material:
     - _Letterbox: 0
     - _LetterboxStr: 0
     - _ManualScrub: 0
-    - _MaxRange: 15
-    - _MinRange: 8
+    - _MaxRange: 30
+    - _MinRange: 1
+    - _MonoTint: 0
     - _NMFOpacity: 1
     - _NMFToggle: 0
     - _Noise: 0
@@ -178,9 +208,15 @@ Material:
     - _OLMinRange: 8
     - _OLUseGlobal: 1
     - _Opacity: 1
+    - _OutlineAltEnable: 0
+    - _OutlineCubeToggle: 0
+    - _OutlineHueShift: 0
+    - _OutlineHueShiftAuto: 0
+    - _OutlineHueShiftSpeed: 1
     - _OutlineThiccN: 0.5
     - _OutlineThiccS: 0.49
     - _OutlineThresh: 1000
+    - _OutlineThreshAlt: 100
     - _OutlineType: 0
     - _PixelBlurSamples: 43
     - _PixelationStr: 0
@@ -257,10 +293,14 @@ Material:
     m_Colors:
     - _BackgroundCol: {r: 1, g: 1, b: 1, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _CubeRotate: {r: 180, g: 0, b: 0, a: 0}
+    - _CubeRotateAlt: {r: 180, g: 0, b: 0, a: 0}
+    - _CubeRotateBG: {r: 180, g: 0, b: 0, a: 0}
     - _DBColor: {r: 1, g: 1, b: 1, a: 1}
     - _FogColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
     - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
     - _OutlineCol: {r: 0, g: 0, b: 0, a: 1}
+    - _OutlineColAlt: {r: 1, g: 1, b: 1, a: 1}
     - _RGB: {r: 1, g: 1, b: 1, a: 0}
     - _SSTColor: {r: 1, g: 1, b: 1, a: 1}
     - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}

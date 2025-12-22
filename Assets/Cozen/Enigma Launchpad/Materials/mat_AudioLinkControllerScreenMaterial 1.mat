@@ -48,7 +48,7 @@ Material:
     - _ExpFalloff: 0.75
     - _FadeSliderHeight: 0.19
     - _FrameMargin: 0.03
-    - _Gain: 0.63530344
+    - _Gain: 0.25277433
     - _GainSliderHeight: 0.13
     - _HandleRadius: 0.011
     - _HighMidThreshold: 0.5
@@ -62,10 +62,10 @@ Material:
     - _Saturation: 0.9843137
     - _SelectedColor: 0
     - _ThemeColorMode: 0
-    - _Threshold0: 0.2964469
-    - _Threshold1: 0.5366671
-    - _Threshold2: 0.66472745
-    - _Threshold3: 0.38164186
+    - _Threshold0: 0.6073952
+    - _Threshold1: 0.43017244
+    - _Threshold2: 0.6479099
+    - _Threshold3: 0.5780962
     - _TopAreaHeight: 0.35
     - _Value: 1
     - _VerticalScale: 0.79

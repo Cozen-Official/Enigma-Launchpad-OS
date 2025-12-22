@@ -68,6 +68,12 @@ namespace Cozen
         [Tooltip("Maximum fader value.")]
         public float valueMax = 1f;
 
+        [Header("Pickup Mode Components")]
+        [Tooltip("VRC Pickup component for pickup mode control.")]
+        [SerializeField] private VRC_Pickup vrcPickup;
+        [Tooltip("Rigidbody component for physics control in pickup mode.")]
+        [SerializeField] private Rigidbody faderRigidbody;
+
         private GameObject _sliderObject;
         private MeshRenderer _sliderRenderer;
         private Material[] _sliderMaterials;
@@ -85,6 +91,13 @@ namespace Cozen
         // Tracks if this fader has been granted grab permission by FaderSystemHandler
         private bool _leftGrabPermitted;
         private bool _rightGrabPermitted;
+
+        // Tracks if this fader is currently being held via VRC Pickup
+        private bool _isPickupHeld;
+
+        // Stores the initial position of the fader for constraining pickup mode movement.
+        // In pickup mode, only the movement axis should change; other axes stay at their initial values.
+        private Vector3 _initialLocalPosition;
 
         // Stores the current computed color for color properties (propertyType == 2)
         // This is used by FaderSystemHandler to update the indicator color
@@ -113,6 +126,9 @@ namespace Cozen
         {
             _sliderObject = gameObject;
             _currentPlayer = Networking.LocalPlayer;
+
+            // Store the initial position for constraining pickup mode movement
+            _initialLocalPosition = transform.localPosition;
 
             _bottomLimit = bottomLimiter != null ? GetAxisValue(bottomLimiter.transform.localPosition) : 0f;
             _topLimit = topLimiter != null ? GetAxisValue(topLimiter.transform.localPosition) : 0f;
@@ -162,6 +178,14 @@ namespace Cozen
 
         private void Update()
         {
+            // Handle VRC Pickup mode - sync position while held
+            if (_isPickupHeld)
+            {
+                UpdatePickupModePosition();
+                return;
+            }
+
+            // Hand collider mode handling
             if (!_inTrigger || (!_rightGrabbed && !_leftGrabbed))
             {
                 return;
@@ -197,6 +221,54 @@ namespace Cozen
                 syncedSliderPosition = _sliderObject.transform.localPosition;
                 OnDeserialization();
                 _lastValue = currentValue;
+            }
+        }
+
+        /// <summary>
+        /// Updates the fader value based on the current position while being held via VRC Pickup.
+        /// This ensures the synced values are updated as the user moves the fader.
+        /// Constrains movement to only the movement axis; other axes are locked to initial position.
+        /// </summary>
+        private void UpdatePickupModePosition()
+        {
+            if (_sliderObject == null) return;
+
+            // Get the current position on the movement axis and clamp it within limits
+            float currentAxisPos = GetAxisValue(_sliderObject.transform.localPosition);
+            float clampedPos = Mathf.Clamp(currentAxisPos, _bottomLimit, _topLimit);
+
+            // Start from the initial position (which has correct frozen axis values),
+            // then only update the movement axis with the clamped value.
+            // This ensures X and Z (or other frozen axes) stay at their original positions.
+            Vector3 constrainedPos = SetAxisValue(_initialLocalPosition, clampedPos);
+            _sliderObject.transform.localPosition = constrainedPos;
+
+            // Also reset rotation to prevent any rotation drift during pickup
+            _sliderObject.transform.localRotation = Quaternion.identity;
+
+            // Calculate the new value
+            float normalizedValue = Mathf.InverseLerp(_bottomLimit, _topLimit, clampedPos);
+            float newValue = Mathf.Lerp(valueMin, valueMax, normalizedValue);
+
+            // Sync if value changed
+            if (!Mathf.Approximately(newValue, currentValue))
+            {
+                if (_currentPlayer != null && !_currentPlayer.IsOwner(gameObject))
+                {
+                    Networking.SetOwner(_currentPlayer, gameObject);
+                }
+
+                currentValue = newValue;
+                syncedSliderPosition = _sliderObject.transform.localPosition;
+                RequestSerialization();
+                UpdateTargetFloat(currentValue);
+                _lastValue = currentValue;
+
+                // Notify FaderSystemHandler to update indicator if this is a color property
+                if (propertyType == 2 && faderSystemHandler != null)
+                {
+                    faderSystemHandler.OnFaderColorChanged(faderIndex);
+                }
             }
         }
 
@@ -519,6 +591,68 @@ namespace Cozen
         public bool IsAssigned()
         {
             return !string.IsNullOrEmpty(materialPropertyId);
+        }
+
+        /// <summary>
+        /// Switches between VRC Pickup mode and hand collider mode for fader control.
+        /// In pickup mode, the VRC Pickup is enabled and rigidbody is non-kinematic.
+        /// In hand collider mode, the VRC Pickup is disabled and rigidbody is kinematic.
+        /// </summary>
+        /// <param name="enabled">True to enable pickup mode, false to use hand collider mode.</param>
+        public void SetPickupMode(bool enabled)
+        {
+            if (vrcPickup != null)
+            {
+                vrcPickup.pickupable = enabled;
+            }
+
+            if (faderRigidbody != null)
+            {
+                faderRigidbody.isKinematic = !enabled;
+            }
+        }
+
+        /// <summary>
+        /// Called when the player picks up the fader (VRC Pickup callback).
+        /// Sets the held flag to enable position syncing during pickup.
+        /// </summary>
+        public override void OnPickup()
+        {
+            _isPickupHeld = true;
+            
+            // Take ownership to enable syncing
+            if (_currentPlayer != null && !_currentPlayer.IsOwner(gameObject))
+            {
+                Networking.SetOwner(_currentPlayer, gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Called when the player drops the fader (VRC Pickup callback).
+        /// Stops all momentum and constrains the final position to ensure the fader stays on track.
+        /// </summary>
+        public override void OnDrop()
+        {
+            _isPickupHeld = false;
+            
+            if (faderRigidbody != null)
+            {
+                faderRigidbody.velocity = Vector3.zero;
+                faderRigidbody.angularVelocity = Vector3.zero;
+            }
+
+            // Constrain final position to movement axis only (frozen axes use initial position)
+            if (_sliderObject != null)
+            {
+                float currentAxisPos = GetAxisValue(_sliderObject.transform.localPosition);
+                float clampedPos = Mathf.Clamp(currentAxisPos, _bottomLimit, _topLimit);
+                Vector3 constrainedPos = SetAxisValue(_initialLocalPosition, clampedPos);
+                _sliderObject.transform.localPosition = constrainedPos;
+                _sliderObject.transform.localRotation = Quaternion.identity;
+                
+                syncedSliderPosition = _sliderObject.transform.localPosition;
+                RequestSerialization();
+            }
         }
     }
 }

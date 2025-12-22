@@ -41,19 +41,43 @@ namespace Cozen
         [Tooltip("If true, the instance owner may always operate the launchpad, even when not on the whitelist.")]
         public bool instanceOwnerAlwaysHasAccess = false;
         [Tooltip("Optional integration with OhGeezCmon's Access Control Manager. When assigned, its runtime admin list is used for the whitelist.")]
-        public UdonBehaviour ohGeezCmonAccessControl;
+        public UdonSharpBehaviour ohGeezCmonAccessControl;
+        [Tooltip("Optional integration with ProTV's TVManagedWhitelist. When assigned without OhGeezCmon, its authorizedList is used. When both are assigned, OhGeezCmon drives the whitelist and changes are pushed to ProTV.")]
+        public UdonSharpBehaviour proTVManagedWhitelist;
+        [Tooltip("Optional integration with Flatline's FlatlineSync whitelist. When assigned without higher-priority systems, its bakedWhitelist is used. Changes from higher-priority systems are pushed to Flatline.")]
+        public UdonSharpBehaviour flatlineSync;
         [Tooltip("Authorized VRChat usernames (case-insensitive, trims whitespace).")]
         public string[] authorizedUsernames;
         
         private string[] normalizedAuthorizedUsernames;
         private bool whitelistInitialized = false;
-        private UdonBehaviour ohGeezAccessControlBehaviour;
+        private UdonSharpBehaviour ohGeezAccessControlBehaviour;
         private bool isWaitingForOhGeezSync = false;
         private int ohGeezSyncRetryCount = 0;
         private const int MAX_OHGEEZ_SYNC_RETRIES = 10;
         private const float OHGEEZ_SYNC_RETRY_DELAY = 0.5f;
         private int lastKnownOhGeezSyncVersion = -1;
         private const float OHGEEZ_SYNC_CHECK_INTERVAL = 2.0f;
+        
+        // ProTV whitelist tracking
+        private bool isWaitingForProTVSync = false;
+        private int proTVSyncRetryCount = 0;
+        private const int MAX_PROTV_SYNC_RETRIES = 10;
+        private const float PROTV_SYNC_RETRY_DELAY = 0.5f;
+        private int lastKnownProTVAuthorizedCount = -1;
+        private const float PROTV_SYNC_CHECK_INTERVAL = 2.0f;
+        private UdonSharpBehaviour proTVManager = null;
+        private bool proTVManagerResolved = false;
+        
+        // Flatline whitelist tracking
+        // Note: Flatline supports online whitelists downloaded from a URL (e.g., GitHub raw file)
+        // The URL download may take longer than local data, so we use more retries with longer delays
+        private bool isWaitingForFlatlineSync = false;
+        private int flatlineSyncRetryCount = 0;
+        private const int MAX_FLATLINE_SYNC_RETRIES = 20;  // More retries to account for URL download time
+        private const float FLATLINE_SYNC_RETRY_DELAY = 1.0f;  // Longer delay for network operations
+        private int lastKnownFlatlineWhitelistCount = -1;
+        private const float FLATLINE_SYNC_CHECK_INTERVAL = 2.0f;
         
         [Header("Skybox Routing")]
         [Tooltip("Handler responsible for Skybox-specific logic.")]
@@ -689,6 +713,8 @@ namespace Cozen
             if (sourceUsernames == null || sourceUsernames.Length == 0)
             {
                 normalizedAuthorizedUsernames = new string[0];
+                // Push empty list to downstream whitelists in router mode
+                PushWhitelistToDownstreamSystems(new string[0]);
                 NotifyFaderHandlerAuthorizationChanged();
                 return;
             }
@@ -724,7 +750,82 @@ namespace Cozen
                 normalizedAuthorizedUsernames[i] = scratch[i];
             }
             
+            // Build deduplicated list preserving original case for downstream systems
+            string[] deduplicatedList = BuildDeduplicatedList(sourceUsernames, count);
+            
+            // Push to downstream systems (router mode)
+            PushWhitelistToDownstreamSystems(deduplicatedList);
+            
             NotifyFaderHandlerAuthorizationChanged();
+        }
+        
+        /// <summary>
+        /// Builds a deduplicated list preserving original case, used for pushing to downstream systems.
+        /// </summary>
+        private string[] BuildDeduplicatedList(string[] sourceUsernames, int expectedCount)
+        {
+            string[] resultList = new string[expectedCount];
+            string[] resultListNormalized = new string[expectedCount];
+            int resultCount = 0;
+            
+            for (int i = 0; i < sourceUsernames.Length; i++)
+            {
+                string trimmed = sourceUsernames[i] != null ? sourceUsernames[i].Trim() : null;
+                if (string.IsNullOrEmpty(trimmed))
+                continue;
+                
+                // Check for duplicate using cached normalized values
+                bool duplicate = false;
+                string normalizedTrimmed = trimmed.ToLower();
+                for (int j = 0; j < resultCount; j++)
+                {
+                    if (resultListNormalized[j] == normalizedTrimmed)
+                    {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                
+                if (duplicate || resultCount >= expectedCount)
+                continue;
+                
+                resultList[resultCount] = trimmed;
+                resultListNormalized[resultCount] = normalizedTrimmed;
+                resultCount++;
+            }
+            
+            // Resize to actual count
+            string[] finalList = new string[resultCount];
+            for (int i = 0; i < resultCount; i++)
+            {
+                finalList[i] = resultList[i];
+            }
+            
+            return finalList;
+        }
+        
+        /// <summary>
+        /// Pushes the whitelist to downstream systems based on current source priority.
+        /// OhGeezCmon → ProTV → Flatline. Only pushes to systems that are lower priority than the current source.
+        /// </summary>
+        private void PushWhitelistToDownstreamSystems(string[] usernames)
+        {
+            // Determine which is the current source
+            bool sourceIsOhGeezCmon = ohGeezCmonAccessControl != null;
+            bool sourceIsProTV = !sourceIsOhGeezCmon && proTVManagedWhitelist != null;
+            bool sourceIsFlatline = !sourceIsOhGeezCmon && !sourceIsProTV && flatlineSync != null;
+            
+            // Push to ProTV if OhGeezCmon is the source
+            if (sourceIsOhGeezCmon && proTVManagedWhitelist != null)
+            {
+                PushWhitelistToProTV(usernames);
+            }
+            
+            // Push to Flatline if OhGeezCmon or ProTV is the source
+            if ((sourceIsOhGeezCmon || sourceIsProTV) && flatlineSync != null)
+            {
+                PushWhitelistToFlatline(usernames);
+            }
         }
         
         private void NotifyFaderHandlerAuthorizationChanged()
@@ -772,6 +873,7 @@ namespace Cozen
         
         private string[] GetWhitelistSourceEntries()
         {
+            // Priority 1: OhGeezCmon Access Control (highest priority, routes to ProTV and Flatline)
             if (ohGeezCmonAccessControl != null)
             {
                 string[] runtimeEntries = TryGetOhGeezRuntimeAdmins();
@@ -794,6 +896,75 @@ namespace Cozen
                 else
                 {
                     Debug.Log("[EnigmaLaunchpad] OhGeezCmon Access Control assigned but no runtime admins available.");
+                    return new string[0];
+                }
+            }
+            
+            // Priority 2: ProTV TVManagedWhitelist (when OhGeezCmon not assigned, routes to Flatline)
+            if (proTVManagedWhitelist != null)
+            {
+                string[] runtimeEntries = TryGetProTVAuthorizedList();
+                
+                // Also check if we can access the TVManager for implicit authorization
+                UdonSharpBehaviour tvManager = GetProTVManager();
+                bool hasTVManagerAccess = tvManager != null;
+                
+                if (runtimeEntries != null && runtimeEntries.Length > 0)
+                {
+                    Debug.Log("[EnigmaLaunchpad] Using ProTV TVManagedWhitelist authorizedList: " + FormatUsernameListForLogging(runtimeEntries));
+                    isWaitingForProTVSync = false;
+                    return runtimeEntries;
+                }
+                
+                // If we have TVManager access, ProTV integration is successful even with empty list
+                // (users may be authorized implicitly via master/first master status)
+                if (hasTVManagerAccess)
+                {
+                    Debug.Log("[EnigmaLaunchpad] ProTV TVManager accessible - implicit authorization will be checked. Explicit authorizedList: " + FormatUsernameListForLogging(runtimeEntries));
+                    isWaitingForProTVSync = false;
+                    return runtimeEntries != null ? runtimeEntries : new string[0];
+                }
+
+                // If we got null or empty array and haven't started waiting, initiate delayed retry
+                if (!isWaitingForProTVSync && proTVSyncRetryCount == 0)
+                {
+                    Debug.Log("[EnigmaLaunchpad] ProTV TVManagedWhitelist assigned but authorizedList not yet available. Will retry in background.");
+                    isWaitingForProTVSync = true;
+                    SendCustomEventDelayedSeconds(nameof(RetryProTVSync), PROTV_SYNC_RETRY_DELAY);
+                    // Return empty array while waiting for first sync
+                    return new string[0];
+                }
+                else
+                {
+                    Debug.Log("[EnigmaLaunchpad] ProTV TVManagedWhitelist assigned but no authorized users available.");
+                    return new string[0];
+                }
+            }
+            
+            // Priority 3: Flatline FlatlineSync whitelist (when OhGeezCmon and ProTV not assigned)
+            if (flatlineSync != null)
+            {
+                string[] runtimeEntries = TryGetFlatlineBakedWhitelist();
+                if (runtimeEntries != null && runtimeEntries.Length > 0)
+                {
+                    Debug.Log("[EnigmaLaunchpad] Using Flatline bakedWhitelist: " + FormatUsernameListForLogging(runtimeEntries));
+                    isWaitingForFlatlineSync = false;
+                    return runtimeEntries;
+                }
+
+                // If we got null or empty array and haven't started waiting, initiate delayed retry
+                // Note: Flatline may be downloading its whitelist from a URL, which can take time
+                if (!isWaitingForFlatlineSync && flatlineSyncRetryCount == 0)
+                {
+                    Debug.Log("[EnigmaLaunchpad] Flatline FlatlineSync assigned but bakedWhitelist not yet available. Will retry in background (may be waiting for online whitelist download).");
+                    isWaitingForFlatlineSync = true;
+                    SendCustomEventDelayedSeconds(nameof(RetryFlatlineSync), FLATLINE_SYNC_RETRY_DELAY);
+                    // Return empty array while waiting for first sync
+                    return new string[0];
+                }
+                else
+                {
+                    Debug.Log("[EnigmaLaunchpad] Flatline FlatlineSync assigned but no whitelisted users available.");
                     return new string[0];
                 }
             }
@@ -848,7 +1019,7 @@ namespace Cozen
                 return;
             }
             
-            UdonBehaviour behaviour = GetOhGeezAccessControlBehaviour();
+            UdonSharpBehaviour behaviour = GetOhGeezAccessControlBehaviour();
             if (behaviour == null)
             {
                 return;
@@ -892,7 +1063,7 @@ namespace Cozen
                 return;
             }
             
-            UdonBehaviour behaviour = GetOhGeezAccessControlBehaviour();
+            UdonSharpBehaviour behaviour = GetOhGeezAccessControlBehaviour();
             if (behaviour == null)
             {
                 return;
@@ -908,7 +1079,7 @@ namespace Cozen
         
         private string[] TryGetOhGeezRuntimeAdmins()
         {
-            UdonBehaviour behaviour = GetOhGeezAccessControlBehaviour();
+            UdonSharpBehaviour behaviour = GetOhGeezAccessControlBehaviour();
             if (behaviour == null)
             {
                 return null;
@@ -932,7 +1103,7 @@ namespace Cozen
             return runtimeAdmins;
         }
         
-        private UdonBehaviour GetOhGeezAccessControlBehaviour()
+        private UdonSharpBehaviour GetOhGeezAccessControlBehaviour()
         {
             if (ohGeezCmonAccessControl == null)
             {
@@ -946,6 +1117,467 @@ namespace Cozen
             }
             
             return ohGeezAccessControlBehaviour;
+        }
+        
+        // ProTV TVManagedWhitelist integration methods
+        
+        public void RetryProTVSync()
+        {
+            if (!isWaitingForProTVSync)
+            {
+                return;
+            }
+            
+            proTVSyncRetryCount++;
+            Debug.Log($"[EnigmaLaunchpad] RetryProTVSync attempt {proTVSyncRetryCount}/{MAX_PROTV_SYNC_RETRIES}");
+            
+            string[] runtimeEntries = TryGetProTVAuthorizedList();
+            
+            // Check if we can get the TVManager reference (for implicit authorization support)
+            UdonSharpBehaviour tvManager = GetProTVManager();
+            bool hasTVManagerAccess = tvManager != null;
+            
+            if ((runtimeEntries != null && runtimeEntries.Length > 0) || hasTVManagerAccess)
+            {
+                if (hasTVManagerAccess)
+                {
+                    Debug.Log("[EnigmaLaunchpad] Successfully accessed ProTV TVManager - implicit authorization will be supported");
+                }
+                if (runtimeEntries != null && runtimeEntries.Length > 0)
+                {
+                    Debug.Log("[EnigmaLaunchpad] Successfully retrieved ProTV TVManagedWhitelist authorizedList: " + FormatUsernameListForLogging(runtimeEntries));
+                }
+                isWaitingForProTVSync = false;
+                
+                // Track the authorized count and start monitoring for changes
+                TrackProTVAuthorizedCount();
+                SendCustomEventDelayedSeconds(nameof(CheckProTVSyncVersion), PROTV_SYNC_CHECK_INTERVAL);
+                
+                // Re-initialize whitelist with the new data
+                whitelistInitialized = false;
+                NormalizeWhitelistEntries();
+                
+                // Notify fader handler and update authorization state
+                NotifyFaderHandlerAuthorizationChanged();
+                return;
+            }
+            
+            // If still empty and we haven't exceeded max retries, schedule another attempt
+            if (proTVSyncRetryCount < MAX_PROTV_SYNC_RETRIES)
+            {
+                Debug.Log($"[EnigmaLaunchpad] ProTV data still not available, will retry again in {PROTV_SYNC_RETRY_DELAY}s");
+                SendCustomEventDelayedSeconds(nameof(RetryProTVSync), PROTV_SYNC_RETRY_DELAY);
+            }
+            else
+            {
+                Debug.LogWarning("[EnigmaLaunchpad] Max retries reached for ProTV TVManagedWhitelist sync.");
+                isWaitingForProTVSync = false;
+                
+                // Still notify in case we need to update UI state
+                NotifyFaderHandlerAuthorizationChanged();
+            }
+        }
+        
+        public void CheckProTVSyncVersion()
+        {
+            if (proTVManagedWhitelist == null)
+            {
+                return;
+            }
+            
+            // If OhGeezCmon is assigned, we are in router mode - don't pull from ProTV
+            if (ohGeezCmonAccessControl != null)
+            {
+                return;
+            }
+            
+            // Get the current authorizedList from TVManagedWhitelist
+            object listObj = proTVManagedWhitelist.GetProgramVariable("authorizedList");
+            if (listObj == null)
+            {
+                // Schedule next check
+                SendCustomEventDelayedSeconds(nameof(CheckProTVSyncVersion), PROTV_SYNC_CHECK_INTERVAL);
+                return;
+            }
+            
+            string[] currentList = (string[])listObj;
+            int currentCount = GetNonEmptyCount(currentList);
+            
+            // If count changed, update the whitelist
+            if (currentCount != lastKnownProTVAuthorizedCount && lastKnownProTVAuthorizedCount != -1)
+            {
+                Debug.Log($"[EnigmaLaunchpad] ProTV TVManagedWhitelist changed (count {lastKnownProTVAuthorizedCount} -> {currentCount}), updating whitelist");
+                lastKnownProTVAuthorizedCount = currentCount;
+                
+                // Re-initialize whitelist with the updated data
+                whitelistInitialized = false;
+                NormalizeWhitelistEntries();
+            }
+            else if (lastKnownProTVAuthorizedCount == -1)
+            {
+                // First time tracking, just store the count
+                lastKnownProTVAuthorizedCount = currentCount;
+            }
+            
+            // Schedule next check
+            SendCustomEventDelayedSeconds(nameof(CheckProTVSyncVersion), PROTV_SYNC_CHECK_INTERVAL);
+        }
+        
+        private void TrackProTVAuthorizedCount()
+        {
+            if (proTVManagedWhitelist == null)
+            {
+                return;
+            }
+            
+            object listObj = proTVManagedWhitelist.GetProgramVariable("authorizedList");
+            if (listObj != null)
+            {
+                string[] currentList = (string[])listObj;
+                lastKnownProTVAuthorizedCount = GetNonEmptyCount(currentList);
+                Debug.Log($"[EnigmaLaunchpad] Now tracking ProTV TVManagedWhitelist authorized count: {lastKnownProTVAuthorizedCount}");
+            }
+        }
+        
+        private string[] TryGetProTVAuthorizedList()
+        {
+            if (proTVManagedWhitelist == null)
+            {
+                return null;
+            }
+            
+            // Get the authorizedList array from TVManagedWhitelist
+            // This is a [UdonSynced] string[] that contains currently authorized usernames
+            object syncedArrayObject = proTVManagedWhitelist.GetProgramVariable("authorizedList");
+            if (syncedArrayObject == null)
+            {
+                return null;
+            }
+            
+            // Direct cast - TVManagedWhitelist guarantees this is string[]
+            string[] authorizedList = CloneStringArray((string[])syncedArrayObject);
+            Debug.Log("[EnigmaLaunchpad] Retrieved authorizedList from ProTV TVManagedWhitelist: " + FormatUsernameListForLogging(authorizedList));
+            return authorizedList;
+        }
+        
+        /// <summary>
+        /// Gets the ProTV TVManager reference from the TVManagedWhitelist.
+        /// The TVManager provides the full authorization check including implicit authorization.
+        /// </summary>
+        private UdonSharpBehaviour GetProTVManager()
+        {
+            if (proTVManagerResolved)
+            {
+                return proTVManager;
+            }
+            
+            if (proTVManagedWhitelist == null)
+            {
+                proTVManagerResolved = true;
+                proTVManager = null;
+                return null;
+            }
+            
+            // TVManagedWhitelist extends TVAuthPlugin which has a 'tv' field referencing the TVManager
+            object tvObj = proTVManagedWhitelist.GetProgramVariable("tv");
+            if (tvObj != null)
+            {
+                proTVManager = (UdonSharpBehaviour)tvObj;
+                Debug.Log("[EnigmaLaunchpad] Successfully resolved ProTV TVManager reference from TVManagedWhitelist");
+            }
+            else
+            {
+                Debug.LogWarning("[EnigmaLaunchpad] Could not resolve TVManager reference from TVManagedWhitelist - 'tv' field is null");
+                proTVManager = null;
+            }
+            
+            proTVManagerResolved = true;
+            return proTVManager;
+        }
+        
+        /// <summary>
+        /// Checks if a player is authorized via ProTV's full authorization system.
+        /// This includes both explicit (authorizedList) and implicit (master, first master) authorization.
+        /// </summary>
+        /// <param name="player">The player to check authorization for</param>
+        /// <returns>True if ProTV considers the player authorized, false otherwise or if check cannot be performed</returns>
+        private bool IsPlayerProTVAuthorized(VRCPlayerApi player)
+        {
+            if (player == null)
+            {
+                return false;
+            }
+            
+            UdonSharpBehaviour tvManager = GetProTVManager();
+            if (tvManager == null)
+            {
+                // Fall back to checking the explicit list
+                return IsPlayerInProTVExplicitList(player);
+            }
+            
+            // Replicate ProTV's implicit authorization logic
+            // Get allowMasterControl
+            object allowMasterObj = tvManager.GetProgramVariable("allowMasterControl");
+            bool allowMasterControl = allowMasterObj != null && (bool)allowMasterObj;
+            
+            // Get allowFirstMasterControl
+            object allowFirstMasterObj = tvManager.GetProgramVariable("allowFirstMasterControl");
+            bool allowFirstMasterControl = allowFirstMasterObj != null && (bool)allowFirstMasterObj;
+            
+            // Get firstMaster
+            object firstMasterObj = tvManager.GetProgramVariable("firstMaster");
+            string firstMaster = firstMasterObj != null ? (string)firstMasterObj : null;
+            
+            // Get syncToOwner - if false, everyone is authorized
+            object syncToOwnerObj = tvManager.GetProgramVariable("syncToOwner");
+            bool syncToOwner = syncToOwnerObj == null || (bool)syncToOwnerObj; // default to true if not found
+            
+            if (!syncToOwner)
+            {
+                Debug.Log($"[EnigmaLaunchpad] ProTV syncToOwner is false - player {player.displayName} is authorized");
+                return true;
+            }
+            
+            // Check implicit authorization (master, first master)
+            bool implicitlyAuthorized = (allowMasterControl && player.isMaster) || 
+                                         (allowFirstMasterControl && !string.IsNullOrEmpty(firstMaster) && player.displayName == firstMaster);
+            
+            if (implicitlyAuthorized)
+            {
+                Debug.Log($"[EnigmaLaunchpad] ProTV implicit authorization: player {player.displayName} is authorized (isMaster={player.isMaster}, allowMasterControl={allowMasterControl}, firstMaster={firstMaster}, allowFirstMasterControl={allowFirstMasterControl})");
+                return true;
+            }
+            
+            // Check instance owner authorization (only when instanceOwnerIsSuper is enabled)
+            object instanceOwnerIsSuperObj = tvManager.GetProgramVariable("instanceOwnerIsSuper");
+            bool instanceOwnerIsSuper = instanceOwnerIsSuperObj != null && (bool)instanceOwnerIsSuperObj;
+            
+            if (instanceOwnerIsSuper && player.isInstanceOwner)
+            {
+                Debug.Log($"[EnigmaLaunchpad] ProTV: player {player.displayName} is instance owner and instanceOwnerIsSuper is enabled - authorized");
+                return true;
+            }
+            
+            // Fall back to checking the explicit list
+            bool explicitlyAuthorized = IsPlayerInProTVExplicitList(player);
+            if (explicitlyAuthorized)
+            {
+                Debug.Log($"[EnigmaLaunchpad] ProTV explicit authorization: player {player.displayName} is in authorizedList");
+            }
+            
+            return explicitlyAuthorized;
+        }
+        
+        /// <summary>
+        /// Checks if a player is in ProTV's explicit authorizedList.
+        /// </summary>
+        private bool IsPlayerInProTVExplicitList(VRCPlayerApi player)
+        {
+            if (proTVManagedWhitelist == null || player == null)
+            {
+                return false;
+            }
+            
+            object syncedArrayObject = proTVManagedWhitelist.GetProgramVariable("authorizedList");
+            if (syncedArrayObject == null)
+            {
+                return false;
+            }
+            
+            string[] authorizedList = (string[])syncedArrayObject;
+            string playerName = player.displayName;
+            
+            for (int i = 0; i < authorizedList.Length; i++)
+            {
+                if (authorizedList[i] == playerName)
+                {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        private int GetNonEmptyCount(string[] arr)
+        {
+            if (arr == null)
+            {
+                return 0;
+            }
+            
+            int count = 0;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(arr[i]))
+                {
+                    count++;
+                }
+            }
+            
+            return count;
+        }
+        
+        /// <summary>
+        /// Pushes the current master whitelist to ProTV TVManagedWhitelist.
+        /// Called when OhGeezCmon updates its whitelist and both systems are assigned.
+        /// </summary>
+        private void PushWhitelistToProTV(string[] usernames)
+        {
+            if (proTVManagedWhitelist == null)
+            {
+                return;
+            }
+            
+            Debug.Log("[EnigmaLaunchpad] Pushing whitelist to ProTV TVManagedWhitelist: " + FormatUsernameListForLogging(usernames));
+            
+            // Set the authorizedList directly - TVManagedWhitelist will handle serialization
+            proTVManagedWhitelist.SetProgramVariable("authorizedList", usernames);
+            proTVManagedWhitelist.SendCustomEvent("RequestSerialization");
+        }
+        
+        // Flatline FlatlineSync integration methods
+        
+        public void RetryFlatlineSync()
+        {
+            if (!isWaitingForFlatlineSync)
+            {
+                return;
+            }
+            
+            flatlineSyncRetryCount++;
+            Debug.Log($"[EnigmaLaunchpad] RetryFlatlineSync attempt {flatlineSyncRetryCount}/{MAX_FLATLINE_SYNC_RETRIES}");
+            
+            string[] runtimeEntries = TryGetFlatlineBakedWhitelist();
+            if (runtimeEntries != null && runtimeEntries.Length > 0)
+            {
+                Debug.Log("[EnigmaLaunchpad] Successfully retrieved Flatline bakedWhitelist: " + FormatUsernameListForLogging(runtimeEntries));
+                isWaitingForFlatlineSync = false;
+                
+                // Track the whitelist count and start monitoring for changes
+                TrackFlatlineWhitelistCount();
+                SendCustomEventDelayedSeconds(nameof(CheckFlatlineSyncVersion), FLATLINE_SYNC_CHECK_INTERVAL);
+                
+                // Re-initialize whitelist with the new data
+                whitelistInitialized = false;
+                NormalizeWhitelistEntries();
+                return;
+            }
+            
+            // If still empty and we haven't exceeded max retries, schedule another attempt
+            // Note: Flatline may be downloading its whitelist from a URL, which can take time
+            if (flatlineSyncRetryCount < MAX_FLATLINE_SYNC_RETRIES)
+            {
+                Debug.Log($"[EnigmaLaunchpad] Flatline data still not available (may be waiting for online whitelist download), will retry again in {FLATLINE_SYNC_RETRY_DELAY}s (attempt {flatlineSyncRetryCount}/{MAX_FLATLINE_SYNC_RETRIES})");
+                SendCustomEventDelayedSeconds(nameof(RetryFlatlineSync), FLATLINE_SYNC_RETRY_DELAY);
+            }
+            else
+            {
+                Debug.LogWarning("[EnigmaLaunchpad] Max retries reached for Flatline FlatlineSync sync. If using an online whitelist, ensure the URL is accessible.");
+                isWaitingForFlatlineSync = false;
+            }
+        }
+        
+        public void CheckFlatlineSyncVersion()
+        {
+            if (flatlineSync == null)
+            {
+                return;
+            }
+            
+            // If OhGeezCmon or ProTV is assigned, we are in router mode - don't pull from Flatline
+            if (ohGeezCmonAccessControl != null || proTVManagedWhitelist != null)
+            {
+                return;
+            }
+            
+            // Get the current bakedWhitelist from FlatlineSync
+            object listObj = flatlineSync.GetProgramVariable("bakedWhitelist");
+            if (listObj == null)
+            {
+                // Schedule next check
+                SendCustomEventDelayedSeconds(nameof(CheckFlatlineSyncVersion), FLATLINE_SYNC_CHECK_INTERVAL);
+                return;
+            }
+            
+            string[] currentList = (string[])listObj;
+            int currentCount = GetNonEmptyCount(currentList);
+            
+            // If count changed, update the whitelist
+            if (currentCount != lastKnownFlatlineWhitelistCount && lastKnownFlatlineWhitelistCount != -1)
+            {
+                Debug.Log($"[EnigmaLaunchpad] Flatline bakedWhitelist changed (count {lastKnownFlatlineWhitelistCount} -> {currentCount}), updating whitelist");
+                lastKnownFlatlineWhitelistCount = currentCount;
+                
+                // Re-initialize whitelist with the updated data
+                whitelistInitialized = false;
+                NormalizeWhitelistEntries();
+            }
+            else if (lastKnownFlatlineWhitelistCount == -1)
+            {
+                // First time tracking, just store the count
+                lastKnownFlatlineWhitelistCount = currentCount;
+            }
+            
+            // Schedule next check
+            SendCustomEventDelayedSeconds(nameof(CheckFlatlineSyncVersion), FLATLINE_SYNC_CHECK_INTERVAL);
+        }
+        
+        private void TrackFlatlineWhitelistCount()
+        {
+            if (flatlineSync == null)
+            {
+                return;
+            }
+            
+            object listObj = flatlineSync.GetProgramVariable("bakedWhitelist");
+            if (listObj != null)
+            {
+                string[] currentList = (string[])listObj;
+                lastKnownFlatlineWhitelistCount = GetNonEmptyCount(currentList);
+                Debug.Log($"[EnigmaLaunchpad] Now tracking Flatline bakedWhitelist count: {lastKnownFlatlineWhitelistCount}");
+            }
+        }
+        
+        private string[] TryGetFlatlineBakedWhitelist()
+        {
+            if (flatlineSync == null)
+            {
+                return null;
+            }
+            
+            // Get the bakedWhitelist array from FlatlineSync
+            // This is a string[] that contains whitelisted usernames
+            object syncedArrayObject = flatlineSync.GetProgramVariable("bakedWhitelist");
+            if (syncedArrayObject == null)
+            {
+                return null;
+            }
+            
+            // Direct cast - FlatlineSync guarantees this is string[]
+            string[] bakedWhitelist = CloneStringArray((string[])syncedArrayObject);
+            Debug.Log("[EnigmaLaunchpad] Retrieved bakedWhitelist from Flatline FlatlineSync: " + FormatUsernameListForLogging(bakedWhitelist));
+            return bakedWhitelist;
+        }
+        
+        /// <summary>
+        /// Pushes the current master whitelist to Flatline FlatlineSync.
+        /// Called when a higher-priority system updates its whitelist and Flatline is assigned.
+        /// </summary>
+        private void PushWhitelistToFlatline(string[] usernames)
+        {
+            if (flatlineSync == null)
+            {
+                return;
+            }
+            
+            Debug.Log("[EnigmaLaunchpad] Pushing whitelist to Flatline FlatlineSync: " + FormatUsernameListForLogging(usernames));
+            
+            // Set the bakedWhitelist and enable external whitelist mode
+            flatlineSync.SetProgramVariable("bakedWhitelist", usernames);
+            flatlineSync.SetProgramVariable("useExternalWhitelist", true);
+            
+            // Call _CheckWhitelist to re-evaluate local player authorization
+            flatlineSync.SendCustomEvent("_CheckWhitelist");
         }
         
         private string[] CloneStringArray(string[] source)
@@ -1015,6 +1647,13 @@ namespace Cozen
             if (instanceOwnerAlwaysHasAccess && localPlayer.isInstanceOwner)
             return true;
             
+            // When ProTV is the whitelist source (and OhGeezCmon is not), use ProTV's full authorization
+            // This includes implicit authorization (master, first master) not just the explicit authorizedList
+            if (proTVManagedWhitelist != null && ohGeezCmonAccessControl == null)
+            {
+                return IsPlayerProTVAuthorized(localPlayer);
+            }
+            
             if (normalizedAuthorizedUsernames == null || normalizedAuthorizedUsernames.Length == 0)
             return false;
             
@@ -1025,6 +1664,50 @@ namespace Cozen
             for (int i = 0; i < normalizedAuthorizedUsernames.Length; i++)
             {
                 if (normalizedAuthorizedUsernames[i] == normalizedLocal)
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Checks whether the specified player is whitelisted.
+        /// </summary>
+        /// <param name="player">The player to check</param>
+        /// <returns>
+        /// <c>true</c> when the whitelist is disabled or the player matches a configured username;
+        /// otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsPlayerWhitelisted(VRCPlayerApi player)
+        {
+            EnsureWhitelistInitialized();
+            
+            if (!whitelistEnabled)
+            return true;
+            
+            if (player == null)
+            return false;
+            
+            if (instanceOwnerAlwaysHasAccess && player.isInstanceOwner)
+            return true;
+            
+            // When ProTV is the whitelist source (and OhGeezCmon is not), use ProTV's full authorization
+            // This includes implicit authorization (master, first master) not just the explicit authorizedList
+            if (proTVManagedWhitelist != null && ohGeezCmonAccessControl == null)
+            {
+                return IsPlayerProTVAuthorized(player);
+            }
+            
+            if (normalizedAuthorizedUsernames == null || normalizedAuthorizedUsernames.Length == 0)
+            return false;
+            
+            string normalizedName = NormalizeUsername(player.displayName);
+            if (string.IsNullOrEmpty(normalizedName))
+            return false;
+            
+            for (int i = 0; i < normalizedAuthorizedUsernames.Length; i++)
+            {
+                if (normalizedAuthorizedUsernames[i] == normalizedName)
                 return true;
             }
             
@@ -1945,6 +2628,24 @@ namespace Cozen
             }
 
             screenHandler.ToggleScreen(buttonIndex - 1);
+        }
+        
+        /// <summary>
+        /// Toggles fader control between VRC Pickup mode and hand collider mode.
+        /// This is a LOCAL-only operation - each player can choose their preferred control method.
+        /// </summary>
+        public void ToggleFaderPickupMode()
+        {
+            if (!CanLocalUserInteract())
+                return;
+
+            if (faderHandler == null)
+            {
+                Debug.LogWarning("[EnigmaLaunchpad] Cannot toggle fader pickup mode - faderHandler is null");
+                return;
+            }
+
+            faderHandler.TogglePickupMode();
         }
         
         private void ApplyVideoScreenMaterial()

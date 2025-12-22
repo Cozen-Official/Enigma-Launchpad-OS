@@ -24,7 +24,7 @@ namespace Cozen
         
         [Tooltip("If true, fader positions are included when capturing presets.")]
         [SerializeField]
-        private bool includeFaders = true;
+        private bool includeFaders = false;
         
         [SerializeField, HideInInspector]
         private bool folderSelectionInitialized = false;

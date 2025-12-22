@@ -16,7 +16,13 @@ namespace Cozen
         Heat,
         Players,
         Age,
-        Time
+        Time,
+        VRUsers,
+        DesktopUsers,
+        Capacity,
+        PeakPlayers,
+        InstanceMaster,
+        Authenticated
     }
     
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
@@ -100,6 +106,15 @@ namespace Cozen
         [UdonSynced] private int worldStatsFavorites = -1;
         [UdonSynced] private int worldStatsPopularity = -1;
         [UdonSynced] private int worldStatsHeat = -1;
+        [UdonSynced] private int worldStatsCapacity = -1;
+        
+        // Synced page state - managed by StatsHandler like other handlers
+        [UdonSynced] private int currentPage = 0;
+        
+        // Local-only stats (computed per-client, not synced)
+        private int worldStatsPeakPlayers = 0;
+        private VRCPlayerApi[] playerBuffer;
+        private const int PlayerBufferSize = 100;
         
         private int worldStatsConsecutiveErrorCount = 0;
         private float worldStatsCurrentBackoffSeconds = 0f;
@@ -349,8 +364,8 @@ namespace Cozen
             
             int count = GetEntryCount();
             int totalPages = Mathf.Max(1, Mathf.CeilToInt((float)count / launchpad.GetItemsPerPage()));
-            int currentPage = GetCurrentStatsPage(statsFolderIndex);
-            return $"{currentPage + 1}/{totalPages}";
+            int page = GetCurrentStatsPage(statsFolderIndex);
+            return $"{page + 1}/{totalPages}";
         }
         
         public void UpdateWorldStatsTimeMetrics()
@@ -387,7 +402,7 @@ namespace Cozen
                 return 0;
             }
             
-            return launchpad.GetFolderPage(statsFolderIndex);
+            return currentPage;
         }
         
         public void OnPageChange(int direction)
@@ -403,14 +418,14 @@ namespace Cozen
                 return;
             }
             
-            launchpad.EnsureLocalOwnership();
+            EnsureLocalOwnership();
             
             int totalPages = GetPageCount();
-            int current = GetCurrentStatsPage(statsFolderIndex);
+            int current = currentPage;
             current = (current + direction + totalPages) % totalPages;
-            launchpad.SetFolderPage(statsFolderIndex, current);
+            currentPage = current;
             
-            launchpad.RequestSerialization();
+            RequestSerialization();
             // UpdateDisplay is called by EnigmaLaunchpad.ChangePage after OnPageChange returns
         }
         
@@ -838,6 +853,7 @@ namespace Cozen
                 worldStatsFavorites = -1;
                 worldStatsPopularity = -1;
                 worldStatsHeat = -1;
+                worldStatsCapacity = -1;
                 
                 // Request serialization to sync cleared stats to all clients
                 launchpad.RequestSerialization();
@@ -1027,6 +1043,14 @@ namespace Cozen
             UpdateWorldStatsTimeMetrics();
         }
         
+        private void EnsureLocalOwnership()
+        {
+            if (!Networking.IsOwner(gameObject))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            }
+        }
+        
         public static bool WorldStatsMetricRequiresApi(WorldStatMetric metric)
         {
             switch (metric)
@@ -1036,6 +1060,7 @@ namespace Cozen
                 case WorldStatMetric.Occupancy:
                 case WorldStatMetric.Popularity:
                 case WorldStatMetric.Heat:
+                case WorldStatMetric.Capacity:
                 return true;
                 default:
                 return false;
@@ -1062,6 +1087,18 @@ namespace Cozen
                 return "Age";
                 case WorldStatMetric.Time:
                 return "Time";
+                case WorldStatMetric.VRUsers:
+                return "VR Users";
+                case WorldStatMetric.DesktopUsers:
+                return "Desktop";
+                case WorldStatMetric.Capacity:
+                return "Capacity";
+                case WorldStatMetric.PeakPlayers:
+                return "Peak";
+                case WorldStatMetric.InstanceMaster:
+                return "Master";
+                case WorldStatMetric.Authenticated:
+                return "Auth'd";
                 default:
                 return metric.ToString();
             }
@@ -1150,6 +1187,16 @@ namespace Cozen
                 return FormatWorldStatsInstanceAge();
                 case WorldStatMetric.Time:
                 return GetWorldStatsClockTime();
+                case WorldStatMetric.VRUsers:
+                return FormatWorldStatsNumber(GetVRUserCount());
+                case WorldStatMetric.DesktopUsers:
+                return FormatWorldStatsNumber(GetDesktopUserCount());
+                case WorldStatMetric.PeakPlayers:
+                return FormatWorldStatsNumber(GetPeakPlayerCount());
+                case WorldStatMetric.InstanceMaster:
+                return GetInstanceMasterName();
+                case WorldStatMetric.Authenticated:
+                return FormatWorldStatsNumber(GetAuthenticatedCount());
                 default:
                 int value = GetWorldStatsMetricValue(metric);
                 return FormatWorldStatsNumber(value);
@@ -1170,6 +1217,8 @@ namespace Cozen
                 return worldStatsPopularity;
                 case WorldStatMetric.Heat:
                 return worldStatsHeat;
+                case WorldStatMetric.Capacity:
+                return worldStatsCapacity;
                 default:
                 return -1;
             }
@@ -1227,6 +1276,7 @@ namespace Cozen
             worldStatsFavorites = ExtractWorldStatsInt(json, "\"favorites\":");
             worldStatsPopularity = ExtractWorldStatsInt(json, "\"popularity\":");
             worldStatsHeat = ExtractWorldStatsInt(json, "\"heat\":");
+            worldStatsCapacity = ExtractWorldStatsInt(json, "\"capacity\":");
         }
         
         private int ExtractWorldStatsInt(string json, string keyPattern)
@@ -1314,6 +1364,120 @@ namespace Cozen
             
             string label = handler.buttonText != null ? handler.buttonText.text : string.Empty;
             handler.UpdateVisual(label, targetColor, true);
+        }
+        
+        private void EnsurePlayerBuffer()
+        {
+            if (playerBuffer == null || playerBuffer.Length < PlayerBufferSize)
+            {
+                playerBuffer = new VRCPlayerApi[PlayerBufferSize];
+            }
+        }
+        
+        private int GetVRUserCount()
+        {
+            EnsurePlayerBuffer();
+            int playerCount = VRCPlayerApi.GetPlayerCount();
+            if (playerCount <= 0) return 0;
+            
+            VRCPlayerApi.GetPlayers(playerBuffer);
+            int vrCount = 0;
+            for (int i = 0; i < playerCount && i < playerBuffer.Length; i++)
+            {
+                VRCPlayerApi player = playerBuffer[i];
+                if (player != null && Utilities.IsValid(player) && player.IsUserInVR())
+                {
+                    vrCount++;
+                }
+            }
+            return vrCount;
+        }
+        
+        private int GetDesktopUserCount()
+        {
+            EnsurePlayerBuffer();
+            int playerCount = VRCPlayerApi.GetPlayerCount();
+            if (playerCount <= 0) return 0;
+            
+            VRCPlayerApi.GetPlayers(playerBuffer);
+            int desktopCount = 0;
+            for (int i = 0; i < playerCount && i < playerBuffer.Length; i++)
+            {
+                VRCPlayerApi player = playerBuffer[i];
+                if (player != null && Utilities.IsValid(player) && !player.IsUserInVR())
+                {
+                    desktopCount++;
+                }
+            }
+            return desktopCount;
+        }
+        
+        private int GetPeakPlayerCount()
+        {
+            int currentCount = VRCPlayerApi.GetPlayerCount();
+            if (currentCount > worldStatsPeakPlayers)
+            {
+                worldStatsPeakPlayers = currentCount;
+            }
+            return worldStatsPeakPlayers;
+        }
+        
+        private string GetInstanceMasterName()
+        {
+            EnsurePlayerBuffer();
+            int playerCount = VRCPlayerApi.GetPlayerCount();
+            if (playerCount <= 0) return "-";
+            
+            VRCPlayerApi.GetPlayers(playerBuffer);
+            for (int i = 0; i < playerCount && i < playerBuffer.Length; i++)
+            {
+                VRCPlayerApi player = playerBuffer[i];
+                if (player != null && Utilities.IsValid(player) && player.isMaster)
+                {
+                    return player.displayName;
+                }
+            }
+            return "-";
+        }
+        
+        private int GetAuthenticatedCount()
+        {
+            if (!IsReady() || launchpad == null)
+            {
+                return -1;
+            }
+            
+            // Check if whitelist is enabled
+            if (!launchpad.whitelistEnabled)
+            {
+                return -1;
+            }
+            
+            EnsurePlayerBuffer();
+            int playerCount = VRCPlayerApi.GetPlayerCount();
+            if (playerCount <= 0) return 0;
+            
+            VRCPlayerApi.GetPlayers(playerBuffer);
+            int authCount = 0;
+            for (int i = 0; i < playerCount && i < playerBuffer.Length; i++)
+            {
+                VRCPlayerApi player = playerBuffer[i];
+                if (player != null && Utilities.IsValid(player) && IsPlayerAuthenticated(player))
+                {
+                    authCount++;
+                }
+            }
+            return authCount;
+        }
+        
+        private bool IsPlayerAuthenticated(VRCPlayerApi player)
+        {
+            if (!IsReady() || launchpad == null || player == null)
+            {
+                return false;
+            }
+            
+            return launchpad.IsPlayerWhitelisted(player);
         }
         
         private static void ResizeArray<T>(ref T[] array, int length)

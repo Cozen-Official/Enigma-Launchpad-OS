@@ -36,7 +36,13 @@ namespace Cozen
             "Heat",
             "Players",
             "Age",
-            "Time"
+            "Time",
+            "VR Users",
+            "Desktop Users",
+            "Capacity",
+            "Peak Players",
+            "Instance Master",
+            "Authenticated"
         };
 
         private const string WorldStatsApiPrefix = "https://api.vrchat.cloud/api/1/worlds/";

@@ -1053,7 +1053,7 @@ SpriteRenderer:
   m_Size: {x: 20, y: 10}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &2280181800590008564
@@ -2158,7 +2158,7 @@ SpriteRenderer:
   m_Size: {x: 20, y: 10}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &3135498888619326627
@@ -3588,7 +3588,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1642535175252664934}
   m_Layer: 0
-  m_Name: Button Grid
+  m_Name: Buttons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6109,10 +6109,11 @@ MonoBehaviour:
   - {fileID: 3195126433986564589}
   buttonTexts: []
   whitelistEnabled: 0
-  instanceOwnerAlwaysHasAccess: 1
+  instanceOwnerAlwaysHasAccess: 0
   ohGeezCmonAccessControl: {fileID: 0}
-  authorizedUsernames:
-  - "C\xF8zen"
+  proTVManagedWhitelist: {fileID: 0}
+  flatlineSync: {fileID: 0}
+  authorizedUsernames: []
   skyboxHandler: {fileID: 0}
   statsHandler: {fileID: 0}
   shaderHandlers: []
@@ -6537,7 +6538,7 @@ SpriteRenderer:
   m_Size: {x: 20, y: 10}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &8780257913100713813

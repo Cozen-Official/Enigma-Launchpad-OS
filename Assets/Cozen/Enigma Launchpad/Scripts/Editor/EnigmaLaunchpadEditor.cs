@@ -18,6 +18,7 @@ using ArchiTech.ProTV;
 #if TEXEL_VIDEO
 using Texel;
 #endif
+// Note: FlatlineSync (LAVY_FLATLINE) and AccessControlManager (OHGEEZ_ACCESSCONTROL) are in the global namespace, no using statement needed
 
 namespace Cozen
 {
@@ -40,6 +41,14 @@ namespace Cozen
             // Check for VideoTXL
             bool hasVideoTXL = System.Type.GetType("Texel.PlayerControls, com.texelsaur.video") != null;
             modified |= UpdateDefine(defines, "TEXEL_VIDEO", hasVideoTXL);
+            
+            // Check for Flatline
+            bool hasFlatline = System.Type.GetType("FlatlineSync, Assembly-CSharp") != null;
+            modified |= UpdateDefine(defines, "LAVY_FLATLINE", hasFlatline);
+            
+            // Check for OhGeezCmon Access Control
+            bool hasOhGeezCmon = System.Type.GetType("AccessControlManager, Assembly-CSharp") != null;
+            modified |= UpdateDefine(defines, "OHGEEZ_ACCESSCONTROL", hasOhGeezCmon);
             
             if (modified)
             {
@@ -72,6 +81,8 @@ namespace Cozen
         private SerializedProperty whitelistEnabled;
         private SerializedProperty instanceOwnerAlwaysHasAccess;
         private SerializedProperty ohGeezCmonAccessControl;
+        private SerializedProperty proTVManagedWhitelist;
+        private SerializedProperty flatlineSync;
         private SerializedProperty authorizedUsernames;
         private SerializedProperty buttonHandlers;
         private SerializedProperty itemsPerPage;
@@ -129,16 +140,61 @@ namespace Cozen
         
         // Version checking
         private const string VersionFilePath = "Assets/Cozen/Enigma Launchpad/VERSION";
-        private const string RemoteVersionUrl = "https://raw.githubusercontent.com/Cozen-Official/Enigma-Launchpad-OS/refs/heads/main/Assets/Cozen/Enigma%20Launchpad/VERSION";
+        private const string GitHubReleasesApiUrl = "https://api.github.com/repos/Cozen-Official/Enigma-Launchpad-OS/releases";
         private const string RepoUrl = "https://github.com/Cozen-Official/Enigma-Launchpad-OS";
         private const string FallbackVersion = "0.9";
         private const string UnknownVersion = "Unknown";
         private string localVersion;
         private string remoteVersion;
+        private string releaseUrl;
+        private string latestPackageDownloadUrl;
+        private List<ReleaseInfo> pendingReleases = new List<ReleaseInfo>();
         private bool versionCheckInProgress = false;
         private bool versionCheckComplete = false;
         private bool updateAvailable = false;
+        private bool showReleaseNotes = false;
+        private bool isDownloading = false;
         private UnityWebRequest versionCheckRequest;
+        private UnityWebRequest packageDownloadRequest;
+        
+        // Structure to store release information for display
+        private struct ReleaseInfo
+        {
+            public string version;
+            public string description;
+            public string url;
+            
+            public ReleaseInfo(string version, string description, string url)
+            {
+                this.version = version;
+                this.description = description;
+                this.url = url;
+            }
+        }
+        
+        // JSON structures for parsing GitHub releases API response
+        [Serializable]
+        private class GitHubReleaseAsset
+        {
+            public string name;
+            public string browser_download_url;
+        }
+        
+        [Serializable]
+        private class GitHubRelease
+        {
+            public string tag_name;
+            public string body;
+            public string html_url;
+            public GitHubReleaseAsset[] assets;
+        }
+        
+        // Wrapper class for parsing array of releases (JsonUtility doesn't support top-level arrays)
+        [Serializable]
+        private class GitHubReleasesWrapper
+        {
+            public GitHubRelease[] releases;
+        }
         
         private struct DuplicateMessage
         {
@@ -200,6 +256,8 @@ namespace Cozen
             whitelistEnabled        = so.FindProperty("whitelistEnabled");
             instanceOwnerAlwaysHasAccess = so.FindProperty("instanceOwnerAlwaysHasAccess");
             ohGeezCmonAccessControl = so.FindProperty("ohGeezCmonAccessControl");
+            proTVManagedWhitelist   = so.FindProperty("proTVManagedWhitelist");
+            flatlineSync            = so.FindProperty("flatlineSync");
             authorizedUsernames     = so.FindProperty("authorizedUsernames");
             mochieMaterialStandardProperty = so.FindProperty("mochieMaterialStandard");
             mochieMaterialXProperty = so.FindProperty("mochieMaterialX");
@@ -250,6 +308,15 @@ namespace Cozen
                 versionCheckRequest.Abort();
                 versionCheckRequest.Dispose();
                 versionCheckRequest = null;
+            }
+            
+            // Clean up package download request if still in progress
+            if (packageDownloadRequest != null && !packageDownloadRequest.isDone)
+            {
+                packageDownloadRequest.Abort();
+                packageDownloadRequest.Dispose();
+                packageDownloadRequest = null;
+                isDownloading = false;
             }
         }
 
@@ -586,6 +653,36 @@ namespace Cozen
             }
         }
         
+        private void MoveFolderFoldout(int from, int to)
+        {
+            if (folderFoldouts == null || from == to) return;
+            if (from < 0 || from >= folderFoldouts.Length) return;
+            if (to < 0 || to >= folderFoldouts.Length) return;
+            
+            bool state = folderFoldouts[from];
+            
+            // Shift elements between from and to
+            if (from < to)
+            {
+                // Moving down: shift elements up to fill the gap
+                for (int i = from; i < to; i++)
+                {
+                    folderFoldouts[i] = folderFoldouts[i + 1];
+                }
+            }
+            else
+            {
+                // Moving up: shift elements down to make room
+                for (int i = from; i > to; i--)
+                {
+                    folderFoldouts[i] = folderFoldouts[i - 1];
+                }
+            }
+            
+            folderFoldouts[to] = state;
+            SavePersistedFoldoutStates();
+        }
+        
         public override void OnInspectorGUI()
         {
             EnsureStyles();
@@ -839,16 +936,82 @@ namespace Cozen
                         "If true, the instance owner may operate the launchpad even when not on the whitelist."));
                     }
                     
+#if OHGEEZ_ACCESSCONTROL
                     if (ohGeezCmonAccessControl != null)
                     {
-                        EditorGUILayout.PropertyField(
-                        ohGeezCmonAccessControl,
-                        new GUIContent(
-                        "OhGeezCmon Access Control",
-                        "Optional AccessControlManager integration that supplies whitelist usernames."));
+                        ohGeezCmonAccessControl.objectReferenceValue = EditorGUILayout.ObjectField(
+                            new GUIContent(
+                                "OhGeezCmon Access Control",
+                                "Optional AccessControlManager integration that supplies whitelist usernames. Highest priority - routes to ProTV and Flatline."),
+                            ohGeezCmonAccessControl.objectReferenceValue,
+                            typeof(AccessControlManager),
+                            true);
                     }
+#else
+                    if (ohGeezCmonAccessControl != null)
+                    {
+                        ohGeezCmonAccessControl.objectReferenceValue = EditorGUILayout.ObjectField(
+                            new GUIContent(
+                                "OhGeezCmon Access Control",
+                                "Optional AccessControlManager integration (OhGeezCmon not installed). Highest priority - routes to ProTV and Flatline."),
+                            ohGeezCmonAccessControl.objectReferenceValue,
+                            typeof(UdonSharpBehaviour),
+                            true);
+                    }
+#endif
                     
-                    bool hasExternalAccessControl = ohGeezCmonAccessControl != null && ohGeezCmonAccessControl.objectReferenceValue != null;
+#if ARCHIT_PROTV
+                    if (proTVManagedWhitelist != null)
+                    {
+                        proTVManagedWhitelist.objectReferenceValue = EditorGUILayout.ObjectField(
+                            new GUIContent(
+                                "ProTV Managed Whitelist",
+                                "Optional TVManagedWhitelist integration. Second priority - routes to Flatline when OhGeezCmon not assigned."),
+                            proTVManagedWhitelist.objectReferenceValue,
+                            typeof(TVManagedWhitelist),
+                            true);
+                    }
+#else
+                    if (proTVManagedWhitelist != null)
+                    {
+                        proTVManagedWhitelist.objectReferenceValue = EditorGUILayout.ObjectField(
+                            new GUIContent(
+                                "ProTV Managed Whitelist",
+                                "Optional TVManagedWhitelist integration (ProTV not installed). Second priority - routes to Flatline when OhGeezCmon not assigned."),
+                            proTVManagedWhitelist.objectReferenceValue,
+                            typeof(UdonSharpBehaviour),
+                            true);
+                    }
+#endif
+                    
+#if LAVY_FLATLINE
+                    if (flatlineSync != null)
+                    {
+                        flatlineSync.objectReferenceValue = EditorGUILayout.ObjectField(
+                            new GUIContent(
+                                "Flatline Sync",
+                                "Optional FlatlineSync integration. Third priority - drives whitelist when OhGeezCmon and ProTV not assigned."),
+                            flatlineSync.objectReferenceValue,
+                            typeof(FlatlineSync),
+                            true);
+                    }
+#else
+                    if (flatlineSync != null)
+                    {
+                        flatlineSync.objectReferenceValue = EditorGUILayout.ObjectField(
+                            new GUIContent(
+                                "Flatline Sync",
+                                "Optional FlatlineSync integration (Flatline not installed). Third priority - drives whitelist when OhGeezCmon and ProTV not assigned."),
+                            flatlineSync.objectReferenceValue,
+                            typeof(UdonSharpBehaviour),
+                            true);
+                    }
+#endif
+                    
+                    bool hasOhGeezCmon = ohGeezCmonAccessControl != null && ohGeezCmonAccessControl.objectReferenceValue != null;
+                    bool hasProTV = proTVManagedWhitelist != null && proTVManagedWhitelist.objectReferenceValue != null;
+                    bool hasFlatline = flatlineSync != null && flatlineSync.objectReferenceValue != null;
+                    bool hasExternalAccessControl = hasOhGeezCmon || hasProTV || hasFlatline;
                     
                     if (authorizedUsernames != null)
                     {
@@ -863,10 +1026,47 @@ namespace Cozen
                         }
                     }
                     
-                    if (hasExternalAccessControl)
+                    // Help messages based on configuration
+                    if (hasOhGeezCmon && hasProTV && hasFlatline)
+                    {
+                        EditorGUILayout.HelpBox(
+                        "OhGeezCmon Access Control is the source of truth. Changes are automatically pushed to both ProTV and Flatline to keep all whitelists in sync.",
+                        MessageType.Info);
+                    }
+                    else if (hasOhGeezCmon && hasProTV)
+                    {
+                        EditorGUILayout.HelpBox(
+                        "OhGeezCmon Access Control is the source of truth. Changes are automatically pushed to ProTV TVManagedWhitelist.",
+                        MessageType.Info);
+                    }
+                    else if (hasOhGeezCmon && hasFlatline)
+                    {
+                        EditorGUILayout.HelpBox(
+                        "OhGeezCmon Access Control is the source of truth. Changes are automatically pushed to Flatline.",
+                        MessageType.Info);
+                    }
+                    else if (hasOhGeezCmon)
                     {
                         EditorGUILayout.HelpBox(
                         "Authorized usernames are provided by the assigned OhGeezCmon Access Control Manager.",
+                        MessageType.Info);
+                    }
+                    else if (hasProTV && hasFlatline)
+                    {
+                        EditorGUILayout.HelpBox(
+                        "ProTV TVManagedWhitelist is the source of truth. Changes are automatically pushed to Flatline.",
+                        MessageType.Info);
+                    }
+                    else if (hasProTV)
+                    {
+                        EditorGUILayout.HelpBox(
+                        "Authorized usernames are provided by the assigned ProTV TVManagedWhitelist.",
+                        MessageType.Info);
+                    }
+                    else if (hasFlatline)
+                    {
+                        EditorGUILayout.HelpBox(
+                        "Authorized usernames are provided by the assigned Flatline FlatlineSync.",
                         MessageType.Info);
                     }
                 }
@@ -877,6 +1077,14 @@ namespace Cozen
             DrawSection(F_Internal, () =>
             {
                 GUILayout.Space(InnerContentVerticalPad);
+                
+                // Wire Internal References button
+                if (GUILayout.Button("Wire Internal References", GUILayout.Height(24)))
+                {
+                    WireInternalReferences();
+                }
+                GUILayout.Space(6);
+                
                 EditorGUILayout.PropertyField(buttonHandlers, new GUIContent("Button Handlers"));
                 // Add ScreenHandler reference above FaderSystemHandler
                 if (screenHandlerProperty != null)
@@ -918,7 +1126,10 @@ namespace Cozen
                         faderHandlerObject.ApplyModifiedProperties();
                     }
                 }
-                EditorGUILayout.PropertyField(itemsPerPage);
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.PropertyField(itemsPerPage);
+                }
                 if (materialHandlers != null)
                 {
                     // Material handlers are managed automatically per Materials folder.
@@ -1090,12 +1301,70 @@ namespace Cozen
                 
                 EditorGUILayout.LabelField($"Update Available: V{remoteVersion}", EditorStyles.boldLabel);
                 
+                // Show release notes foldout if there are pending releases with descriptions
+                if (pendingReleases.Count > 0)
+                {
+                    EditorGUI.indentLevel++;
+                    showReleaseNotes = EditorGUILayout.Foldout(showReleaseNotes, "What's New", true);
+                    if (showReleaseNotes)
+                    {
+                        EditorGUI.indentLevel++;
+                        
+                        // Display each release's notes (newest first)
+                        for (int i = 0; i < pendingReleases.Count; i++)
+                        {
+                            var release = pendingReleases[i];
+                            
+                            // Show version header if there are multiple releases
+                            if (pendingReleases.Count > 1)
+                            {
+                                EditorGUILayout.LabelField($"V{release.version}:", EditorStyles.boldLabel);
+                            }
+                            
+                            // Show description if available
+                            if (!string.IsNullOrEmpty(release.description))
+                            {
+                                EditorGUILayout.LabelField(release.description, EditorStyles.wordWrappedLabel);
+                            }
+                            
+                            // Add spacing between releases
+                            if (i < pendingReleases.Count - 1)
+                            {
+                                GUILayout.Space(8);
+                            }
+                        }
+                        
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUI.indentLevel--;
+                }
+                
+                GUILayout.Space(4);
+                
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("View Update on GitHub", GUILayout.Width(180)))
+                
+                // Download button - only show if we have a package URL and not currently downloading
+                if (!string.IsNullOrEmpty(latestPackageDownloadUrl))
                 {
-                    Application.OpenURL(RepoUrl);
+                    EditorGUI.BeginDisabledGroup(isDownloading);
+                    string downloadButtonText = isDownloading ? "Downloading..." : "Download";
+                    if (GUILayout.Button(downloadButtonText, GUILayout.Width(100)))
+                    {
+                        DownloadAndImportPackage();
+                    }
+                    EditorGUI.EndDisabledGroup();
+                    
+                    GUILayout.Space(8);
                 }
+                
+                if (GUILayout.Button("View on GitHub", GUILayout.Width(120)))
+                {
+                    // Open the specific release page if available, otherwise the repo
+                    string url = !string.IsNullOrEmpty(releaseUrl) ? releaseUrl : RepoUrl;
+                    Application.OpenURL(url);
+                }
+                
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
                 
@@ -2152,6 +2421,12 @@ namespace Cozen
             // Update fader folder indices to preserve fader assignments after reordering
             UpdateFaderFolderIndices(from, to);
             
+            // Update preset included folder indices to preserve preset settings after reordering
+            UpdatePresetIncludedFolderIndices(from, to);
+            
+            // Move foldout state to match the folder's new position
+            MoveFolderFoldout(from, to);
+            
             RefreshFolderFoldouts();
         }
         
@@ -2694,13 +2969,16 @@ namespace Cozen
             
             try
             {
-                versionCheckRequest = UnityWebRequest.Get(RemoteVersionUrl);
+                versionCheckRequest = UnityWebRequest.Get(GitHubReleasesApiUrl);
                 if (versionCheckRequest == null)
                 {
                     versionCheckInProgress = false;
                     Debug.LogWarning("[EnigmaLaunchpad Editor] Failed to create version check request");
                     return;
                 }
+                
+                // GitHub API requires User-Agent header
+                versionCheckRequest.SetRequestHeader("User-Agent", "EnigmaLaunchpad-Unity-Editor");
                 
                 var operation = versionCheckRequest.SendWebRequest();
                 operation.completed += OnVersionCheckComplete;
@@ -2728,12 +3006,92 @@ namespace Cozen
             if (!versionCheckRequest.isNetworkError && !versionCheckRequest.isHttpError)
             #endif
             {
-                remoteVersion = versionCheckRequest.downloadHandler.text.Trim();
-                updateAvailable = CompareVersions(localVersion, remoteVersion) < 0;
-                
-                if (updateAvailable)
+                try
                 {
-                    Debug.Log($"[EnigmaLaunchpad Editor] Update available! Local: {localVersion}, Remote: {remoteVersion}");
+                    string jsonResponse = versionCheckRequest.downloadHandler.text;
+                    // JsonUtility doesn't support top-level arrays, so wrap it
+                    string wrappedJson = "{\"releases\":" + jsonResponse + "}";
+                    GitHubReleasesWrapper releasesWrapper = JsonUtility.FromJson<GitHubReleasesWrapper>(wrappedJson);
+                    
+                    if (releasesWrapper != null && releasesWrapper.releases != null && releasesWrapper.releases.Length > 0)
+                    {
+                        pendingReleases.Clear();
+                        latestPackageDownloadUrl = null;
+                        
+                        // Track the latest release to get its download URL
+                        GitHubRelease latestRelease = null;
+                        string latestVersion = null;
+                        
+                        // Process releases to find all versions newer than local
+                        foreach (var release in releasesWrapper.releases)
+                        {
+                            if (string.IsNullOrEmpty(release.tag_name))
+                                continue;
+                            
+                            // Extract version from tag (remove 'v' or 'V' prefix if present)
+                            string tagVersion = release.tag_name;
+                            if (tagVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+                            {
+                                tagVersion = tagVersion.Substring(1);
+                            }
+                            
+                            // Check if this release is newer than the local version
+                            if (CompareVersions(localVersion, tagVersion) < 0)
+                            {
+                                pendingReleases.Add(new ReleaseInfo(
+                                    tagVersion,
+                                    CleanReleaseDescription(release.body),
+                                    release.html_url
+                                ));
+                                
+                                // Track the latest release (compare only when we already have a candidate)
+                                if (latestRelease == null)
+                                {
+                                    latestRelease = release;
+                                    latestVersion = tagVersion;
+                                }
+                                else if (CompareVersions(latestVersion, tagVersion) < 0)
+                                {
+                                    latestRelease = release;
+                                    latestVersion = tagVersion;
+                                }
+                            }
+                        }
+                        
+                        // Sort pending releases by version (newest first)
+                        pendingReleases.Sort((a, b) => CompareVersions(b.version, a.version));
+                        
+                        if (pendingReleases.Count > 0)
+                        {
+                            // Set the latest version info
+                            remoteVersion = pendingReleases[0].version;
+                            releaseUrl = pendingReleases[0].url;
+                            updateAvailable = true;
+                            
+                            // Find the .unitypackage download URL from the latest release
+                            if (latestRelease != null && latestRelease.assets != null)
+                            {
+                                foreach (var asset in latestRelease.assets)
+                                {
+                                    if (asset.name != null && asset.name.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        latestPackageDownloadUrl = asset.browser_download_url;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            Debug.Log($"[EnigmaLaunchpad Editor] Update available! Local: {localVersion}, Latest: {remoteVersion} ({pendingReleases.Count} new release(s))");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[EnigmaLaunchpad Editor] Failed to parse GitHub releases response");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[EnigmaLaunchpad Editor] Error parsing version check response: {ex.Message}");
                 }
             }
             else
@@ -2746,6 +3104,131 @@ namespace Cozen
             
             // Request a repaint to show the update notification
             Repaint();
+        }
+        
+        /// <summary>
+        /// Downloads the latest release package and imports it into the project.
+        /// </summary>
+        private void DownloadAndImportPackage()
+        {
+            if (string.IsNullOrEmpty(latestPackageDownloadUrl) || isDownloading)
+            {
+                return;
+            }
+            
+            isDownloading = true;
+            
+            try
+            {
+                packageDownloadRequest = UnityWebRequest.Get(latestPackageDownloadUrl);
+                if (packageDownloadRequest == null)
+                {
+                    isDownloading = false;
+                    Debug.LogError("[EnigmaLaunchpad Editor] Failed to create download request");
+                    return;
+                }
+                
+                // GitHub requires User-Agent header
+                packageDownloadRequest.SetRequestHeader("User-Agent", "EnigmaLaunchpad-Unity-Editor");
+                
+                var operation = packageDownloadRequest.SendWebRequest();
+                operation.completed += OnPackageDownloadComplete;
+                
+                Debug.Log($"[EnigmaLaunchpad Editor] Downloading Enigma Launchpad v{remoteVersion}...");
+            }
+            catch (Exception ex)
+            {
+                isDownloading = false;
+                Debug.LogError($"[EnigmaLaunchpad Editor] Error initiating download: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Handles completion of the package download.
+        /// </summary>
+        private void OnPackageDownloadComplete(UnityEngine.AsyncOperation op)
+        {
+            isDownloading = false;
+            
+            if (packageDownloadRequest == null)
+            {
+                return;
+            }
+            
+            #if UNITY_2020_1_OR_NEWER
+            if (packageDownloadRequest.result == UnityWebRequest.Result.Success)
+            #else
+            if (!packageDownloadRequest.isNetworkError && !packageDownloadRequest.isHttpError)
+            #endif
+            {
+                try
+                {
+                    // Sanitize version string for safe filename usage
+                    string safeVersion = SanitizeVersionForFilename(remoteVersion);
+                    
+                    // Save the downloaded package to a temporary file
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"EnigmaLaunchpad_v{safeVersion}.unitypackage");
+                    File.WriteAllBytes(tempPath, packageDownloadRequest.downloadHandler.data);
+                    
+                    Debug.Log($"[EnigmaLaunchpad Editor] Download complete. Importing package...");
+                    
+                    // Import the package with interactive mode so user can select what to import
+                    AssetDatabase.ImportPackage(tempPath, true);
+                    
+                    // Clean up temp file after a delay to allow import dialog to read it
+                    EditorApplication.delayCall += () =>
+                    {
+                        try
+                        {
+                            if (File.Exists(tempPath))
+                            {
+                                File.Delete(tempPath);
+                            }
+                        }
+                        catch (Exception cleanupEx)
+                        {
+                            // Log cleanup errors for debugging but don't treat as critical
+                            Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not clean up temp file: {cleanupEx.Message}");
+                        }
+                    };
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[EnigmaLaunchpad Editor] Error importing package: {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogError($"[EnigmaLaunchpad Editor] Failed to download package: {packageDownloadRequest.error}");
+            }
+            
+            packageDownloadRequest.Dispose();
+            packageDownloadRequest = null;
+            
+            // Request a repaint to update the UI
+            Repaint();
+        }
+        
+        /// <summary>
+        /// Sanitizes a version string for safe use in a filename.
+        /// Removes or replaces characters that are invalid in filenames.
+        /// </summary>
+        private string SanitizeVersionForFilename(string version)
+        {
+            if (string.IsNullOrEmpty(version))
+            {
+                return "unknown";
+            }
+            
+            // Replace invalid filename characters with underscores
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            StringBuilder sb = new StringBuilder(version);
+            foreach (char c in invalidChars)
+            {
+                sb.Replace(c, '_');
+            }
+            
+            return sb.ToString();
         }
         
         /// <summary>
@@ -2803,6 +3286,481 @@ namespace Cozen
             }
             
             return 0; // Versions are equal
+        }
+        
+        /// <summary>
+        /// Cleans up release description text by removing or simplifying Markdown formatting
+        /// for better display in Unity Editor GUI.
+        /// </summary>
+        /// <param name="description">Raw release description from GitHub</param>
+        /// <returns>Cleaned description suitable for display</returns>
+        private string CleanReleaseDescription(string description)
+        {
+            if (string.IsNullOrEmpty(description))
+            {
+                return string.Empty;
+            }
+            
+            // Remove common Markdown formatting
+            string cleaned = description;
+            
+            // Remove bold markers (**text** or __text__)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\*\*(.+?)\*\*", "$1");
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"__(.+?)__", "$1");
+            
+            // Remove italic markers (*text* or _text_)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\*(.+?)\*", "$1");
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"_(.+?)_", "$1");
+            
+            // Remove inline code markers (`code`)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"`(.+?)`", "$1");
+            
+            // Remove link formatting [text](url) -> text
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\[(.+?)\]\(.+?\)", "$1");
+            
+            // Remove heading markers (# ## ### etc.)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"^#{1,6}\s*", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+            
+            // Replace bullet points with simple dash
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"^\s*[\*\-]\s+", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+            
+            // Trim whitespace and limit to reasonable length for display
+            cleaned = cleaned.Trim();
+            
+            return cleaned;
+        }
+        
+        #endregion
+        
+        #region Wire Internal References
+        
+        // Child object names used for wiring
+        private const string ButtonsChildName = "Buttons";
+        private const string PageDisplayChildName = "Page Display";
+        private const string FolderChildName = "Folder";
+        private const string ScreenChildName = "Screen";
+        private const string FadersChildName = "Faders";
+        private const string FaderPrefix = "Fader ";
+        private const string FaderInnerChildName = "Fader";
+        private const string LeftHandColliderChildName = "Left Hand Collider";
+        private const string RightHandColliderChildName = "Right Hand Collider";
+        private const string VideoPlayerControlsChildName = "Video Player Controls";
+        private const string MediaControlsChildName = "MediaControls";
+        private const string PlayerControlsChildName = "PlayerControls";
+        
+        // Asset paths for materials
+        private const string MochieStandardMaterialPath = "Assets/Cozen/Enigma Launchpad/Materials/Mochie Screen FX.mat";
+        private const string MochieXMaterialPath = "Assets/Cozen/Enigma Launchpad/Materials/Mochie Screen FX X.mat";
+        private const string JuneMaterialPath = "Assets/Cozen/Enigma Launchpad/Materials/June Paid.mat";
+        
+        /// <summary>
+        /// Automatically wires all internal references by looking at child objects under the launchpad.
+        /// </summary>
+        private void WireInternalReferences()
+        {
+            EnigmaLaunchpad launchpad = (EnigmaLaunchpad)target;
+            if (launchpad == null)
+            {
+                Debug.LogError("[EnigmaLaunchpad Editor] Cannot wire references - target is null");
+                return;
+            }
+            
+            Undo.RecordObject(launchpad, "Wire Internal References");
+            
+            bool anyChanges = false;
+            
+            // Wire Button Handlers
+            anyChanges |= WireButtonHandlers(launchpad);
+            
+            // Wire Screen Handler
+            anyChanges |= WireScreenHandler(launchpad);
+            
+            // Wire Fader System Handler and related
+            anyChanges |= WireFaderSystem(launchpad);
+            
+            // Wire Mochie Materials
+            anyChanges |= WireMochieMaterials();
+            
+            // Wire June Material
+            anyChanges |= WireJuneMaterial();
+            
+            // Wire Video Player Controls (ProTV and VideoTXL)
+            anyChanges |= WireVideoPlayerControls(launchpad);
+            
+            if (anyChanges)
+            {
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(launchpad);
+                Debug.Log("[EnigmaLaunchpad Editor] Internal references wired successfully");
+            }
+            else
+            {
+                Debug.Log("[EnigmaLaunchpad Editor] All internal references were already wired");
+            }
+        }
+        
+        /// <summary>
+        /// Wires ButtonHandler references by finding them under the "Buttons" child object.
+        /// Numbered buttons (1-9) come first, sorted numerically, then Page Display and Folder.
+        /// </summary>
+        private bool WireButtonHandlers(EnigmaLaunchpad launchpad)
+        {
+            Transform buttonsTransform = launchpad.transform.Find(ButtonsChildName);
+            if (buttonsTransform == null)
+            {
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not find '{ButtonsChildName}' child object");
+                return false;
+            }
+            
+            var numberedButtons = new List<(int number, ButtonHandler handler)>();
+            ButtonHandler pageDisplayHandler = null;
+            ButtonHandler folderHandler = null;
+            
+            foreach (Transform child in buttonsTransform)
+            {
+                ButtonHandler handler = child.GetComponent<ButtonHandler>();
+                if (handler == null)
+                {
+                    continue;
+                }
+                
+                string childName = child.name;
+                
+                // Check if the name is a number
+                if (int.TryParse(childName, out int buttonNumber))
+                {
+                    numberedButtons.Add((buttonNumber, handler));
+                }
+                else if (childName == PageDisplayChildName)
+                {
+                    pageDisplayHandler = handler;
+                }
+                else if (childName == FolderChildName)
+                {
+                    folderHandler = handler;
+                }
+            }
+            
+            // Sort numbered buttons by their number
+            numberedButtons.Sort((a, b) => a.number.CompareTo(b.number));
+            
+            // Build the final array: numbered buttons first, then Page Display, then Folder
+            var handlersList = new List<ButtonHandler>();
+            foreach (var (_, handler) in numberedButtons)
+            {
+                handlersList.Add(handler);
+            }
+            if (pageDisplayHandler != null)
+            {
+                handlersList.Add(pageDisplayHandler);
+            }
+            if (folderHandler != null)
+            {
+                handlersList.Add(folderHandler);
+            }
+            
+            if (handlersList.Count == 0)
+            {
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] No ButtonHandler components found under '{ButtonsChildName}'");
+                return false;
+            }
+            
+            // Update the buttonHandlers array
+            buttonHandlers.arraySize = handlersList.Count;
+            for (int i = 0; i < handlersList.Count; i++)
+            {
+                buttonHandlers.GetArrayElementAtIndex(i).objectReferenceValue = handlersList[i];
+                
+                // Also set the enigmaLaunchpad reference on each ButtonHandler
+                SerializedObject handlerObject = new SerializedObject(handlersList[i]);
+                SerializedProperty launchpadProp = handlerObject.FindProperty("enigmaLaunchpad");
+                if (launchpadProp != null && launchpadProp.objectReferenceValue != launchpad)
+                {
+                    launchpadProp.objectReferenceValue = launchpad;
+                    handlerObject.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(handlersList[i]);
+                }
+            }
+            
+            Debug.Log($"[EnigmaLaunchpad Editor] Wired {handlersList.Count} ButtonHandler(s)");
+            return true;
+        }
+        
+        /// <summary>
+        /// Wires the ScreenHandler reference from the "Screen" child object.
+        /// </summary>
+        private bool WireScreenHandler(EnigmaLaunchpad launchpad)
+        {
+            // Look for ScreenHandler in children
+            ScreenHandler screenHandler = FindComponentInChildrenByName<ScreenHandler>(launchpad.transform, ScreenChildName);
+            if (screenHandler == null)
+            {
+                // Try to find any ScreenHandler in children
+                screenHandler = launchpad.GetComponentInChildren<ScreenHandler>(true);
+            }
+            
+            if (screenHandler == null)
+            {
+                Debug.LogWarning("[EnigmaLaunchpad Editor] Could not find ScreenHandler in children");
+                return false;
+            }
+            
+            if (screenHandlerProperty.objectReferenceValue != screenHandler)
+            {
+                screenHandlerProperty.objectReferenceValue = screenHandler;
+                
+                // Set the launchpad reference on ScreenHandler
+                SerializedObject handlerObject = new SerializedObject(screenHandler);
+                SerializedProperty launchpadProp = handlerObject.FindProperty("launchpad");
+                if (launchpadProp != null && launchpadProp.objectReferenceValue != launchpad)
+                {
+                    launchpadProp.objectReferenceValue = launchpad;
+                    handlerObject.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(screenHandler);
+                }
+                
+                Debug.Log("[EnigmaLaunchpad Editor] Wired ScreenHandler");
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Wires the FaderSystemHandler and related references (FaderHandlers, hand colliders).
+        /// Hierarchy: Launchpad -> Faders (has FaderSystemHandler) -> Fader 1/2/3... -> Fader (has FaderHandler)
+        /// </summary>
+        private bool WireFaderSystem(EnigmaLaunchpad launchpad)
+        {
+            bool anyChanges = false;
+            
+            // Find the "Faders" child object
+            Transform fadersTransform = launchpad.transform.Find(FadersChildName);
+            if (fadersTransform == null)
+            {
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not find '{FadersChildName}' child object");
+                return false;
+            }
+            
+            // Get FaderSystemHandler from the Faders object
+            FaderSystemHandler systemHandler = fadersTransform.GetComponent<FaderSystemHandler>();
+            if (systemHandler == null)
+            {
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not find FaderSystemHandler on '{FadersChildName}' object");
+                return false;
+            }
+            
+            // Wire the FaderSystemHandler to launchpad
+            if (faderHandlerProperty.objectReferenceValue != systemHandler)
+            {
+                faderHandlerProperty.objectReferenceValue = systemHandler;
+                anyChanges = true;
+                Debug.Log("[EnigmaLaunchpad Editor] Wired FaderSystemHandler");
+            }
+            
+            // Bind the fader handler object to get access to its properties
+            BindFaderHandlerSerializedObject();
+            if (faderHandlerObject == null)
+            {
+                return anyChanges;
+            }
+            
+            // Find Left Hand Collider and Right Hand Collider under Faders
+            Transform leftHandTransform = fadersTransform.Find(LeftHandColliderChildName);
+            Transform rightHandTransform = fadersTransform.Find(RightHandColliderChildName);
+            
+            if (leftHandTransform != null && leftHandColliderProperty != null)
+            {
+                if (leftHandColliderProperty.objectReferenceValue != leftHandTransform.gameObject)
+                {
+                    leftHandColliderProperty.objectReferenceValue = leftHandTransform.gameObject;
+                    anyChanges = true;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired Left Hand Collider");
+                }
+            }
+            
+            if (rightHandTransform != null && rightHandColliderProperty != null)
+            {
+                if (rightHandColliderProperty.objectReferenceValue != rightHandTransform.gameObject)
+                {
+                    rightHandColliderProperty.objectReferenceValue = rightHandTransform.gameObject;
+                    anyChanges = true;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired Right Hand Collider");
+                }
+            }
+            
+            // Find FaderHandlers: Faders -> Fader 1 (2,3...) -> Fader (has FaderHandler)
+            var faderHandlers = new List<(int number, FaderHandler handler)>();
+            foreach (Transform faderParent in fadersTransform)
+            {
+                string parentName = faderParent.name;
+                
+                // Check if name starts with "Fader " and is followed by a number
+                if (parentName.StartsWith(FaderPrefix))
+                {
+                    string numberPart = parentName.Substring(FaderPrefix.Length);
+                    if (int.TryParse(numberPart, out int faderNumber))
+                    {
+                        // Look for the "Fader" child that has the FaderHandler
+                        Transform faderChild = faderParent.Find(FaderInnerChildName);
+                        if (faderChild != null)
+                        {
+                            FaderHandler handler = faderChild.GetComponent<FaderHandler>();
+                            if (handler != null)
+                            {
+                                faderHandlers.Add((faderNumber, handler));
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Sort by fader number
+            faderHandlers.Sort((a, b) => a.number.CompareTo(b.number));
+            
+            if (faderHandlers.Count > 0 && fadersFadersArray != null)
+            {
+                fadersFadersArray.arraySize = faderHandlers.Count;
+                for (int i = 0; i < faderHandlers.Count; i++)
+                {
+                    SerializedProperty element = fadersFadersArray.GetArrayElementAtIndex(i);
+                    if (element.objectReferenceValue != faderHandlers[i].handler)
+                    {
+                        element.objectReferenceValue = faderHandlers[i].handler;
+                        anyChanges = true;
+                    }
+                }
+                
+                if (anyChanges)
+                {
+                    faderHandlerObject.ApplyModifiedProperties();
+                    // Auto-assign the system handler and index on each FaderHandler
+                    AutoAssignFaderHandlerReferences();
+                    Debug.Log($"[EnigmaLaunchpad Editor] Wired {faderHandlers.Count} FaderHandler(s)");
+                }
+            }
+            
+            // Set the launchpad reference on FaderSystemHandler
+            SerializedProperty launchpadProp = faderHandlerObject.FindProperty("launchpad");
+            if (launchpadProp != null && launchpadProp.objectReferenceValue != launchpad)
+            {
+                launchpadProp.objectReferenceValue = launchpad;
+                faderHandlerObject.ApplyModifiedProperties();
+                EditorUtility.SetDirty(systemHandler);
+                anyChanges = true;
+            }
+            
+            return anyChanges;
+        }
+        
+        /// <summary>
+        /// Wires Mochie Materials from their asset paths.
+        /// </summary>
+        private bool WireMochieMaterials()
+        {
+            bool anyChanges = false;
+            
+            // Standard Mochie Material
+            Material standardMat = AssetDatabase.LoadAssetAtPath<Material>(MochieStandardMaterialPath);
+            if (standardMat != null && mochieMaterialStandardProperty != null)
+            {
+                if (mochieMaterialStandardProperty.objectReferenceValue != standardMat)
+                {
+                    mochieMaterialStandardProperty.objectReferenceValue = standardMat;
+                    anyChanges = true;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired Mochie Standard Material");
+                }
+            }
+            
+            // Mochie X Material
+            Material xMat = AssetDatabase.LoadAssetAtPath<Material>(MochieXMaterialPath);
+            if (xMat != null && mochieMaterialXProperty != null)
+            {
+                if (mochieMaterialXProperty.objectReferenceValue != xMat)
+                {
+                    mochieMaterialXProperty.objectReferenceValue = xMat;
+                    anyChanges = true;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired Mochie X Material");
+                }
+            }
+            
+            return anyChanges;
+        }
+        
+        /// <summary>
+        /// Wires the June Material from its asset path.
+        /// </summary>
+        private bool WireJuneMaterial()
+        {
+            Material juneMat = AssetDatabase.LoadAssetAtPath<Material>(JuneMaterialPath);
+            if (juneMat != null && juneMaterialProperty != null)
+            {
+                if (juneMaterialProperty.objectReferenceValue != juneMat)
+                {
+                    juneMaterialProperty.objectReferenceValue = juneMat;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired June Material");
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Wires ProTV MediaControls and VideoTXL PlayerControls from "Video Player Controls" child.
+        /// Hierarchy: Launchpad -> Video Player Controls -> MediaControls / PlayerControls
+        /// </summary>
+        private bool WireVideoPlayerControls(EnigmaLaunchpad launchpad)
+        {
+            bool anyChanges = false;
+            
+            Transform videoControlsTransform = launchpad.transform.Find(VideoPlayerControlsChildName);
+            if (videoControlsTransform == null)
+            {
+                Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not find '{VideoPlayerControlsChildName}' child object");
+                return false;
+            }
+            
+            // Find MediaControls (ProTV)
+            Transform mediaControlsTransform = videoControlsTransform.Find(MediaControlsChildName);
+            if (mediaControlsTransform != null && proTVMediaControlsProperty != null)
+            {
+                UdonSharpBehaviour mediaControls = mediaControlsTransform.GetComponent<UdonSharpBehaviour>();
+                if (mediaControls != null && proTVMediaControlsProperty.objectReferenceValue != mediaControls)
+                {
+                    proTVMediaControlsProperty.objectReferenceValue = mediaControls;
+                    anyChanges = true;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired ProTV MediaControls");
+                }
+            }
+            
+            // Find PlayerControls (VideoTXL)
+            Transform playerControlsTransform = videoControlsTransform.Find(PlayerControlsChildName);
+            if (playerControlsTransform != null && videoTXLPlayerControlsProperty != null)
+            {
+                UdonSharpBehaviour playerControls = playerControlsTransform.GetComponent<UdonSharpBehaviour>();
+                if (playerControls != null && videoTXLPlayerControlsProperty.objectReferenceValue != playerControls)
+                {
+                    videoTXLPlayerControlsProperty.objectReferenceValue = playerControls;
+                    anyChanges = true;
+                    Debug.Log("[EnigmaLaunchpad Editor] Wired VideoTXL PlayerControls");
+                }
+            }
+            
+            return anyChanges;
+        }
+        
+        /// <summary>
+        /// Helper method to find a component on a child with a specific name.
+        /// </summary>
+        private T FindComponentInChildrenByName<T>(Transform parent, string childName) where T : Component
+        {
+            Transform child = parent.Find(childName);
+            if (child != null)
+            {
+                return child.GetComponent<T>();
+            }
+            return null;
         }
         
         #endregion

@@ -30,14 +30,20 @@ namespace Cozen
         private int currentHistoryPointer = 0;
         private int historySize;
         private bool skyboxMaterialsValid = false;
-        private bool isAutoChangeScheduled = false;
         
-        // Chain ID tracking to prevent multiple concurrent auto-change loops.
-        // Each time auto-change is toggled (ON or OFF), autoChangeChainId is incremented.
-        // Events check if their scheduledChainId matches the current autoChangeChainId.
-        // If they don't match, the event is from an old chain and should be ignored.
+        // Robust auto-change loop prevention:
+        // - autoChangeChainId: Monotonically increasing counter, incremented every time auto-change is toggled OFF
+        //   or when performing a full reset. This invalidates any pending events from previous sessions.
+        // - scheduledChainId: Set when scheduling an event, stores the chainId at scheduling time.
+        //   Events check if scheduledChainId == autoChangeChainId to validate they're from the current session.
+        // - isEventPending: True from when an event is scheduled until it fires (regardless of outcome).
+        //   This prevents scheduling multiple events - only one event can be "in flight" at a time.
+        //   Key insight: this flag is ONLY reset when an event actually fires, never by other code paths.
+        //   This ensures that even during Reset operations, we wait for pending events to complete
+        //   before scheduling new ones.
         private int autoChangeChainId = 0;
-        private int scheduledChainId = -1; // -1 = invalid/uninitialized, set when scheduling events
+        private int scheduledChainId = -1;
+        private bool isEventPending = false;
         
         private int initialSkyboxIndex = -1;
         private int initialSkyboxPage = 0;
@@ -177,8 +183,11 @@ namespace Cozen
             
             Debug.Log("[SkyboxHandler] Setting auto-change state to false");
             isAutoChanging = false;
-            isAutoChangeScheduled = false;
-            autoChangeChainId = 0;
+            
+            // Increment chain ID to invalidate any potentially pending events from previous sessions.
+            // Note: At true initialization (Start), there shouldn't be pending events, but in VRChat
+            // late joiners may have synced state. Incrementing maintains safety and monotonic ordering.
+            autoChangeChainId++;
             scheduledChainId = -1;
             
             Debug.Log("[SkyboxHandler] Calling InitializeSkybox");
@@ -216,11 +225,17 @@ namespace Cozen
         
         public void ResetSkybox()
         {
+            // First, disable auto-change to stop any new scheduling
             isAutoChanging = false;
-            isAutoChangeScheduled = false;
-            autoChangeChainId = 0;
+            
+            // Increment chain ID to invalidate any pending events
+            // Note: We do NOT clear isEventPending here. If there's a pending event,
+            // it will fire, see the chain mismatch, and clear the flag itself.
+            // This prevents scheduling multiple concurrent events.
+            autoChangeChainId++;
             scheduledChainId = -1;
             
+            // Restore initial state
             syncedSkyboxIndex = initialSkyboxIndex;
             syncedSkyboxPage = initialSkyboxPage < 0 ? 0 : initialSkyboxPage;
             isAutoChanging = initialAutoChangeEnabled;
@@ -230,6 +245,9 @@ namespace Cozen
             // Update page button state after resetting isAutoChanging
             UpdatePageButtonAutoChangeState();
             
+            // Attempt to resume auto-change. If there's a pending event (isEventPending=true),
+            // this won't schedule a new one. When the pending event fires, it will see the
+            // chain mismatch, exit early, and call ResumeAutoChangeIfNeeded() to start fresh.
             ResumeAutoChangeIfNeeded(0f);
             RequestSerialization();
         }
@@ -387,23 +405,45 @@ namespace Cozen
         
         public void _ProcessAutoChange()
         {
-            // Check if this event belongs to the current auto-change chain
-            // scheduledChainId should always be set when this method is called through normal scheduling,
-            // but check for -1 to handle edge cases where the event might be triggered improperly
+            // Mark that the pending event has now fired.
+            // This is done FIRST, before any validation checks, because regardless of whether
+            // this event is valid or stale, it's no longer "pending" - it has executed.
+            isEventPending = false;
+            
+            // Validate this event belongs to the current auto-change session.
+            // If scheduledChainId doesn't match autoChangeChainId, this event is from a
+            // previous session that was cancelled when the user toggled auto-change OFF.
             if (scheduledChainId == -1 || scheduledChainId != autoChangeChainId)
             {
-                // This event belongs to a previous auto-change chain that has been superseded,
-                // or was not properly scheduled
+                // Stale event from a cancelled session - ignore it completely.
+                // Do NOT change the skybox, but DO check if we should resume auto-change
+                // for the current session (in case user toggled it back ON).
+                if (isAutoChanging && Networking.IsOwner(gameObject))
+                {
+                    // User toggled auto-change back ON while this stale event was pending.
+                    // Now that this event has cleared isEventPending, schedule a new event
+                    // for the current session.
+                    ResumeAutoChangeIfNeeded();
+                }
                 return;
             }
             
-            isAutoChangeScheduled = false;
+            // Event is valid. Check if we should still be auto-changing.
             if (!isAutoChanging || !Networking.IsOwner(gameObject) || skyboxMaterials == null || skyboxMaterials.Length == 0)
-            return;
-            AutoChangeSkybox();
-            if (isAutoChanging && autoChangeInterval > 0f && !isAutoChangeScheduled)
             {
-                isAutoChangeScheduled = true;
+                return;
+            }
+            
+            // Perform the skybox change
+            AutoChangeSkybox();
+            
+            // Schedule the next auto-change event, but ONLY if:
+            // 1. Auto-change is still enabled
+            // 2. The interval is valid
+            // 3. No other event is already pending (defensive check - should always be false here)
+            if (isAutoChanging && autoChangeInterval > 0f && !isEventPending)
+            {
+                isEventPending = true;
                 scheduledChainId = autoChangeChainId;
                 SendCustomEventDelayedSeconds(nameof(_ProcessAutoChange), autoChangeInterval);
             }
@@ -462,14 +502,24 @@ namespace Cozen
             
             if (!isAutoChanging)
             {
-                isAutoChangeScheduled = false;
+                // Turning OFF: Increment chain ID to invalidate any pending events.
+                // IMPORTANT: Do NOT reset isEventPending here. The pending event will still fire,
+                // but it will see the chain ID mismatch and exit early. When it fires, IT will
+                // reset isEventPending to false. This prevents a race condition where we could
+                // schedule multiple events.
+                autoChangeChainId++;
             }
-            
-            // Increment chain ID on every toggle to invalidate any pending auto-change events
-            // from the previous session. This prevents multiple concurrent event loops.
-            autoChangeChainId++;
-            
-            ResumeAutoChangeIfNeeded(0f);
+            else
+            {
+                // Turning ON: Only schedule a new event if there isn't one already pending.
+                // If there IS a pending event (from before we toggled OFF), it will fire and
+                // see the chain ID mismatch, then reset isEventPending. We don't want to
+                // schedule a NEW event that would run concurrently.
+                //
+                // However, if the user toggled OFF and the pending event already fired (clearing
+                // isEventPending), we DO want to schedule a new event now.
+                ResumeAutoChangeIfNeeded(0f);
+            }
             
             // Update the page button's auto-change animation state
             UpdatePageButtonAutoChangeState();
@@ -555,21 +605,24 @@ namespace Cozen
         
         private void ResumeAutoChangeIfNeeded(float delayOverrideSeconds = -1f)
         {
-            if (isAutoChanging)
+            if (!isAutoChanging)
             {
-                if (Networking.IsOwner(gameObject) && !isAutoChangeScheduled)
-                {
-                    float delay = delayOverrideSeconds >= 0f
+                // Auto-change is OFF - don't schedule anything.
+                // Note: We do NOT reset isEventPending here. If there's a pending event,
+                // it will fire and see the chain ID mismatch, then reset the flag itself.
+                return;
+            }
+            
+            // Auto-change is ON. Only schedule if we're the owner AND no event is pending.
+            if (Networking.IsOwner(gameObject) && !isEventPending)
+            {
+                float delay = delayOverrideSeconds >= 0f
                     ? Mathf.Max(0f, delayOverrideSeconds)
                     : Mathf.Max(0f, autoChangeInterval);
-                    isAutoChangeScheduled = true;
-                    scheduledChainId = autoChangeChainId;
-                    SendCustomEventDelayedSeconds(nameof(_ProcessAutoChange), delay);
-                }
-            }
-            else
-            {
-                isAutoChangeScheduled = false;
+                    
+                isEventPending = true;
+                scheduledChainId = autoChangeChainId;
+                SendCustomEventDelayedSeconds(nameof(_ProcessAutoChange), delay);
             }
         }
 

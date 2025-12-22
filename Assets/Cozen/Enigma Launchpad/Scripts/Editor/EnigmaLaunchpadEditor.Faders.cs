@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using VRC.SDKBase;
 
 namespace Cozen
 {
@@ -276,6 +277,8 @@ namespace Cozen
                 SerializedProperty indexProp = faderObject.FindProperty("faderIndex");
                 SerializedProperty leftColliderProp = faderObject.FindProperty("leftHandCollider");
                 SerializedProperty rightColliderProp = faderObject.FindProperty("rightHandCollider");
+                SerializedProperty vrcPickupProp = faderObject.FindProperty("vrcPickup");
+                SerializedProperty faderRigidbodyProp = faderObject.FindProperty("faderRigidbody");
 
                 bool needsUpdate = false;
 
@@ -301,6 +304,28 @@ namespace Cozen
                 {
                     rightColliderProp.objectReferenceValue = rightHandCollider;
                     needsUpdate = true;
+                }
+
+                // Auto-assign VRC_Pickup from the same GameObject if not already assigned
+                if (vrcPickupProp != null && vrcPickupProp.objectReferenceValue == null)
+                {
+                    VRC_Pickup pickup = fader.GetComponent<VRC_Pickup>();
+                    if (pickup != null)
+                    {
+                        vrcPickupProp.objectReferenceValue = pickup;
+                        needsUpdate = true;
+                    }
+                }
+
+                // Auto-assign Rigidbody from the same GameObject if not already assigned
+                if (faderRigidbodyProp != null && faderRigidbodyProp.objectReferenceValue == null)
+                {
+                    Rigidbody rigidbody = fader.GetComponent<Rigidbody>();
+                    if (rigidbody != null)
+                    {
+                        faderRigidbodyProp.objectReferenceValue = rigidbody;
+                        needsUpdate = true;
+                    }
                 }
 
                 if (needsUpdate)
@@ -979,7 +1004,7 @@ namespace Cozen
             bool structuralChange = false;
 
             List<FolderOption> folderOptions = BuildFolderOptions()
-                .Where(option => option.Type != ToggleFolderType.Stats)
+                .Where(option => option.Type != ToggleFolderType.Stats && option.Type != ToggleFolderType.Presets)
                 .ToList();
 
             if (entryCount == 0)

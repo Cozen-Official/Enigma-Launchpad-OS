@@ -38,6 +38,10 @@ namespace Cozen
         [Tooltip("If true, this button toggles screens in the ScreenHandler.")]
         public bool IsScreenButton = false;
         
+        [Header("Fader")]
+        [Tooltip("If true, this button toggles between VRC Pickup and hand collider mode for faders.")]
+        public bool IsFaderButton = false;
+        
         [Header("Visuals")]
         [Tooltip("Renderer to flash (if null, will try GetComponent<Renderer>() )")]
         public Renderer buttonRenderer;
@@ -132,6 +136,11 @@ namespace Cozen
             else if (IsScreenButton)
             {
                 enigmaLaunchpad.HandleScreenButtonPress(buttonIndex);
+                shouldFlash = true;
+            }
+            else if (IsFaderButton)
+            {
+                enigmaLaunchpad.ToggleFaderPickupMode();
                 shouldFlash = true;
             }
             else
@@ -407,6 +416,11 @@ namespace Cozen
         public static bool GetIsResetButton(ButtonHandler handler)
         {
             return handler != null && handler.IsResetButton;
+        }
+        
+        public static bool GetIsFaderButton(ButtonHandler handler)
+        {
+            return handler != null && handler.IsFaderButton;
         }
     }
 }
