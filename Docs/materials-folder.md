@@ -121,65 +121,12 @@ Materials:
 ### Networking
 - Material assignments sync across all players
 - Late joiners see current material state
-- Material property changes sync if networked
-- Whitelist restrictions apply (if enabled)
 
 ### Performance
 - Material swapping is lightweight
 - Material instances created per renderer
 - Consider material count for memory usage
 - Shader complexity affects performance more than swapping
-
-## Tips and Best Practices
-
-### Material Preparation
-- **Optimize Textures**: Use appropriate texture sizes
-- **Shader Selection**: Choose performant shaders
-- **Texture Compression**: Use compressed formats for VRChat
-- **Material Variants**: Create material variants instead of duplicating
-
-### Renderer Configuration
-- **Material Slots**: Know which slot you're targeting
-- **Shared Materials**: Multiple renderers can share materials
-- **UV Mapping**: Ensure UVs are correct for all materials
-- **Lightmap Considerations**: Be aware of lightmap UVs
-
-### Organization
-- **Naming Convention**: Clear material names for easy identification
-- **Folder Structure**: Organize materials in project folders
-- **Preview Icons**: Use material preview for visual reference
-- **Categories**: Group similar materials (art, themes, surfaces)
-
-### Performance Optimization
-- **Texture Atlases**: Combine textures when possible
-- **Material Count**: Limit total unique materials
-- **Shader Variants**: Minimize shader variant count
-- **Draw Calls**: Consider batching implications
-
-## Common Issues
-
-### Material Not Changing
-- Verify renderer reference is assigned
-- Check material slot index (0-based)
-- Ensure material is assigned in the list
-- Confirm renderer has material slots
-
-### Wrong Material Slot Modified
-- Check material slot index in configuration
-- Renderers can have multiple material slots
-- Default is slot 0 (first material)
-
-### Material Looks Different
-- Check shader on material
-- Verify texture assignments
-- Review material properties
-- Consider lighting in scene
-
-### Performance Drop
-- Too many high-resolution textures
-- Complex shader on materials
-- Too many material instances
-- Consider texture compression and LOD
 
 ## Integration with Other Systems
 
@@ -201,18 +148,6 @@ Materials:
 - Share themed setups between players
 
 ## Examples
-
-### Virtual Museum
-
-```
-Materials Folder: "Exhibit A" (Exclusive)
-Target: ExhibitFrame_Renderer
-Materials:
-- Ancient_Artifact_Info
-- Renaissance_Painting
-- Modern_Sculpture_Info
-- Interactive_Display
-```
 
 ### Nightclub Lighting
 
@@ -250,22 +185,6 @@ Materials:
 - Default_Theme
 ```
 
-## Advanced Techniques
-
-### Multi-Slot Control
-- Configure multiple Materials Folders for different material slots
-- Independent control of different material slots
-- Example: Folder 1 controls slot 0 (base), Folder 2 controls slot 1 (detail)
-
-### Animated Materials
-- Use materials with animated shaders
-- Combine with timeline animations
-- Create dynamic visual effects
-
-### Material Property Blocks
-- Use Properties Folder for per-instance property changes
-- Combine material swapping with property modification
-- Advanced material control workflows
 
 ## Next Steps
 

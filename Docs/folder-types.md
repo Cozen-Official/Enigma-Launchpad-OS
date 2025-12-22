@@ -64,22 +64,7 @@ Display world and instance statistics on button displays. Integrates with World 
 #### [Presets Folder](presets-folder.md)
 Save and load toggle state configurations. Supports persistent PlayerData for sharing and transferring presets.
 
-**Use for**: Scene presets, event configurations, saved states, shared setups
-
-## Folder Configuration
-
-### Common Settings
-
-All Folder Types share these configuration options:
-
-- **Folder Name**: Display name shown in folder navigation
-- **Icon** (optional): Visual icon for the folder
-- **Pages**: Folders automatically paginate when exceeding 81 buttons
-- **Button Names**: Individual button display text
-
-### Type-Specific Settings
-
-Each Folder Type has unique configuration requirements. See the individual folder type pages for detailed setup instructions.
+**Use for**: Scene presets, event configurations, saved states, sharing setups
 
 ## Exclusivity
 
@@ -96,50 +81,9 @@ When a folder is set to exclusive:
 ## Pages and Navigation
 
 Folders support multiple pages:
-
-- **81 buttons per page** (9×9 grid)
 - **Automatic pagination**: Add more buttons, pages create automatically
 - **Page navigation**: Forward/back buttons on the Launchpad interface
 - **Page indicator**: Shows current page number and total pages
-
-## Folder Organization Tips
-
-### Naming Conventions
-- Keep folder names short and clear
-- Use descriptive names that indicate purpose
-- Consider using emoji/icons for visual identification
-
-### Logical Grouping
-- Group related controls into the same folder
-- Use separate folders for different control domains
-- Consider workflow when organizing folders
-
-### Page Structure
-- Place most-used buttons on the first page
-- Group related buttons together on the same page
-- Use empty buttons as visual separators if needed
-
-## Folder Type Selection Guide
-
-### Choose Based on Purpose
-
-**Toggling Visibility?** → [Objects Folder](objects-folder.md)
-
-**Swapping Materials?** → [Materials Folder](materials-folder.md)
-
-**Adjusting Properties?** → [Properties Folder](properties-folder.md)
-
-**Launching Shaders?** → [Shaders Folder](shaders-folder.md)
-
-**Using Mochie Screen FX?** → [Mochie Folder](mochie-folder.md)
-
-**Using June Shaders?** → [June Folder](june-folder.md)
-
-**Changing Skybox?** → [Skybox Folder](skybox-folder.md)
-
-**Displaying Stats?** → [Stats Folder](stats-folder.md)
-
-**Saving Configurations?** → [Presets Folder](presets-folder.md)
 
 ## Working with Multiple Folders
 
@@ -149,11 +93,6 @@ Folders support multiple pages:
 - Whitelist applies globally to all folders
 - Fader system can link to toggles in any folder
 
-### Navigation Flow
-- Players navigate between folders using folder navigation buttons
-- Current folder name displays prominently
-- Page navigation within each folder is independent
-- Auto-change toggle affects applicable folders globally
 
 ## Next Steps
 

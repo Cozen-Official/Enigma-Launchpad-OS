@@ -28,8 +28,8 @@ While tailored for VRChat club environments, Enigma Launchpad OS is useful for a
 - **Objects Folder**: Switch between furniture layouts or toggle props
 - **Properties Folder**: Modify light colors or shader-driven effects
 - **Skybox Folder**: Change environment skyboxes with auto-cycling
-- **Mochie/June Folders**: Control post-processing effects
-- **Presets Folder**: Save and share complex multi-toggle configurations
+- **Shaders/Mochie/June Folders**: Control post-processing effects and screen shaders
+- **Presets Folder**: Save and share complex multi-toggle configurations with persistence
 
 ## Getting Started
 
@@ -50,10 +50,10 @@ Enigma Launchpad OS uses different **Folder Types** to implement various behavio
 - [Properties Folder](properties-folder.md) - Set shader property values
 - [Shaders Folder](shaders-folder.md) - Launch screen shaders
 - [Skybox Folder](skybox-folder.md) - Switch world skyboxes
-- [Stats Folder](stats-folder.md) - Display world statistics
+- [Stats Folder](stats-folder.md) - Display world/instance statistics
 - [Mochie Folder](mochie-folder.md) - Control Mochie Screen FX
 - [June Folder](june-folder.md) - Control June Shaders
-- [Presets Folder](presets-folder.md) - Save and load configurations
+- [Presets Folder](presets-folder.md) - Save and load user created presets
 
 Learn more about [Folder Types](folder-types.md) and how to configure each type.
 

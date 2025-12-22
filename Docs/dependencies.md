@@ -33,7 +33,7 @@ These dependencies enable specific Folder Types or features. Install only what y
 - **June Shaders**: Enables the June Folder type
   - Purchase from: [https://kleineluka.gumroad.com/l/june](https://kleineluka.gumroad.com/l/june)
   - Complete the full installation process as per June Shaders documentation
-  - Note: Support for the free version is coming soon. For now, use the Shaders Folder for free alternatives
+  - Note: Support for the free version is coming soon. For now, use the Shaders Folder with a material for each effect.
 
 ### Video Players
 
@@ -52,7 +52,7 @@ These dependencies enable specific Folder Types or features. Install only what y
   - Allows adding users to the whitelist during runtime
   - Install the package from the repository
 
-- **Flatline Open Decks Manager**: Advanced whitelist integration
+- **Flatline Open Decks Manager**: Additional whitelist integration and event support
   - Purchase from: [https://lavysworlds.gumroad.com/l/flatline](https://lavysworlds.gumroad.com/l/flatline)
   - Provides whitelist integration and event hosting features
 
@@ -69,20 +69,14 @@ These dependencies enable specific Folder Types or features. Install only what y
 
 If you receive errors about missing dependencies after import:
 - Check that all required packages are installed in Creator Companion
-- Verify that the correct versions are installed
+- Verify that the latest versions are installed
 - Restart Unity Editor after installing dependencies
 
-### AudioLink Not Found
-
-- Ensure AudioLink is installed via Creator Companion
-- Check that AudioLink prefab is in your scene
-- Verify AudioLink is properly initialized
+You may see a missing script error if don't have ProTV or VideoTXL installed. This is normal as the prefab ships linked to video player controls. You can delete the unused controls from under the "Video Player Controls" transform to remove the error.
 
 ### AutoLink Issues
 
-- Confirm the AutoLink VCC repository was added correctly
-- Check that AutoLink is listed in your project's installed packages
-- AutoLink requires AudioLink to be installed first
+- You should see an AutoLink UI canvas on the Mixer if imported correctly. If you do not see the UI buttons to toggle autolink, search for "AutoLink" in the hierarchy and make sure it's enabled and not clipping. Resizing the model may cause it to clip, so drag it up until it's visible.
 
 ## Next Steps
 
