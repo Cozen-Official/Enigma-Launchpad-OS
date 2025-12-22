@@ -6,7 +6,7 @@ Welcome to the **Enigma Launchpad OS** documentation! Enigma Launchpad OS is a m
 
 Enigma Launchpad OS is a powerful UdonSharp-based control system that simplifies world UI creation in VRChat. The system offers two prefab versions:
 
-- **Enigma Launchpad**: A 9×9 grid of toggle buttons with displays, folder navigation, and page management
+- **Enigma Launchpad**: A 3x3 grid of toggle buttons with displays, folder navigation, and page management
 - **Enigma Mixer**: All Launchpad features plus a fader system, screen panel, AudioLink integration, and video player controls
 
 ## Key Features
