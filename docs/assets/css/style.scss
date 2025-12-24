@@ -1,0 +1,11 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* Fix image aspect ratio to prevent stretching */
+img {
+  max-width: 100%;
+  height: auto !important;
+  object-fit: contain;
+}
