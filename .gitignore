@@ -1,0 +1,6 @@
+# Jekyll build artifacts
+docs/_site/
+docs/vendor/
+docs/.bundle/
+docs/.sass-cache/
+docs/Gemfile.lock
