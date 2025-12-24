@@ -35,8 +35,6 @@ Mochie Folder is specifically designed for the Mochie Screen FX shader system (b
 
 [Setting up Screen Shaders](setting-up-screen-shaders.md)
 
-TODO: more info to come soon. This folder type should be pretty stable.
-
 ## Mochie Folder vs. Shaders Folder
 
 **Use Mochie Folder when**:
@@ -50,6 +48,11 @@ TODO: more info to come soon. This folder type should be pretty stable.
 - Need simple on/off control
 - Want generic shader launching
 - Don't need Mochie-specific features
+
+## Technical Details
+The editor applies the Mochie Material under Interal References (Standard or X version depending on what is imported, with X taking priority) to the set target renderer upon play mode entry and/or build.
+All effects use the same material and renderer which helps with performance and eliminates render queue conflicts.
+If you don't see the full 6 pages toggles, check that you have the Patreon version of Mochie Screen FX installed and the SFX X material is assigned under "Internal References". Hitting "Wire Internal References" should auto-assign the reference if the Material exists in the project (which it should if the Engima Launchpad package was imported successfully!)
 
 ## Next Steps
 
