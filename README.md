@@ -113,6 +113,7 @@ Special thanks to the many world creators that beta tested this asset for me ove
 - Bean from District One (https://discord.gg/DQw3r9VJjZ)
 - Biochemicals from Club Chemistry (https://discord.gg/DQw3r9VJjZ)
 - TootyFrooty and Rondogbot from Psychosis (https://discord.gg/DQw3r9VJjZ)
+
 whose feedback and suggestions made this all this possible.
 
 Also special thanks to Zoey/Luka, developer of June Shaders, for her detailed help that made the optimized June Folder integration possible.
