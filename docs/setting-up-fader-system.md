@@ -27,6 +27,10 @@ Faders provide immediate visual feedback and smooth property transitions, making
 - Automatically clear when toggle is disabled
 - Unlimited dynamic faders can be defined (limited by available slots)
 
+You must choose how many Faders you want to be static vs. dynamic. If you set 2 Dynamic Faders, the first 7 Faders will be static and the remaining 2 will be used as the pool for dynamic faders, which are populated by active linked effects.
+<img width="457" height="266" alt="image" src="https://github.com/user-attachments/assets/878d3b96-45b0-448f-acd9-89eba4cc8adc" />
+
+
 ## Setting up Static Faders
 
 Static faders are configured directly in the Mixer custom editor:
@@ -107,10 +111,14 @@ Dynamic faders provide per-toggle control without cluttering the fader bank:
 3. **Configure Property**:
    - Follow the same steps as static faders
    - Property target is specific to the linked toggle's object
+   - Values are populated from the shader if possible, so no need to manually copy over min/max/default values from the shader.
 
 4. **Set Priority** (optional):
-   - Determines which dynamic faders appear first if slots are limited
-   - Higher priority faders take precedence
+   - Faders are applied to the available dynamic fader slots in order that they are created in the editor
+   - Higher priority faders take precedence, so if only two slots are available are three dynamic faders are enabled by linked effects, only the top two will display on the mixer.
+
+   <img width="445" height="262" alt="image" src="https://github.com/user-attachments/assets/c670ced8-cbe1-4012-aa4d-edee4a48a1e5" />
+
 
 ### Dynamic Fader Behavior
 
