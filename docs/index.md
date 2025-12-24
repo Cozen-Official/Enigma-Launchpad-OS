@@ -31,6 +31,9 @@ While tailored for VRChat club environments, Enigma Launchpad OS is useful for a
 - **Shaders/Mochie/June Folders**: Control post-processing effects and screen shaders
 - **Presets Folder**: Save and share complex multi-toggle configurations with persistence
 
+<img width="2318" height="1724" alt="Launchpad" src="https://github.com/user-attachments/assets/5b7cbe5f-9aac-42c4-a3ed-1f6e55dba6af" />
+<img width="2318" height="1724" alt="Mixer" src="https://github.com/user-attachments/assets/7afd332a-54fc-4f65-a5f9-da6149a674b0" />
+
 ## Getting Started
 
 To get started with Enigma Launchpad OS, follow these steps:
@@ -54,8 +57,6 @@ Enigma Launchpad OS uses different **Folder Types** to implement various behavio
 - [Mochie Folder](mochie-folder.md) - Control Mochie Screen FX
 - [June Folder](june-folder.md) - Control June Shaders
 - [Presets Folder](presets-folder.md) - Save and load user created presets
-
-Learn more about [Folder Types](folder-types.md) and how to configure each type.
 
 ## Navigation
 
