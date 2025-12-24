@@ -26,6 +26,8 @@ Enigma Launchpad OS includes two prefab options:
 
 **Use when**: You need fader controls for real-time shader property adjustment
 
+Note: The Mixer prefab already has the full launchpad built into it, there is no benefit to using both unless you need a separate launcher for a different area of your world or for a separate purpose.
+
 ## Adding the Prefab
 
 1. **Locate the Prefab**: In your Unity Project window, navigate to `Assets/Cozen/Enigma Launchpad`
