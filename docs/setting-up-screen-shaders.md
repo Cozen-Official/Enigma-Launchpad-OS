@@ -125,6 +125,7 @@ For June Shaders integration:
 
 1. **Create a June Folder**:
    - Set Folder Type to **"June Folder"**
+   - Make sure you have the June Depth Light prefab in your scene.
    
 2. **Assign Target Renderer**:
    - Make a cube gameobject and size it around the area you want the shaders to be visible in
@@ -144,6 +145,7 @@ For June Shaders integration:
    - Configure per-module or folder-wide exclusivity
    - After clicking Generate Mapping, set the values for the desired effect for that toggle.
    <img width="445" height="495" alt="image" src="https://github.com/user-attachments/assets/4263f664-5d2b-4377-b3ab-5c692d77097d" />
+   - If you need to change the render queue from the default (3998), search for "June Paid" material in your project or click it under "Internal References". You will need to make a new branch with the desired render queue and make sure the material is set to that branch (it should do so automatically after creation).
 
 5. **Shader Locking**:
    - The system handles shader locking automatically
