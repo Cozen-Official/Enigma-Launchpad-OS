@@ -1221,6 +1221,21 @@ namespace Cozen
             });
             
             GUILayout.Space(10);
+            
+            // Documentation and Discord buttons
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Open Documentation", GUILayout.Height(24)))
+            {
+                Application.OpenURL("https://cozen-official.github.io/Enigma-Launchpad-OS/");
+            }
+            GUILayout.Space(4);
+            if (GUILayout.Button("Join the Discord", GUILayout.Height(24)))
+            {
+                Application.OpenURL("https://discord.gg/DQw3r9VJjZ");
+            }
+            GUILayout.EndHorizontal();
+            
+            GUILayout.Space(10);
             DrawFooterLogo();
             
             if (materialHandlerObjects != null)

@@ -201,6 +201,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 2270734959314974415}
   buttonText: {fileID: 1721414109328502699}
   flashDuration: 0.5
@@ -544,6 +545,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 79947086156730987}
   buttonText: {fileID: 0}
   flashDuration: 0.5
@@ -748,6 +750,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 7381727590370927485}
   buttonText: {fileID: 8836399618079375359}
   flashDuration: 0.5
@@ -1174,6 +1177,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 6646528377429640326}
   buttonText: {fileID: 3036947575641082602}
   flashDuration: 0.5
@@ -1345,6 +1349,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 3664972877244272139}
   buttonText: {fileID: 0}
   flashDuration: 0.5
@@ -1859,6 +1864,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 5178788346362353937}
   buttonText: {fileID: 7878563898225350372}
   flashDuration: 0.5
@@ -2280,6 +2286,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 7231901638422285390}
   buttonText: {fileID: 0}
   flashDuration: 0.5
@@ -2616,6 +2623,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 943079610218243807}
   buttonText: {fileID: 5227959382590074319}
   flashDuration: 0.5
@@ -2785,6 +2793,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 0}
   buttonText: {fileID: 135703499423363563}
   flashDuration: 0.5
@@ -3017,6 +3026,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 9193384205812765747}
   buttonText: {fileID: 3197415232530932668}
   flashDuration: 0.5
@@ -3442,6 +3452,7 @@ MonoBehaviour:
   IsAutoChangeButton: 1
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 3965121167292377544}
   buttonText: {fileID: 7005306913530112855}
   flashDuration: 0.5
@@ -3827,6 +3838,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 999121666515238093}
   buttonText: {fileID: 868195369311526091}
   flashDuration: 0.5
@@ -5477,6 +5489,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 4364958554285283396}
   buttonText: {fileID: 1704402429803755612}
   flashDuration: 0.5
@@ -5647,6 +5660,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 3338727602651226072}
   buttonText: {fileID: 5897818311808312029}
   flashDuration: 0.5
@@ -5901,6 +5915,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 1
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 9160929118253611597}
   buttonText: {fileID: 0}
   flashDuration: 0.5
@@ -6113,7 +6128,8 @@ MonoBehaviour:
   ohGeezCmonAccessControl: {fileID: 0}
   proTVManagedWhitelist: {fileID: 0}
   flatlineSync: {fileID: 0}
-  authorizedUsernames: []
+  authorizedUsernames:
+  - "C\xF8zen"
   skyboxHandler: {fileID: 0}
   statsHandler: {fileID: 0}
   shaderHandlers: []
@@ -6660,6 +6676,7 @@ MonoBehaviour:
   IsAutoChangeButton: 0
   IsResetButton: 0
   IsScreenButton: 0
+  IsFaderButton: 0
   buttonRenderer: {fileID: 5608198258314004257}
   buttonText: {fileID: 0}
   flashDuration: 0.5

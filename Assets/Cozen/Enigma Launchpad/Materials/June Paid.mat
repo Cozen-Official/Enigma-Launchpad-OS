@@ -8,10 +8,11 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: June Paid
-  m_Shader: {fileID: 4800000, guid: 5813ec58d641d804ba09debd5081b975, type: 3}
+  m_Shader: {fileID: 4800000, guid: 3f3b8857527d26649acd146204a6ecb3, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
+  m_ValidKeywords: []
+  m_InvalidKeywords:
   - _KEYWORD_JUNE_ONE_BORDER
   - _KEYWORD_JUNE_ONE_CHROMATIC_ABERRATION
   - _KEYWORD_JUNE_ONE_COLOR_MANIPULATION
@@ -25,7 +26,6 @@ Material:
   - _KEYWORD_JUNE_ONE_OVERLAY
   - _KEYWORD_JUNE_ONE_TRIPLANAR
   - _KEYWORD_JUNE_ONE_ZOOM
-  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -819,7 +819,7 @@ Material:
     - _InformationDeveloperUsername: 0
     - _InformationDeveloperWebsite: 0
     - _InformationVersion: 5
-    - _KeywordBlur: 0
+    - _KeywordBlur: 1
     - _KeywordBorder: 0
     - _KeywordChromaticAberration: 0
     - _KeywordColorManipulation: 0
@@ -835,7 +835,7 @@ Material:
     - _KeywordOthers: 0
     - _KeywordOutlines: 0
     - _KeywordOverlay: 0
-    - _KeywordSpecial: 0
+    - _KeywordSpecial: 1
     - _KeywordStylize: 0
     - _KeywordTesting: 0
     - _KeywordTransition: 0
@@ -859,7 +859,7 @@ Material:
     - _LockingBlackhole: 0
     - _LockingBlend: 0
     - _LockingBloom: 0
-    - _LockingBlur: 0
+    - _LockingBlur: 1
     - _LockingBokeh: 0
     - _LockingBonnibel: 0
     - _LockingBubbles: 0
@@ -963,7 +963,7 @@ Material:
     - _LockingMetaimage: 0
     - _LockingMirror: 0
     - _LockingMirrorshatter: 0
-    - _LockingModuleBlur: 0
+    - _LockingModuleBlur: 1
     - _LockingModuleBorder: 0
     - _LockingModuleChromaticaberration: 0
     - _LockingModuleColormanipulation: 0
@@ -980,7 +980,7 @@ Material:
     - _LockingModuleOthers: 0
     - _LockingModuleOutlines: 0
     - _LockingModuleOverlay: 0
-    - _LockingModuleSpecial: 0
+    - _LockingModuleSpecial: 1
     - _LockingModuleStylize: 0
     - _LockingModuleTransition: 0
     - _LockingModuleTriplanar: 0
