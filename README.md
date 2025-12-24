@@ -99,10 +99,10 @@ Mixer Prefab:
 
 Optional Dependencies(for a sepecifc folder or feature):  
 • Mochie Screen FX (Enables basic Mochie layout using free Screen FX https://github.com/MochiesCode/Mochies-Unity-Shaders, or extended layout using Patreon version at https://www.patreon.com/c/mochieshaders/posts)  
-• June Shaders (Enables June Folder type, purchase from https://kleineluka.gumroad.com/l/june and compelete the install process). Support for the free version will be added soon, if you would like to use the free version, use the Shaders folder instead.
+• June Shaders (Enables June Folder type, purchase from https://kleineluka.gumroad.com/l/june and compelete the install process). Support for the free version will be added soon, if you would like to use the free version, use the Shaders folder instead.  
 • ProTV (From https://protv.dev/, add the VCC and import from creator companion.)  
 • VideoTXL (From https://github.com/vrctxl/VideoTXL, add the VCC and import from creator companion.)  
-• OhGeezCmon Access Control (for adding users to the whitelist at runtime, install the package from https://github.com/OhGeezCmon/VRC-AccessControl)
+• OhGeezCmon Access Control (for adding users to the whitelist at runtime, install the package from https://github.com/OhGeezCmon/VRC-AccessControl)  
 • Flatine Open Decks Manager (https://lavysworlds.gumroad.com/l/flatline) for whitelist integration and event hosting.
 
 ## **SUPPORT**
@@ -112,8 +112,7 @@ For support message "cozen." on Discord or join the [Enigma Discord](https://dis
 Special thanks to the many world creators that beta tested this asset for me over the course of a year, especially:
 - Bean from District One (https://discord.gg/DQw3r9VJjZ)
 - Biochemicals from Club Chemistry (https://discord.gg/DQw3r9VJjZ)
-- TootyFrooty and Rondogbot from Psychosis (https://discord.gg/DQw3r9VJjZ)
-
+- TootyFrooty and Rondogbot from Psychosis (https://discord.gg/DQw3r9VJjZ)  
 whose feedback and suggestions made this all this possible.
 
 Also special thanks to Zoey/Luka, developer of June Shaders, for her detailed help that made the optimized June Folder integration possible.
