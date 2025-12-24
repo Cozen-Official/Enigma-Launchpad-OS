@@ -53,10 +53,15 @@ The **Shaders Folder** type enables you to launch screen shaders with minimal se
    - The system duplicates this renderer as a template, duplicating for each shader toggle, and sets the template to Editor Only.
    - The duplicates appear at the same level as the template. Link your user-facing local toggle to the Shaders folder to allow users to individually turn off shaders. You will want to do this for photosensitivity or user preference if using intense shaders. 
 
+<img width="2318" height="1724" alt="Folder Navigation (3)" src="https://github.com/user-attachments/assets/06508e5b-8ab0-4592-9a65-3d267e6c6273" />
+<img width="2318" height="1724" alt="Folder Navigation (2)" src="https://github.com/user-attachments/assets/3fb69a03-8d85-4a15-996a-16b840831b08" />
+
 3. **Add Shader Materials**:
    - Drag shader materials into the folder's material list
    - Each material becomes a toggle button
    - Materials should have your desired screen shader applied
+
+   <img width="2318" height="1724" alt="Folder Navigation (4)" src="https://github.com/user-attachments/assets/11ff9527-fe23-468f-8f84-064310621a1f" />
 
 4. **Set Display Names**:
    - Name each toggle for the in-game display
@@ -80,20 +85,32 @@ For Mochie Screen FX integration:
    - Set Folder Type to **"Mochie Folder"**
 
 2. **Assign Target Renderer**:
-   - Make a cube gameobject and size it around the area you want the shaders to be visible in
+   - Make a cube gameobject and size it around the area you want the shaders to be visible in.
    - Remove the collider from this object, and place it under a parent called "Shaders" (or whatever name you prefer).
    - Assign this cube to the "Target Renderer" slot in the Shaders Folder. Do not use the same target renderer as a June Folder or Shaders Folder. Each should be on their own renderer.
+
+   <img width="460" height="642" alt="image" src="https://github.com/user-attachments/assets/6bdfee15-a1a4-4e5c-aa4e-2b7396a50660" />
+   <img width="463" height="328" alt="image" src="https://github.com/user-attachments/assets/34bd0eb0-5d4c-4ad0-a08b-84fe1eb58e7c" />
 
 3. **Configure Presets**:
    - The folder provides six pages of preset controls
    - Customize default values for each effect in the editor
-   - Set color presets, intensity values, and AudioLink bands
+   - Provide as many outline colors as you'd like. You can cycle through them to choose which one you want.
+   - Provide up to three images to use for scan and overlay effects. These will show on page 5 of the layout. You can preview the Mochie layout in the Preview foldout.
+   
+   <img width="454" height="297" alt="image" src="https://github.com/user-attachments/assets/eace8111-4065-446d-9798-2b5849be9d3f" />
 
-4. **Set Up Controls**:
-   - +/- buttons for value adjustments
-   - Color selector toggles
-   - AudioLink band assignments
-   - Effect enable/disable toggles
+
+4. **Using The Mochie Folder**:
+   - Some controls have +/- buttons that adjust the property in steps. Clicking the middle button resets the property back to default. The middle button will light up green when positive or red when negative, and will be the inactive color when default.
+   - On the first page, the color selector works by clicking the "Next Color" button which changes the "Set Color" to the "Next Color". Once the "Set Color" matches the desired color, click the "Set Color" button to change the "Current Color" to the "Set Color". To reiterate, the left button is the applied color, the right button cycles the colors on the selector, and the middle button applies the chosen color.
+   
+   <img width="260" height="82" alt="image" src="https://github.com/user-attachments/assets/3947aecf-6557-424d-8794-368a38a9c16b" />
+   
+   - The audiolink page lets you choose audiolink strengths for the different effects. These all start at full strength, with the sxception of Fog. When in doubt, hit reset.
+   
+   <img width="254" height="239" alt="image" src="https://github.com/user-attachments/assets/6e69a898-1b6f-4c8c-8be9-8b5a6abeb4e4" />
+
 
 See [Mochie Folder](mochie-folder.md) for complete details.
 
@@ -117,15 +134,22 @@ For June Shaders integration:
 3. **Select Modules**:
    - Choose which June modules to expose as toggles
    - Each module gets its own button
+   - The first time you use June Folder, you will need to click "Generate Mapping" to scan the shader files and build the module UI.
+
+   <img width="451" height="351" alt="image" src="https://github.com/user-attachments/assets/cbeec9b5-31c5-456b-a7d2-29d108352886" />
 
 4. **Configure Properties**:
    - All module properties are exposed in the editor
    - Set default values, ranges, and behaviors
    - Configure per-module or folder-wide exclusivity
+   - After clicking Generate Mapping, set the values for the desired effect for that toggle.
+   <img width="445" height="495" alt="image" src="https://github.com/user-attachments/assets/4263f664-5d2b-4377-b3ab-5c692d77097d" />
 
 5. **Shader Locking**:
    - The system handles shader locking automatically
    - Prevents conflicts between modules
+   - After setting the values for every destired toggle, lock the June Folder Material by clicking the Lock button at the button of the Folder. This will disable editing, so unlock if you need to make changes. If you forget to lock the folder, the editor will do so for you upon build.
+   <img width="458" height="572" alt="image" src="https://github.com/user-attachments/assets/6372fd94-7ea7-4f54-87a4-4325fbfb7446" />
 
 See [June Folder](june-folder.md) for complete details.
 
