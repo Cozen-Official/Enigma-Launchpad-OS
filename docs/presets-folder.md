@@ -174,17 +174,16 @@ Slots:
 ## Behavior Details
 
 ### Save Operation
-- Captures current state of included folders
-- Writes to preset slot in memory
-- Persists to PlayerData
-- Confirmation feedback to user
+- Captures current state of included folders and faders (if set)
+- Writes to preset slot in persistent PlayerData
+- Buttons show confirmation feedback to user
 
 ### Load Operation
 - Reads preset from slot
-- Applies state to included folders
+- Clicking preset toggles sets state of included folders/faders to captured state
 - Networks changes to all players
 - Visual update immediate
-- Preserves excluded folder states
+- Users can use loaded presets of other useres
 
 ### Persistence
 - Saved to VRChat PlayerData
@@ -195,7 +194,6 @@ Slots:
 ### Networking
 - Preset loads sync across players
 - All players see state changes
-- Whitelist restrictions apply to loading (if enabled)
 - Ownership transfer handled automatically
 
 
