@@ -9,9 +9,9 @@ June Folder is specifically designed for the June Shader system, a modular post-
 - Individual toggle per June module
 - All module properties exposed in editor
 - Per-module or folder-wide exclusivity
-- Automatic shader locking to prevent conflicts
+- Automatic shader locking for optimization
 - Complete setup handled by Launchpad OS
-- Configurable default values
+- Configurable values using the same UI layout as June editor
 - Integration with Faders and Presets systems
 
 ## Prerequisites
@@ -27,7 +27,12 @@ June Folder is specifically designed for the June Shader system, a modular post-
 - **Full Version**: Complete module support
 - **Free Version**: Support coming soon (use Shaders Folder for now)
 
-### More info to come soon. This folder type is technically complex with rolsyn parsing, locking, validation, etc.
+## Technical Details
+- June Folder utilizes a single material that is assigned under Internal References. This material is applied by the editor to the set target renderer on play mode entry and upon build if not already applied.
+- The Enigma Launchpad OS is agnostic about June shader properties and values, an included Roslyn parser scans the June editor for shader property and module organization, and scans the shader files for min/max/default values. A June Mapping file is created with the needed information to build the UI for each module within the Enigma Launchpad editor.
+- Locking the June Folder automatically sets the locking flags for only the modules needed for the toggles set in the June Folder, then locks the material, which creates a new Shader file "branch".
+- The June material should be using the AudioLink branch of June.
+- Render queue should be changed within this material if necessary.
 
 ## Next Steps
 
