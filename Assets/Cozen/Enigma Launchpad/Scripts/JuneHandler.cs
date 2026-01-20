@@ -903,8 +903,9 @@ namespace Cozen
         }
 
         /// <summary>
-        /// Resets all properties associated with a toggle to 0.
+        /// Resets all properties associated with a toggle to their default disabled values.
         /// This ensures the specific effect is disabled even if other effects in the same module remain active.
+        /// Property types are detected using the same logic as ApplyJuneTogglePreset.
         /// </summary>
         private void ResetToggleProperties(int flatIndex)
         {
@@ -932,7 +933,7 @@ namespace Cozen
                 return;
             }
 
-            // Reset each property to 0 (default disabled state)
+            // Reset each property to its default disabled state based on type
             for (int i = 0; i < count; i++)
             {
                 int propIdx = startIdx + i;
@@ -952,8 +953,35 @@ namespace Cozen
                     continue;
                 }
 
-                // Reset float properties to 0
-                _runtimeJuneMaterial.SetFloat(propName, 0f);
+                // Determine property type using the same logic as ApplyJuneTogglePreset
+                bool hasTextureValue = juneToggleHasTextureValues != null
+                    && propIdx < juneToggleHasTextureValues.Length
+                    && juneToggleHasTextureValues[propIdx];
+                bool hasVectorValue = juneToggleHasVectorValues != null
+                    && propIdx < juneToggleHasVectorValues.Length
+                    && juneToggleHasVectorValues[propIdx];
+
+                if (hasTextureValue)
+                {
+                    _runtimeJuneMaterial.SetTexture(propName, null);
+                }
+                else if (hasVectorValue)
+                {
+                    _runtimeJuneMaterial.SetVector(propName, Vector4.zero);
+                }
+                else
+                {
+                    bool isColorProperty = propName.Contains("Color") || propName.Contains("colour");
+
+                    if (isColorProperty)
+                    {
+                        _runtimeJuneMaterial.SetColor(propName, Color.black);
+                    }
+                    else
+                    {
+                        _runtimeJuneMaterial.SetFloat(propName, 0f);
+                    }
+                }
             }
         }
 

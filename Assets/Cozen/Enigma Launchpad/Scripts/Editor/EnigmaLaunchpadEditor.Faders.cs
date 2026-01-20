@@ -6,6 +6,9 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using VRC.SDKBase;
+using VRC.Udon;
+using UdonSharp;
+using UdonSharp.Compiler;
 
 namespace Cozen
 {
@@ -48,6 +51,14 @@ namespace Cozen
         private SerializedProperty staticFaderColorIndicatorsEnabled;
         private SerializedProperty staticFaderIndicatorColors;
         private SerializedProperty staticFaderIndicatorConditional;
+        private SerializedProperty staticFaderTargetsUdon;
+        private SerializedProperty staticFaderUdonBehaviours;
+        private SerializedProperty staticFaderUdonCounts;
+        private SerializedProperty staticFaderUdonVariableNames;
+        private SerializedProperty staticFaderTargetsSlider;
+        private SerializedProperty staticFaderSliders;
+        private SerializedProperty staticFaderSliderCounts;
+        private SerializedProperty staticFaderSliderReversed;
 
         // Dynamic fader properties
         private SerializedProperty dynamicFaderNames;
@@ -63,6 +74,14 @@ namespace Cozen
         private SerializedProperty dynamicFaderColorIndicatorsEnabled;
         private SerializedProperty dynamicFaderIndicatorColors;
         private SerializedProperty dynamicFaderIndicatorConditional;
+        private SerializedProperty dynamicFaderTargetsUdon;
+        private SerializedProperty dynamicFaderUdonBehaviours;
+        private SerializedProperty dynamicFaderUdonCounts;
+        private SerializedProperty dynamicFaderUdonVariableNames;
+        private SerializedProperty dynamicFaderTargetsSlider;
+        private SerializedProperty dynamicFaderSliders;
+        private SerializedProperty dynamicFaderSliderCounts;
+        private SerializedProperty dynamicFaderSliderReversed;
 
         // Fader foldout states
         private readonly bool[] staticFaderFoldouts = new bool[9];
@@ -144,6 +163,10 @@ namespace Cozen
             staticFaderColorIndicatorsEnabled = null;
             staticFaderIndicatorColors = null;
             staticFaderIndicatorConditional = null;
+            staticFaderTargetsUdon = null;
+            staticFaderUdonBehaviours = null;
+            staticFaderUdonCounts = null;
+            staticFaderUdonVariableNames = null;
             leftHandColliderProperty = null;
             rightHandColliderProperty = null;
             dynamicFaderNames = null;
@@ -157,6 +180,10 @@ namespace Cozen
             dynamicFaderColorIndicatorsEnabled = null;
             dynamicFaderIndicatorColors = null;
             dynamicFaderIndicatorConditional = null;
+            dynamicFaderTargetsUdon = null;
+            dynamicFaderUdonBehaviours = null;
+            dynamicFaderUdonCounts = null;
+            dynamicFaderUdonVariableNames = null;
 
             if (faderHandlerProperty == null || faderHandlerProperty.objectReferenceValue == null)
             {
@@ -185,6 +212,14 @@ namespace Cozen
             staticFaderColorIndicatorsEnabled = faderHandlerObject.FindProperty("staticFaderColorIndicatorsEnabled");
             staticFaderIndicatorColors = faderHandlerObject.FindProperty("staticFaderIndicatorColors");
             staticFaderIndicatorConditional = faderHandlerObject.FindProperty("staticFaderIndicatorConditional");
+            staticFaderTargetsUdon = faderHandlerObject.FindProperty("staticFaderTargetsUdon");
+            staticFaderUdonBehaviours = faderHandlerObject.FindProperty("staticFaderUdonBehaviours");
+            staticFaderUdonCounts = faderHandlerObject.FindProperty("staticFaderUdonCounts");
+            staticFaderUdonVariableNames = faderHandlerObject.FindProperty("staticFaderUdonVariableNames");
+            staticFaderTargetsSlider = faderHandlerObject.FindProperty("staticFaderTargetsSlider");
+            staticFaderSliders = faderHandlerObject.FindProperty("staticFaderSliders");
+            staticFaderSliderCounts = faderHandlerObject.FindProperty("staticFaderSliderCounts");
+            staticFaderSliderReversed = faderHandlerObject.FindProperty("staticFaderSliderReversed");
 
             // Dynamic fader properties
             dynamicFaderNames = faderHandlerObject.FindProperty("dynamicFaderNames");
@@ -200,6 +235,14 @@ namespace Cozen
             dynamicFaderColorIndicatorsEnabled = faderHandlerObject.FindProperty("dynamicFaderColorIndicatorsEnabled");
             dynamicFaderIndicatorColors = faderHandlerObject.FindProperty("dynamicFaderIndicatorColors");
             dynamicFaderIndicatorConditional = faderHandlerObject.FindProperty("dynamicFaderIndicatorConditional");
+            dynamicFaderTargetsUdon = faderHandlerObject.FindProperty("dynamicFaderTargetsUdon");
+            dynamicFaderUdonBehaviours = faderHandlerObject.FindProperty("dynamicFaderUdonBehaviours");
+            dynamicFaderUdonCounts = faderHandlerObject.FindProperty("dynamicFaderUdonCounts");
+            dynamicFaderUdonVariableNames = faderHandlerObject.FindProperty("dynamicFaderUdonVariableNames");
+            dynamicFaderTargetsSlider = faderHandlerObject.FindProperty("dynamicFaderTargetsSlider");
+            dynamicFaderSliders = faderHandlerObject.FindProperty("dynamicFaderSliders");
+            dynamicFaderSliderCounts = faderHandlerObject.FindProperty("dynamicFaderSliderCounts");
+            dynamicFaderSliderReversed = faderHandlerObject.FindProperty("dynamicFaderSliderReversed");
 
             // Auto-assign faderSystemHandler and faderIndex on each FaderHandler
             AutoAssignFaderHandlerReferences();
@@ -371,6 +414,11 @@ namespace Cozen
             EnsureArraySize(staticFaderIndicatorColors, FaderCount, prop => prop.colorValue = Color.white);
             EnsureArraySize(staticFaderIndicatorConditional, FaderCount, prop => prop.boolValue = false);
             EnsureArraySize(staticFaderRendererCounts, FaderCount, prop => prop.intValue = 0);
+            EnsureArraySize(staticFaderTargetsUdon, FaderCount, prop => prop.boolValue = false);
+            EnsureArraySize(staticFaderUdonCounts, FaderCount, prop => prop.intValue = 0);
+            EnsureArraySize(staticFaderUdonVariableNames, FaderCount, prop => prop.stringValue = string.Empty);
+            EnsureArraySize(staticFaderTargetsSlider, FaderCount, prop => prop.boolValue = false);
+            EnsureArraySize(staticFaderSliderCounts, FaderCount, prop => prop.intValue = 0);
         }
 
         private void EnsureDynamicFaderArrayParity()
@@ -425,6 +473,18 @@ namespace Cozen
             {
                 maxSize = Mathf.Max(maxSize, dynamicFaderIndicatorConditional.arraySize);
             }
+            if (dynamicFaderTargetsUdon != null)
+            {
+                maxSize = Mathf.Max(maxSize, dynamicFaderTargetsUdon.arraySize);
+            }
+            if (dynamicFaderUdonCounts != null)
+            {
+                maxSize = Mathf.Max(maxSize, dynamicFaderUdonCounts.arraySize);
+            }
+            if (dynamicFaderUdonVariableNames != null)
+            {
+                maxSize = Mathf.Max(maxSize, dynamicFaderUdonVariableNames.arraySize);
+            }
 
             if (maxSize == 0)
             {
@@ -443,6 +503,11 @@ namespace Cozen
             EnsureDynamicFaderArraySize(dynamicFaderColorIndicatorsEnabled, maxSize, prop => prop.boolValue = false);
             EnsureDynamicFaderArraySize(dynamicFaderIndicatorColors, maxSize, prop => prop.colorValue = Color.white);
             EnsureDynamicFaderArraySize(dynamicFaderIndicatorConditional, maxSize, prop => prop.boolValue = false);
+            EnsureDynamicFaderArraySize(dynamicFaderTargetsUdon, maxSize, prop => prop.boolValue = false);
+            EnsureDynamicFaderArraySize(dynamicFaderUdonCounts, maxSize, prop => prop.intValue = 0);
+            EnsureDynamicFaderArraySize(dynamicFaderUdonVariableNames, maxSize, prop => prop.stringValue = string.Empty);
+            EnsureDynamicFaderArraySize(dynamicFaderTargetsSlider, maxSize, prop => prop.boolValue = false);
+            EnsureDynamicFaderArraySize(dynamicFaderSliderCounts, maxSize, prop => prop.intValue = 0);
         }
 
         private void EnsureDynamicFaderArraySize(SerializedProperty prop, int targetSize, Action<SerializedProperty> initialize)
@@ -632,48 +697,140 @@ namespace Cozen
             {
                 EditorGUI.indentLevel++;
 
-                if (staticFaderTargetFolders != null && faderIndex < staticFaderTargetFolders.arraySize)
+                // Check if targeting UdonBehaviour
+                bool udonToggle = false;
+                SerializedProperty udonProp = (staticFaderTargetsUdon != null && faderIndex < staticFaderTargetsUdon.arraySize)
+                    ? staticFaderTargetsUdon.GetArrayElementAtIndex(faderIndex)
+                    : null;
+
+                // Check if targeting Unity Slider
+                bool sliderToggle = false;
+                SerializedProperty sliderProp = (staticFaderTargetsSlider != null && faderIndex < staticFaderTargetsSlider.arraySize)
+                    ? staticFaderTargetsSlider.GetArrayElementAtIndex(faderIndex)
+                    : null;
+
+                if (sliderProp != null)
                 {
-                    SerializedProperty folderProp = staticFaderTargetFolders.GetArrayElementAtIndex(faderIndex);
-                    foreach (FolderOption option in rendererFolders)
+                    sliderToggle = sliderProp.boolValue;
+                }
+
+                if (udonProp != null)
+                {
+                    udonToggle = udonProp.boolValue;
+                }
+
+                // Unity Slider targeting (exclusive with other options)
+                if (!udonToggle && sliderProp != null)
+                {
+                    bool newSliderToggle = EditorGUILayout.ToggleLeft("Unity Slider", sliderToggle);
+                    if (newSliderToggle != sliderToggle)
                     {
-                        string label = string.IsNullOrEmpty(option.Label)
-                            ? "Folder Renderer"
-                            : $"{option.Label} Renderer";
-                        bool selected = folderProp != null && folderProp.intValue == option.Index;
-                        bool next = EditorGUILayout.ToggleLeft(label, selected);
-                        if (folderProp != null)
+                        sliderProp.boolValue = newSliderToggle;
+                        sliderToggle = newSliderToggle;
+                        // Clear other target options when switching to Slider
+                        if (newSliderToggle)
                         {
-                            if (next && !selected)
+                            if (udonProp != null)
                             {
-                                folderProp.intValue = option.Index;
+                                udonProp.boolValue = false;
                             }
-                            else if (!next && selected)
+                            if (staticFaderTargetFolders != null && faderIndex < staticFaderTargetFolders.arraySize)
                             {
-                                folderProp.intValue = -1;
+                                staticFaderTargetFolders.GetArrayElementAtIndex(faderIndex).intValue = -1;
+                            }
+                            if (staticFaderTargetsCustom != null && faderIndex < staticFaderTargetsCustom.arraySize)
+                            {
+                                staticFaderTargetsCustom.GetArrayElementAtIndex(faderIndex).boolValue = false;
                             }
                         }
                     }
                 }
 
-                bool customToggle = false;
-                SerializedProperty customProp = (staticFaderTargetsCustom != null && faderIndex < staticFaderTargetsCustom.arraySize)
-                    ? staticFaderTargetsCustom.GetArrayElementAtIndex(faderIndex)
-                    : null;
-
-                if (customProp != null)
-                {
-                    customToggle = EditorGUILayout.ToggleLeft("Other Renderer", customProp.boolValue);
-                    if (customToggle != customProp.boolValue)
-                    {
-                        customProp.boolValue = customToggle;
-                    }
-                }
-
-                if (customToggle)
+                if (sliderToggle)
                 {
                     GUILayout.Space(4);
-                    DrawStaticFaderRendererList(faderIndex);
+                    DrawStaticFaderSliderList(faderIndex);
+                }
+                else
+                {
+                    // Show Udon Behavior option only when Slider is not selected
+                    if (udonProp != null)
+                    {
+                        bool newUdonToggle = EditorGUILayout.ToggleLeft("Udon Behavior", udonToggle);
+                        if (newUdonToggle != udonToggle)
+                        {
+                            udonProp.boolValue = newUdonToggle;
+                            udonToggle = newUdonToggle;
+                            // Clear other target options when switching to Udon
+                            if (newUdonToggle)
+                            {
+                                if (sliderProp != null)
+                                {
+                                    sliderProp.boolValue = false;
+                                }
+                                if (staticFaderTargetFolders != null && faderIndex < staticFaderTargetFolders.arraySize)
+                                {
+                                    staticFaderTargetFolders.GetArrayElementAtIndex(faderIndex).intValue = -1;
+                                }
+                                if (staticFaderTargetsCustom != null && faderIndex < staticFaderTargetsCustom.arraySize)
+                                {
+                                    staticFaderTargetsCustom.GetArrayElementAtIndex(faderIndex).boolValue = false;
+                                }
+                            }
+                        }
+                    }
+
+                    if (udonToggle)
+                    {
+                        GUILayout.Space(4);
+                        DrawStaticFaderUdonList(faderIndex);
+                    }
+                    else
+                    {
+                        if (staticFaderTargetFolders != null && faderIndex < staticFaderTargetFolders.arraySize)
+                        {
+                            SerializedProperty folderProp = staticFaderTargetFolders.GetArrayElementAtIndex(faderIndex);
+                            foreach (FolderOption option in rendererFolders)
+                            {
+                                string label = string.IsNullOrEmpty(option.Label)
+                                    ? "Folder Renderer"
+                                    : $"{option.Label} Renderer";
+                                bool selected = folderProp != null && folderProp.intValue == option.Index;
+                                bool next = EditorGUILayout.ToggleLeft(label, selected);
+                                if (folderProp != null)
+                                {
+                                    if (next && !selected)
+                                    {
+                                        folderProp.intValue = option.Index;
+                                    }
+                                    else if (!next && selected)
+                                    {
+                                        folderProp.intValue = -1;
+                                    }
+                                }
+                            }
+                        }
+
+                        bool customToggle = false;
+                        SerializedProperty customProp = (staticFaderTargetsCustom != null && faderIndex < staticFaderTargetsCustom.arraySize)
+                            ? staticFaderTargetsCustom.GetArrayElementAtIndex(faderIndex)
+                            : null;
+
+                        if (customProp != null)
+                        {
+                            customToggle = EditorGUILayout.ToggleLeft("Other Renderer", customProp.boolValue);
+                            if (customToggle != customProp.boolValue)
+                            {
+                                customProp.boolValue = customToggle;
+                            }
+                        }
+
+                        if (customToggle)
+                        {
+                            GUILayout.Space(4);
+                            DrawStaticFaderRendererList(faderIndex);
+                        }
+                    }
                 }
 
                 EditorGUI.indentLevel--;
@@ -686,6 +843,12 @@ namespace Cozen
         private void DrawStaticFaderMaterialIndex(int faderIndex)
         {
             if (staticFaderMaterialIndices == null || faderIndex < 0 || faderIndex >= staticFaderMaterialIndices.arraySize)
+            {
+                return;
+            }
+
+            // Skip Material Index when targeting Udon or Slider (not applicable)
+            if (IsStaticFaderTargetingUdon(faderIndex) || IsStaticFaderTargetingSlider(faderIndex))
             {
                 return;
             }
@@ -706,79 +869,19 @@ namespace Cozen
                 return;
             }
 
-            // Check if a renderer or material target is configured
-            FaderShaderTarget target = BuildStaticFaderShaderTarget(faderIndex);
-            if ((target.renderers == null || target.renderers.Length == 0) &&
-                (target.directMaterials == null || target.directMaterials.Length == 0))
-            {
-                return;
-            }
+            // Check if targeting UdonBehaviour
+            bool targetsUdon = IsStaticFaderTargetingUdon(faderIndex);
 
-            // Check if a property has been selected
-            string propertyName = GetStaticFaderPropertyName(faderIndex);
-            if (string.IsNullOrEmpty(propertyName))
+            if (targetsUdon)
             {
-                return;
-            }
-
-            // Check if this is a color property (propertyType == 2)
-            int propertyType = GetStaticFaderPropertyType(faderIndex);
-            bool isColorProperty = (propertyType == 2);
-
-            if (isColorProperty)
-            {
-                // For color properties, show default color and max shift
-                if (staticFaderDefaultColors == null || faderIndex < 0 || faderIndex >= staticFaderDefaultColors.arraySize)
+                // For UdonBehaviour, check if a variable has been selected
+                string variableName = GetStaticFaderUdonVariableName(faderIndex);
+                if (string.IsNullOrEmpty(variableName))
                 {
                     return;
                 }
 
-                SerializedProperty colorProp = staticFaderDefaultColors.GetArrayElementAtIndex(faderIndex);
-                if (colorProp != null)
-                {
-                    Color defaultColor = colorProp.colorValue;
-                    // Enable HDR support for color properties that may use HDR values
-                    Color updatedColor = EditorGUILayout.ColorField(
-                        new GUIContent("Default Color", "Base color to shift from. Supports HDR colors."), 
-                        defaultColor,
-                        true,  // showEyedropper
-                        true,  // showAlpha
-                        true   // hdr
-                    );
-                    if (updatedColor != defaultColor)
-                    {
-                        colorProp.colorValue = updatedColor;
-                    }
-
-                    // Check saturation and show warning if too low
-                    Color.RGBToHSV(updatedColor, out float h, out float s, out float v);
-                    if (s < 0.15f)
-                    {
-                        EditorGUILayout.HelpBox(
-                            "Warning: This color has low saturation (greyscale). Hue shifting will have minimal effect on greyscale colors.",
-                            MessageType.Warning);
-                    }
-                }
-
-                // Max Shift field (stored in maxValue, 0-360 degrees)
-                float maxShift = GetStaticFaderMaxValue(faderIndex);
-                maxShift = Mathf.Clamp(maxShift, 0f, 360f);
-                float updatedMaxShift = EditorGUILayout.Slider(
-                    new GUIContent("Max Shift (degrees)", "Maximum hue shift in degrees. 360 = full color wheel rotation."),
-                    maxShift,
-                    0f,
-                    360f);
-
-                if (!Mathf.Approximately(updatedMaxShift, maxShift))
-                {
-                    SetStaticFaderMinValue(faderIndex, 0f); // Min is always 0 for color
-                    SetStaticFaderMaxValue(faderIndex, updatedMaxShift);
-                    SetStaticFaderDefaultValue(faderIndex, 0f); // Default position is at min (no shift)
-                }
-            }
-            else
-            {
-                // For float/range properties, show min/max/default
+                // For Udon variables, always show float range fields (no color support)
                 float minValue = GetStaticFaderMinValue(faderIndex);
                 float maxValue = GetStaticFaderMaxValue(faderIndex);
                 float defaultValue = GetStaticFaderDefaultValue(faderIndex);
@@ -806,6 +909,111 @@ namespace Cozen
                 if (!Mathf.Approximately(updatedDefault, defaultValue))
                 {
                     SetStaticFaderDefaultValue(faderIndex, updatedDefault);
+                }
+            }
+            else
+            {
+                // Check if a renderer or material target is configured
+                FaderShaderTarget target = BuildStaticFaderShaderTarget(faderIndex);
+                if ((target.renderers == null || target.renderers.Length == 0) &&
+                    (target.directMaterials == null || target.directMaterials.Length == 0))
+                {
+                    return;
+                }
+
+                // Check if a property has been selected
+                string propertyName = GetStaticFaderPropertyName(faderIndex);
+                if (string.IsNullOrEmpty(propertyName))
+                {
+                    return;
+                }
+
+                // Check if this is a color property (propertyType == 2)
+                int propertyType = GetStaticFaderPropertyType(faderIndex);
+                bool isColorProperty = (propertyType == 2);
+
+                if (isColorProperty)
+                {
+                    // For color properties, show default color and max shift
+                    if (staticFaderDefaultColors == null || faderIndex < 0 || faderIndex >= staticFaderDefaultColors.arraySize)
+                    {
+                        return;
+                    }
+
+                    SerializedProperty colorProp = staticFaderDefaultColors.GetArrayElementAtIndex(faderIndex);
+                    if (colorProp != null)
+                    {
+                        Color defaultColor = colorProp.colorValue;
+                        // Enable HDR support for color properties that may use HDR values
+                        Color updatedColor = EditorGUILayout.ColorField(
+                            new GUIContent("Default Color", "Base color to shift from. Supports HDR colors."), 
+                            defaultColor,
+                            true,  // showEyedropper
+                            true,  // showAlpha
+                            true   // hdr
+                        );
+                        if (updatedColor != defaultColor)
+                        {
+                            colorProp.colorValue = updatedColor;
+                        }
+
+                        // Check saturation and show warning if too low
+                        Color.RGBToHSV(updatedColor, out float h, out float s, out float v);
+                        if (s < 0.15f)
+                        {
+                            EditorGUILayout.HelpBox(
+                                "Warning: This color has low saturation (greyscale). Hue shifting will have minimal effect on greyscale colors.",
+                                MessageType.Warning);
+                        }
+                    }
+
+                    // Max Shift field (stored in maxValue, 0-360 degrees)
+                    float maxShift = GetStaticFaderMaxValue(faderIndex);
+                    maxShift = Mathf.Clamp(maxShift, 0f, 360f);
+                    float updatedMaxShift = EditorGUILayout.Slider(
+                        new GUIContent("Max Shift (degrees)", "Maximum hue shift in degrees. 360 = full color wheel rotation."),
+                        maxShift,
+                        0f,
+                        360f);
+
+                    if (!Mathf.Approximately(updatedMaxShift, maxShift))
+                    {
+                        SetStaticFaderMinValue(faderIndex, 0f); // Min is always 0 for color
+                        SetStaticFaderMaxValue(faderIndex, updatedMaxShift);
+                        SetStaticFaderDefaultValue(faderIndex, 0f); // Default position is at min (no shift)
+                    }
+                }
+                else
+                {
+                    // For float/range properties, show min/max/default
+                    float minValue = GetStaticFaderMinValue(faderIndex);
+                    float maxValue = GetStaticFaderMaxValue(faderIndex);
+                    float defaultValue = GetStaticFaderDefaultValue(faderIndex);
+
+                    float updatedMin = EditorGUILayout.FloatField(new GUIContent("Min", "Lower bound for this fader."), minValue);
+                    float updatedMax = EditorGUILayout.FloatField(new GUIContent("Max", "Upper bound for this fader."), maxValue);
+                    if (updatedMax < updatedMin)
+                    {
+                        updatedMax = updatedMin;
+                    }
+
+                    float updatedDefault = EditorGUILayout.FloatField(new GUIContent("Default", "Value applied on start and reset."), defaultValue);
+                    updatedDefault = Mathf.Clamp(updatedDefault, updatedMin, updatedMax);
+
+                    if (!Mathf.Approximately(updatedMin, minValue))
+                    {
+                        SetStaticFaderMinValue(faderIndex, updatedMin);
+                    }
+
+                    if (!Mathf.Approximately(updatedMax, maxValue))
+                    {
+                        SetStaticFaderMaxValue(faderIndex, updatedMax);
+                    }
+
+                    if (!Mathf.Approximately(updatedDefault, defaultValue))
+                    {
+                        SetStaticFaderDefaultValue(faderIndex, updatedDefault);
+                    }
                 }
             }
         }
@@ -956,6 +1164,320 @@ namespace Cozen
             {
                 AddStaticFaderRenderer(faderIndex);
                 countProp.intValue = rendererCount + 1;
+            }
+            GUI.enabled = true;
+        }
+
+        private void DrawStaticFaderSliderList(int faderIndex)
+        {
+            if (staticFaderSliders == null || staticFaderSliderCounts == null)
+            {
+                return;
+            }
+
+            SerializedProperty countProp = (faderIndex >= 0 && faderIndex < staticFaderSliderCounts.arraySize)
+                ? staticFaderSliderCounts.GetArrayElementAtIndex(faderIndex)
+                : null;
+
+            if (countProp == null)
+            {
+                return;
+            }
+
+            int sliderCount = Mathf.Max(0, countProp.intValue);
+            int sliderStart = GetStaticFaderSliderStartIndex(faderIndex);
+            EnsureStaticFaderSliderArrayCapacity(sliderStart + sliderCount);
+
+            bool structuralChange = false;
+
+            for (int i = 0; i < sliderCount; i++)
+            {
+                int flatIndex = sliderStart + i;
+                if (flatIndex < 0 || flatIndex >= staticFaderSliders.arraySize)
+                {
+                    break;
+                }
+
+                SerializedProperty sliderProp = staticFaderSliders.GetArrayElementAtIndex(flatIndex);
+
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                
+                EditorGUILayout.BeginHorizontal();
+                UnityEngine.UI.Slider current = sliderProp.objectReferenceValue as UnityEngine.UI.Slider;
+                UnityEngine.UI.Slider updated = (UnityEngine.UI.Slider)EditorGUILayout.ObjectField($"Slider {i + 1}", current, typeof(UnityEngine.UI.Slider), true);
+                if (updated != current)
+                {
+                    sliderProp.objectReferenceValue = updated;
+                    // Auto-fill min/max/default from slider when assigned
+                    if (updated != null)
+                    {
+                        AutofillStaticFaderFromSlider(faderIndex, updated);
+                    }
+                }
+
+                GUI.enabled = !structuralChange;
+                if (!structuralChange && GUILayout.Button("X", GUILayout.Width(22)))
+                {
+                    RemoveStaticFaderSliderAt(faderIndex, i);
+                    countProp.intValue = Mathf.Max(0, sliderCount - 1);
+                    structuralChange = true;
+                }
+                GUI.enabled = true;
+                EditorGUILayout.EndHorizontal();
+
+                // Show reversed direction checkbox
+                if (!structuralChange && current != null)
+                {
+                    SerializedProperty reversedProp = (staticFaderSliderReversed != null && flatIndex < staticFaderSliderReversed.arraySize)
+                        ? staticFaderSliderReversed.GetArrayElementAtIndex(flatIndex)
+                        : null;
+                    
+                    if (reversedProp != null)
+                    {
+                        bool reversed = EditorGUILayout.ToggleLeft("Reversed Direction (Right to Left / Top to Bottom)", reversedProp.boolValue);
+                        if (reversed != reversedProp.boolValue)
+                        {
+                            reversedProp.boolValue = reversed;
+                        }
+                    }
+                    
+                    // Show slider info
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.LabelField($"Min: {current.minValue}, Max: {current.maxValue}, Current: {current.value}", EditorStyles.miniLabel);
+                    EditorGUI.indentLevel--;
+                }
+                
+                EditorGUILayout.EndVertical();
+
+                if (structuralChange)
+                {
+                    GUILayout.Space(2);
+                    break;
+                }
+
+                GUILayout.Space(2);
+            }
+
+            if (structuralChange)
+            {
+                return;
+            }
+
+            if (GUILayout.Button("Add Slider", GUILayout.Height(22)))
+            {
+                AddStaticFaderSlider(faderIndex);
+                countProp.intValue = sliderCount + 1;
+            }
+        }
+
+        private void AutofillStaticFaderFromSlider(int faderIndex, UnityEngine.UI.Slider slider)
+        {
+            if (slider == null) return;
+            
+            SetStaticFaderMinValue(faderIndex, slider.minValue);
+            SetStaticFaderMaxValue(faderIndex, slider.maxValue);
+            SetStaticFaderDefaultValue(faderIndex, slider.value);
+        }
+
+        private int GetStaticFaderSliderStartIndex(int faderIndex)
+        {
+            int start = 0;
+            if (staticFaderSliderCounts == null || faderIndex <= 0)
+            {
+                return start;
+            }
+
+            for (int i = 0; i < faderIndex && i < staticFaderSliderCounts.arraySize; i++)
+            {
+                SerializedProperty countProp = staticFaderSliderCounts.GetArrayElementAtIndex(i);
+                start += Mathf.Max(0, countProp?.intValue ?? 0);
+            }
+
+            return start;
+        }
+
+        private void EnsureStaticFaderSliderArrayCapacity(int required)
+        {
+            if (staticFaderSliders == null || required <= 0)
+            {
+                return;
+            }
+
+            while (staticFaderSliders.arraySize < required)
+            {
+                staticFaderSliders.InsertArrayElementAtIndex(staticFaderSliders.arraySize);
+                SerializedProperty element = staticFaderSliders.GetArrayElementAtIndex(staticFaderSliders.arraySize - 1);
+                if (element != null)
+                {
+                    element.objectReferenceValue = null;
+                }
+            }
+
+            // Also ensure reversed array
+            if (staticFaderSliderReversed != null)
+            {
+                while (staticFaderSliderReversed.arraySize < required)
+                {
+                    staticFaderSliderReversed.InsertArrayElementAtIndex(staticFaderSliderReversed.arraySize);
+                    SerializedProperty element = staticFaderSliderReversed.GetArrayElementAtIndex(staticFaderSliderReversed.arraySize - 1);
+                    if (element != null)
+                    {
+                        element.boolValue = false;
+                    }
+                }
+            }
+        }
+
+        private void AddStaticFaderSlider(int faderIndex)
+        {
+            if (staticFaderSliders == null || staticFaderSliderCounts == null)
+            {
+                return;
+            }
+
+            SerializedProperty countProp = (faderIndex >= 0 && faderIndex < staticFaderSliderCounts.arraySize)
+                ? staticFaderSliderCounts.GetArrayElementAtIndex(faderIndex)
+                : null;
+
+            if (countProp == null)
+            {
+                return;
+            }
+
+            int sliderStart = GetStaticFaderSliderStartIndex(faderIndex);
+            int currentCount = Mathf.Max(0, countProp.intValue);
+            int insertIndex = sliderStart + currentCount;
+
+            staticFaderSliders.InsertArrayElementAtIndex(insertIndex);
+            SerializedProperty element = staticFaderSliders.GetArrayElementAtIndex(insertIndex);
+            if (element != null)
+            {
+                element.objectReferenceValue = null;
+            }
+
+            // Also add to reversed array
+            if (staticFaderSliderReversed != null)
+            {
+                staticFaderSliderReversed.InsertArrayElementAtIndex(insertIndex);
+                SerializedProperty reversedElement = staticFaderSliderReversed.GetArrayElementAtIndex(insertIndex);
+                if (reversedElement != null)
+                {
+                    reversedElement.boolValue = false;
+                }
+            }
+        }
+
+        private void RemoveStaticFaderSliderAt(int faderIndex, int localIndex)
+        {
+            if (staticFaderSliders == null || staticFaderSliderCounts == null)
+            {
+                return;
+            }
+
+            int sliderStart = GetStaticFaderSliderStartIndex(faderIndex);
+            int flatIndex = sliderStart + localIndex;
+
+            if (flatIndex >= 0 && flatIndex < staticFaderSliders.arraySize)
+            {
+                staticFaderSliders.DeleteArrayElementAtIndex(flatIndex);
+            }
+
+            // Also remove from reversed array
+            if (staticFaderSliderReversed != null && flatIndex >= 0 && flatIndex < staticFaderSliderReversed.arraySize)
+            {
+                staticFaderSliderReversed.DeleteArrayElementAtIndex(flatIndex);
+            }
+        }
+
+        private void DrawStaticFaderUdonList(int faderIndex)
+        {
+            if (staticFaderUdonBehaviours == null || staticFaderUdonCounts == null)
+            {
+                return;
+            }
+
+            SerializedProperty countProp = (faderIndex >= 0 && faderIndex < staticFaderUdonCounts.arraySize)
+                ? staticFaderUdonCounts.GetArrayElementAtIndex(faderIndex)
+                : null;
+
+            if (countProp == null)
+            {
+                return;
+            }
+
+            int udonCount = Mathf.Max(0, countProp.intValue);
+            int udonStart = GetStaticFaderUdonStartIndex(faderIndex);
+            EnsureStaticFaderUdonArrayCapacity(udonStart + udonCount);
+
+            bool structuralChange = false;
+
+            for (int i = 0; i < udonCount; i++)
+            {
+                int flatIndex = udonStart + i;
+                if (flatIndex < 0 || flatIndex >= staticFaderUdonBehaviours.arraySize)
+                {
+                    break;
+                }
+
+                SerializedProperty udonProp = staticFaderUdonBehaviours.GetArrayElementAtIndex(flatIndex);
+
+                EditorGUILayout.BeginHorizontal();
+                UdonBehaviour current = udonProp.objectReferenceValue as UdonBehaviour;
+                UdonBehaviour updated = (UdonBehaviour)EditorGUILayout.ObjectField($"Udon Behavior {i + 1}", current, typeof(UdonBehaviour), true);
+                if (updated != current)
+                {
+                    udonProp.objectReferenceValue = updated;
+                }
+
+                GUI.enabled = i > 0;
+                if (GUILayout.Button("▲", GUILayout.Width(22)))
+                {
+                    MoveStaticFaderUdon(faderIndex, i, i - 1);
+                    structuralChange = true;
+                }
+
+                GUI.enabled = !structuralChange && i < udonCount - 1;
+                if (!structuralChange && GUILayout.Button("▼", GUILayout.Width(22)))
+                {
+                    MoveStaticFaderUdon(faderIndex, i, i + 1);
+                    structuralChange = true;
+                }
+
+                GUI.enabled = !structuralChange;
+                if (!structuralChange && GUILayout.Button("X", GUILayout.Width(22)))
+                {
+                    RemoveStaticFaderUdonAt(faderIndex, i);
+                    countProp.intValue = Mathf.Max(0, udonCount - 1);
+                    structuralChange = true;
+                }
+                GUI.enabled = true;
+                EditorGUILayout.EndHorizontal();
+
+                if (structuralChange)
+                {
+                    GUILayout.Space(2);
+                    break;
+                }
+
+                GUILayout.Space(2);
+            }
+
+            if (structuralChange)
+            {
+                return;
+            }
+
+            Rect addButtonRect = GUILayoutUtility.GetRect(new GUIContent("Add Udon Behavior"), GUI.skin.button, GUILayout.Height(22));
+            bool addClicked = GUI.Button(addButtonRect, "Add Udon Behavior");
+            if (HandleUdonDrop(addButtonRect, faderIndex, countProp, udonCount))
+            {
+                return;
+            }
+
+            if (addClicked)
+            {
+                AddStaticFaderUdon(faderIndex);
+                countProp.intValue = udonCount + 1;
             }
             GUI.enabled = true;
         }
@@ -1788,6 +2310,9 @@ namespace Cozen
             InsertDynamicFaderElement(dynamicFaderColorIndicatorsEnabled, index, prop => prop.boolValue = false);
             InsertDynamicFaderElement(dynamicFaderIndicatorColors, index, prop => prop.colorValue = Color.white);
             InsertDynamicFaderElement(dynamicFaderIndicatorConditional, index, prop => prop.boolValue = false);
+            InsertDynamicFaderElement(dynamicFaderTargetsUdon, index, prop => prop.boolValue = false);
+            InsertDynamicFaderElement(dynamicFaderUdonCounts, index, prop => prop.intValue = 0);
+            InsertDynamicFaderElement(dynamicFaderUdonVariableNames, index, prop => prop.stringValue = string.Empty);
         }
 
         private void InsertDynamicFaderElement(SerializedProperty prop, int index, Action<SerializedProperty> initialize)
@@ -1805,6 +2330,9 @@ namespace Cozen
 
         private void RemoveDynamicFaderAt(int index)
         {
+            // First remove Udon behaviours from flat array before modifying counts
+            RemoveDynamicFaderUdonBehavioursAt(index);
+            
             DeleteDynamicFaderElement(dynamicFaderNames, index);
             DeleteDynamicFaderElement(dynamicFaderFolders, index);
             DeleteDynamicFaderElement(dynamicFaderToggles, index);
@@ -1818,6 +2346,35 @@ namespace Cozen
             DeleteDynamicFaderElement(dynamicFaderColorIndicatorsEnabled, index);
             DeleteDynamicFaderElement(dynamicFaderIndicatorColors, index);
             DeleteDynamicFaderElement(dynamicFaderIndicatorConditional, index);
+            DeleteDynamicFaderElement(dynamicFaderTargetsUdon, index);
+            DeleteDynamicFaderElement(dynamicFaderUdonCounts, index);
+            DeleteDynamicFaderElement(dynamicFaderUdonVariableNames, index);
+        }
+
+        private void RemoveDynamicFaderUdonBehavioursAt(int index)
+        {
+            if (dynamicFaderUdonBehaviours == null || dynamicFaderUdonCounts == null)
+            {
+                return;
+            }
+            
+            if (index < 0 || index >= dynamicFaderUdonCounts.arraySize)
+            {
+                return;
+            }
+            
+            int startIndex = GetDynamicFaderUdonStartIndex(index);
+            int count = GetDynamicFaderUdonCountValue(index);
+            
+            // Remove entries from flat array (in reverse order to maintain indices)
+            for (int i = count - 1; i >= 0; i--)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < dynamicFaderUdonBehaviours.arraySize)
+                {
+                    dynamicFaderUdonBehaviours.DeleteArrayElementAtIndex(flatIndex);
+                }
+            }
         }
 
         private void DeleteDynamicFaderElement(SerializedProperty prop, int index)
@@ -2334,6 +2891,246 @@ namespace Cozen
             return Mathf.Max(0, countProp?.intValue ?? 0);
         }
 
+        // ==================== UdonBehaviour Helper Methods ====================
+
+        private int GetStaticFaderUdonStartIndex(int faderIndex)
+        {
+            int start = 0;
+            if (staticFaderUdonCounts == null)
+            {
+                return start;
+            }
+
+            int count = Mathf.Min(faderIndex, staticFaderUdonCounts.arraySize);
+            for (int i = 0; i < count; i++)
+            {
+                SerializedProperty countProp = staticFaderUdonCounts.GetArrayElementAtIndex(i);
+                start += Mathf.Max(0, countProp?.intValue ?? 0);
+            }
+
+            return start;
+        }
+
+        private int GetStaticFaderUdonCountValue(int faderIndex)
+        {
+            if (staticFaderUdonCounts == null || faderIndex < 0 || faderIndex >= staticFaderUdonCounts.arraySize)
+            {
+                return 0;
+            }
+
+            SerializedProperty countProp = staticFaderUdonCounts.GetArrayElementAtIndex(faderIndex);
+            return Mathf.Max(0, countProp?.intValue ?? 0);
+        }
+
+        private void AddStaticFaderUdon(int faderIndex)
+        {
+            int insertIndex = GetStaticFaderUdonStartIndex(faderIndex) + GetStaticFaderUdonCountValue(faderIndex);
+            InsertStaticFaderUdonAt(insertIndex);
+        }
+
+        private void InsertStaticFaderUdonAt(int flatIndex)
+        {
+            if (staticFaderUdonBehaviours == null)
+            {
+                return;
+            }
+
+            int insertIndex = Mathf.Clamp(flatIndex, 0, staticFaderUdonBehaviours.arraySize);
+            staticFaderUdonBehaviours.InsertArrayElementAtIndex(insertIndex);
+            SerializedProperty element = staticFaderUdonBehaviours.GetArrayElementAtIndex(insertIndex);
+            if (element != null)
+            {
+                element.objectReferenceValue = null;
+            }
+        }
+
+        private void RemoveStaticFaderUdonAt(int faderIndex, int localIndex)
+        {
+            int start = GetStaticFaderUdonStartIndex(faderIndex);
+            int flatIndex = start + localIndex;
+            if (staticFaderUdonBehaviours == null || flatIndex < 0 || flatIndex >= staticFaderUdonBehaviours.arraySize)
+            {
+                return;
+            }
+
+            staticFaderUdonBehaviours.DeleteArrayElementAtIndex(flatIndex);
+        }
+
+        private void MoveStaticFaderUdon(int faderIndex, int from, int to)
+        {
+            if (staticFaderUdonBehaviours == null)
+            {
+                return;
+            }
+
+            int start = GetStaticFaderUdonStartIndex(faderIndex);
+            int count = GetStaticFaderUdonCountValue(faderIndex);
+            if (from < 0 || to < 0 || from >= count || to >= count)
+            {
+                return;
+            }
+
+            int fromFlat = start + from;
+            int toFlat = start + to;
+            if (fromFlat < 0 || toFlat < 0 || fromFlat >= staticFaderUdonBehaviours.arraySize || toFlat >= staticFaderUdonBehaviours.arraySize)
+            {
+                return;
+            }
+
+            staticFaderUdonBehaviours.MoveArrayElement(fromFlat, toFlat);
+        }
+
+        private void EnsureStaticFaderUdonArrayCapacity(int required)
+        {
+            if (staticFaderUdonBehaviours == null || required <= 0)
+            {
+                return;
+            }
+
+            while (staticFaderUdonBehaviours.arraySize < required)
+            {
+                staticFaderUdonBehaviours.InsertArrayElementAtIndex(staticFaderUdonBehaviours.arraySize);
+                SerializedProperty element = staticFaderUdonBehaviours.GetArrayElementAtIndex(staticFaderUdonBehaviours.arraySize - 1);
+                if (element != null)
+                {
+                    element.objectReferenceValue = null;
+                }
+            }
+        }
+
+        private bool HandleUdonDrop(Rect dropRect, int faderIndex, SerializedProperty countProp, int udonCount)
+        {
+            Event current = Event.current;
+            if (current == null || countProp == null)
+            {
+                return false;
+            }
+
+            if (!dropRect.Contains(current.mousePosition))
+            {
+                return false;
+            }
+
+            EventType type = current.type;
+            if (type != EventType.DragUpdated && type != EventType.DragPerform)
+            {
+                return false;
+            }
+
+            List<UdonBehaviour> droppedUdon = new List<UdonBehaviour>();
+            HashSet<UdonBehaviour> seenUdon = new HashSet<UdonBehaviour>();
+            foreach (UnityEngine.Object reference in DragAndDrop.objectReferences)
+            {
+                UdonBehaviour udon = reference as UdonBehaviour;
+                if (udon != null)
+                {
+                    if (seenUdon.Add(udon))
+                    {
+                        droppedUdon.Add(udon);
+                    }
+
+                    continue;
+                }
+
+                GameObject go = reference as GameObject;
+                if (go == null)
+                {
+                    continue;
+                }
+
+                UdonBehaviour[] udons = go.GetComponentsInChildren<UdonBehaviour>(true);
+                foreach (UdonBehaviour childUdon in udons)
+                {
+                    if (childUdon != null && seenUdon.Add(childUdon))
+                    {
+                        droppedUdon.Add(childUdon);
+                    }
+                }
+            }
+
+            if (droppedUdon.Count == 0)
+            {
+                return false;
+            }
+
+            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+
+            if (type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                AddDroppedUdons(faderIndex, countProp, udonCount, droppedUdon);
+            }
+
+            current.Use();
+            return type == EventType.DragPerform;
+        }
+
+        private void AddDroppedUdons(int faderIndex, SerializedProperty countProp, int udonCount, List<UdonBehaviour> droppedUdon)
+        {
+            int insertIndex = GetStaticFaderUdonStartIndex(faderIndex) + udonCount;
+
+            foreach (UdonBehaviour udon in droppedUdon)
+            {
+                InsertStaticFaderUdonAt(insertIndex);
+                SerializedProperty udonProp = staticFaderUdonBehaviours.GetArrayElementAtIndex(insertIndex);
+                if (udonProp != null)
+                {
+                    udonProp.objectReferenceValue = udon;
+                }
+
+                insertIndex++;
+            }
+
+            countProp.intValue = udonCount + droppedUdon.Count;
+        }
+
+        private bool IsStaticFaderTargetingUdon(int faderIndex)
+        {
+            if (staticFaderTargetsUdon == null || faderIndex < 0 || faderIndex >= staticFaderTargetsUdon.arraySize)
+            {
+                return false;
+            }
+
+            SerializedProperty prop = staticFaderTargetsUdon.GetArrayElementAtIndex(faderIndex);
+            return prop != null && prop.boolValue;
+        }
+
+        private bool IsStaticFaderTargetingSlider(int faderIndex)
+        {
+            if (staticFaderTargetsSlider == null || faderIndex < 0 || faderIndex >= staticFaderTargetsSlider.arraySize)
+            {
+                return false;
+            }
+
+            SerializedProperty prop = staticFaderTargetsSlider.GetArrayElementAtIndex(faderIndex);
+            return prop != null && prop.boolValue;
+        }
+
+        private string GetStaticFaderUdonVariableName(int faderIndex)
+        {
+            if (staticFaderUdonVariableNames == null || faderIndex < 0 || faderIndex >= staticFaderUdonVariableNames.arraySize)
+            {
+                return string.Empty;
+            }
+
+            SerializedProperty prop = staticFaderUdonVariableNames.GetArrayElementAtIndex(faderIndex);
+            return prop != null ? prop.stringValue : string.Empty;
+        }
+
+        private void SetStaticFaderUdonVariableName(int faderIndex, string value)
+        {
+            if (staticFaderUdonVariableNames == null || faderIndex < 0 || faderIndex >= staticFaderUdonVariableNames.arraySize)
+            {
+                return;
+            }
+
+            SerializedProperty prop = staticFaderUdonVariableNames.GetArrayElementAtIndex(faderIndex);
+            if (prop != null)
+            {
+                prop.stringValue = value ?? string.Empty;
+            }
+        }
+
         // ==================== Property Field Methods ====================
 
         private void DrawDynamicFaderPropertyField(int index)
@@ -2351,6 +3148,14 @@ namespace Cozen
             }
 
             ToggleFolderType folderType = GetFolderType(folderIndex);
+            
+            // Check if this is a Properties folder and the entry targets UdonBehaviour
+            if (folderType == ToggleFolderType.Properties && IsPropertyEntryTargetingUdon(folderIndex, toggleIndex))
+            {
+                DrawDynamicFaderUdonFromPropertyEntry(index, folderIndex, toggleIndex);
+                return;
+            }
+
             FaderShaderTarget target = BuildDynamicFaderShaderTarget(folderType, folderIndex, toggleIndex, index);
             if ((target.renderers == null || target.renderers.Length == 0) &&
                 (target.directMaterials == null || target.directMaterials.Length == 0))
@@ -2401,8 +3206,216 @@ namespace Cozen
             EditorGUILayout.EndHorizontal();
         }
 
+        private bool IsPropertyEntryTargetingUdon(int folderIndex, int entryIndex)
+        {
+            SerializedObject propHandlerObj = GetPropertyHandlerObjectForFolder(folderIndex);
+            if (propHandlerObj == null)
+            {
+                return false;
+            }
+
+            SerializedProperty targetsUdonProp = propHandlerObj.FindProperty("propertyTargetsUdon");
+            if (targetsUdonProp == null || !targetsUdonProp.isArray || entryIndex < 0 || entryIndex >= targetsUdonProp.arraySize)
+            {
+                return false;
+            }
+
+            SerializedProperty entryTargetsUdon = targetsUdonProp.GetArrayElementAtIndex(entryIndex);
+            return entryTargetsUdon != null && entryTargetsUdon.boolValue;
+        }
+
+        private void DrawDynamicFaderUdonFromPropertyEntry(int dynamicIndex, int folderIndex, int entryIndex)
+        {
+            SerializedObject propHandlerObj = GetPropertyHandlerObjectForFolder(folderIndex);
+            if (propHandlerObj == null)
+            {
+                EditorGUILayout.HelpBox("Properties handler not found.", MessageType.Warning);
+                return;
+            }
+
+            SerializedProperty udonCountsProp = propHandlerObj.FindProperty("propertyUdonCounts");
+            SerializedProperty udonBehavioursProp = propHandlerObj.FindProperty("propertyUdonBehaviours");
+            SerializedProperty udonVariableNamesProp = propHandlerObj.FindProperty("propertyUdonVariableNames");
+
+            if (udonCountsProp == null || udonBehavioursProp == null || udonVariableNamesProp == null)
+            {
+                EditorGUILayout.HelpBox("UdonBehaviour configuration missing from PropertyHandler.", MessageType.Warning);
+                return;
+            }
+
+            // Get the variable name from the Properties entry
+            string entryVariableName = string.Empty;
+            if (entryIndex >= 0 && entryIndex < udonVariableNamesProp.arraySize)
+            {
+                SerializedProperty varNameProp = udonVariableNamesProp.GetArrayElementAtIndex(entryIndex);
+                entryVariableName = varNameProp != null ? varNameProp.stringValue : string.Empty;
+            }
+
+            // Get UdonBehaviour count and start index
+            int udonCount = 0;
+            int udonStart = 0;
+            if (entryIndex >= 0 && entryIndex < udonCountsProp.arraySize)
+            {
+                SerializedProperty countProp = udonCountsProp.GetArrayElementAtIndex(entryIndex);
+                udonCount = countProp != null ? Mathf.Max(0, countProp.intValue) : 0;
+                
+                // Calculate start index
+                for (int i = 0; i < entryIndex && i < udonCountsProp.arraySize; i++)
+                {
+                    SerializedProperty prevCount = udonCountsProp.GetArrayElementAtIndex(i);
+                    udonStart += prevCount != null ? Mathf.Max(0, prevCount.intValue) : 0;
+                }
+            }
+
+            // Display info about the linked UdonBehaviour entry
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Udon Behavior Target", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Variable: {(string.IsNullOrEmpty(entryVariableName) ? "(None)" : entryVariableName)}");
+            EditorGUILayout.LabelField($"Target Count: {udonCount}");
+            EditorGUILayout.EndVertical();
+
+            // Sync the dynamic fader's Udon configuration with the Properties entry
+            if (!string.IsNullOrEmpty(entryVariableName) && udonCount > 0)
+            {
+                // Set the dynamic fader to target Udon
+                SetDynamicFaderTargetsUdon(dynamicIndex, true);
+                SetDynamicFaderUdonVariableName(dynamicIndex, entryVariableName);
+                
+                // Copy UdonBehaviour references from Properties entry to dynamic fader
+                SyncDynamicFaderUdonBehaviours(dynamicIndex, udonBehavioursProp, udonStart, udonCount);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Configure the UdonBehaviour target in the Properties folder entry.", MessageType.Info);
+            }
+        }
+
+        private void SetDynamicFaderTargetsUdon(int index, bool value)
+        {
+            if (dynamicFaderTargetsUdon == null || index < 0 || index >= dynamicFaderTargetsUdon.arraySize)
+            {
+                return;
+            }
+
+            SerializedProperty prop = dynamicFaderTargetsUdon.GetArrayElementAtIndex(index);
+            if (prop != null)
+            {
+                prop.boolValue = value;
+            }
+        }
+
+        private void SetDynamicFaderUdonVariableName(int index, string value)
+        {
+            if (dynamicFaderUdonVariableNames == null || index < 0 || index >= dynamicFaderUdonVariableNames.arraySize)
+            {
+                return;
+            }
+
+            SerializedProperty prop = dynamicFaderUdonVariableNames.GetArrayElementAtIndex(index);
+            if (prop != null)
+            {
+                prop.stringValue = value ?? string.Empty;
+            }
+        }
+
+        private void SyncDynamicFaderUdonBehaviours(int dynamicIndex, SerializedProperty sourceUdonBehaviours, int sourceStart, int sourceCount)
+        {
+            if (dynamicFaderUdonBehaviours == null || dynamicFaderUdonCounts == null || sourceUdonBehaviours == null)
+            {
+                return;
+            }
+
+            // Get current count for this dynamic fader
+            int currentStart = GetDynamicFaderUdonStartIndex(dynamicIndex);
+            int currentCount = GetDynamicFaderUdonCountValue(dynamicIndex);
+
+            // Remove existing entries for this dynamic fader
+            for (int i = currentCount - 1; i >= 0; i--)
+            {
+                int flatIndex = currentStart + i;
+                if (flatIndex >= 0 && flatIndex < dynamicFaderUdonBehaviours.arraySize)
+                {
+                    dynamicFaderUdonBehaviours.DeleteArrayElementAtIndex(flatIndex);
+                }
+            }
+
+            // Add entries from source
+            int insertIndex = currentStart;
+            for (int i = 0; i < sourceCount; i++)
+            {
+                int sourceIndex = sourceStart + i;
+                if (sourceIndex < 0 || sourceIndex >= sourceUdonBehaviours.arraySize)
+                {
+                    continue;
+                }
+
+                SerializedProperty sourceEntry = sourceUdonBehaviours.GetArrayElementAtIndex(sourceIndex);
+                UdonBehaviour udon = sourceEntry?.objectReferenceValue as UdonBehaviour;
+
+                dynamicFaderUdonBehaviours.InsertArrayElementAtIndex(insertIndex);
+                SerializedProperty destEntry = dynamicFaderUdonBehaviours.GetArrayElementAtIndex(insertIndex);
+                if (destEntry != null)
+                {
+                    destEntry.objectReferenceValue = udon;
+                }
+                insertIndex++;
+            }
+
+            // Update count
+            if (dynamicIndex >= 0 && dynamicIndex < dynamicFaderUdonCounts.arraySize)
+            {
+                SerializedProperty countProp = dynamicFaderUdonCounts.GetArrayElementAtIndex(dynamicIndex);
+                if (countProp != null)
+                {
+                    countProp.intValue = sourceCount;
+                }
+            }
+        }
+
+        private int GetDynamicFaderUdonStartIndex(int index)
+        {
+            int start = 0;
+            if (dynamicFaderUdonCounts == null || index <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(index, dynamicFaderUdonCounts.arraySize);
+            for (int i = 0; i < limit; i++)
+            {
+                SerializedProperty countProp = dynamicFaderUdonCounts.GetArrayElementAtIndex(i);
+                start += Mathf.Max(0, countProp?.intValue ?? 0);
+            }
+
+            return start;
+        }
+
+        private int GetDynamicFaderUdonCountValue(int index)
+        {
+            if (dynamicFaderUdonCounts == null || index < 0 || index >= dynamicFaderUdonCounts.arraySize)
+            {
+                return 0;
+            }
+
+            SerializedProperty countProp = dynamicFaderUdonCounts.GetArrayElementAtIndex(index);
+            return Mathf.Max(0, countProp?.intValue ?? 0);
+        }
+
         private void DrawStaticFaderPropertyField(int faderIndex)
         {
+            // Check if targeting UdonBehaviour
+            if (IsStaticFaderTargetingUdon(faderIndex))
+            {
+                DrawStaticFaderUdonVariableField(faderIndex);
+                return;
+            }
+
+            // Check if targeting Unity Slider (no shader property needed)
+            if (IsStaticFaderTargetingSlider(faderIndex))
+            {
+                return;
+            }
+
             if (staticFaderPropertyNames == null || staticFaderPropertyTypes == null)
             {
                 return;
@@ -2412,7 +3425,7 @@ namespace Cozen
             if ((target.renderers == null || target.renderers.Length == 0) &&
                 (target.directMaterials == null || target.directMaterials.Length == 0))
             {
-                EditorGUILayout.HelpBox("Select at least one renderer or material target to populate shader properties.", MessageType.Info);
+                EditorGUILayout.HelpBox("Select a target (folder, renderer, Udon Behavior, or Unity Slider) to configure the fader.", MessageType.Info);
                 return;
             }
 
@@ -2458,6 +3471,292 @@ namespace Cozen
             EditorGUILayout.EndHorizontal();
         }
 
+        private void DrawStaticFaderUdonVariableField(int faderIndex)
+        {
+            // Get the UdonBehaviour targets for this fader
+            int udonCount = GetStaticFaderUdonCountValue(faderIndex);
+            int udonStart = GetStaticFaderUdonStartIndex(faderIndex);
+            
+            if (udonCount == 0 || staticFaderUdonBehaviours == null)
+            {
+                EditorGUILayout.HelpBox("Add at least one Udon Behavior to select a variable.", MessageType.Info);
+                return;
+            }
+
+            // Build list of UdonBehaviour targets
+            List<UdonBehaviour> udonTargets = new List<UdonBehaviour>();
+            for (int i = 0; i < udonCount; i++)
+            {
+                int flatIndex = udonStart + i;
+                if (flatIndex >= 0 && flatIndex < staticFaderUdonBehaviours.arraySize)
+                {
+                    SerializedProperty udonProp = staticFaderUdonBehaviours.GetArrayElementAtIndex(flatIndex);
+                    UdonBehaviour udon = udonProp?.objectReferenceValue as UdonBehaviour;
+                    if (udon != null)
+                    {
+                        udonTargets.Add(udon);
+                    }
+                }
+            }
+
+            if (udonTargets.Count == 0)
+            {
+                EditorGUILayout.HelpBox("No valid Udon Behaviors assigned.", MessageType.Warning);
+                return;
+            }
+
+            // Get common public variables across all UdonBehaviour targets
+            List<string> variableNames;
+            if (!TryBuildUdonVariableOptions(udonTargets, out variableNames, out string warning))
+            {
+                if (!string.IsNullOrEmpty(warning))
+                {
+                    EditorGUILayout.HelpBox(warning, MessageType.Warning);
+                }
+                return;
+            }
+
+            if (variableNames.Count == 0)
+            {
+                EditorGUILayout.HelpBox("No common public float variables found across all Udon Behaviors.", MessageType.Info);
+                return;
+            }
+
+            string currentName = GetStaticFaderUdonVariableName(faderIndex);
+            
+            // Draw variable selection with search button on single line
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel(new GUIContent("Variable"));
+            string displayName = string.IsNullOrEmpty(currentName) ? "(None)" : currentName;
+            GUILayout.Label(displayName, EditorStyles.textField);
+            if (GUILayout.Button("Search", GUILayout.Width(60)))
+            {
+                // Capture udonTargets for the callback closure
+                List<UdonBehaviour> capturedTargets = new List<UdonBehaviour>(udonTargets);
+                OpenUdonVariableSearchWindow(variableNames, (selectedName) =>
+                {
+                    SetStaticFaderUdonVariableName(faderIndex, selectedName);
+                    // Set property type to Float (0) for Udon variables
+                    SetStaticFaderPropertyType(faderIndex, 0);
+                    // Autofill min/max/default values from the Udon variable
+                    AutofillStaticFaderUdonValues(faderIndex, selectedName, capturedTargets);
+                    // Apply changes immediately and force repaint
+                    if (faderHandlerObject != null)
+                    {
+                        faderHandlerObject.ApplyModifiedProperties();
+                    }
+                    Repaint();
+                });
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private bool TryBuildUdonVariableOptions(List<UdonBehaviour> udonTargets, out List<string> variableNames, out string warning)
+        {
+            variableNames = new List<string>();
+            warning = null;
+
+            if (udonTargets == null || udonTargets.Count == 0)
+            {
+                warning = "No Udon Behaviors available.";
+                return false;
+            }
+
+            HashSet<string> commonVariables = null;
+
+            foreach (UdonBehaviour udon in udonTargets)
+            {
+                if (udon == null)
+                {
+                    continue;
+                }
+
+                HashSet<string> udonVariables = GetUdonPublicFloatVariables(udon);
+                
+                if (commonVariables == null)
+                {
+                    commonVariables = udonVariables;
+                }
+                else
+                {
+                    // Intersect to find common variables
+                    commonVariables.IntersectWith(udonVariables);
+                }
+            }
+
+            if (commonVariables == null || commonVariables.Count == 0)
+            {
+                warning = "No common public float variables found.";
+                return false;
+            }
+
+            variableNames = commonVariables.OrderBy(v => v).ToList();
+            return true;
+        }
+
+        private HashSet<string> GetUdonPublicFloatVariables(UdonBehaviour udon)
+        {
+            HashSet<string> variables = new HashSet<string>();
+            
+            if (udon == null || udon.programSource == null)
+            {
+                return variables;
+            }
+
+            try
+            {
+                // Check if this is an UdonSharp behavior - use fieldDefinitions from UdonSharpProgramAsset
+                if (udon.programSource is UdonSharpProgramAsset udonSharpProgramAsset)
+                {
+                    if (udonSharpProgramAsset.fieldDefinitions != null)
+                    {
+                        foreach (var fieldDef in udonSharpProgramAsset.fieldDefinitions.Values)
+                        {
+                            // Only include numeric types that can be used as fader values
+                            if (fieldDef.SystemType == typeof(float) || 
+                                fieldDef.SystemType == typeof(int) || 
+                                fieldDef.SystemType == typeof(double))
+                            {
+                                variables.Add(fieldDef.Name);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Fall back to publicVariables for non-UdonSharp behaviors (Udon Graph, etc.)
+                    var publicVariables = udon.publicVariables;
+                    if (publicVariables != null)
+                    {
+                        var symbolNames = publicVariables.VariableSymbols;
+                        foreach (string symbolName in symbolNames)
+                        {
+                            // Only include float variables (faders work with floats)
+                            if (publicVariables.TryGetVariableType(symbolName, out System.Type varType))
+                            {
+                                if (varType == typeof(float) || varType == typeof(int) || varType == typeof(double))
+                                {
+                                    variables.Add(symbolName);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception)
+            {
+                // Fallback: no variables found
+            }
+
+            return variables;
+        }
+
+        /// <summary>
+        /// Attempts to get the min, max, and default values for an Udon variable.
+        /// For UdonSharp behaviors, this uses the RangeAttribute if present and gets the current value from publicVariables.
+        /// </summary>
+        private bool TryGetUdonVariableValues(UdonBehaviour udon, string variableName, out float defaultValue, out float minValue, out float maxValue)
+        {
+            defaultValue = 0f;
+            minValue = 0f;
+            maxValue = 1f;
+
+            if (udon == null || udon.programSource == null || string.IsNullOrEmpty(variableName))
+            {
+                return false;
+            }
+
+            try
+            {
+                // Try to get the current value from publicVariables
+                if (udon.publicVariables != null && udon.publicVariables.TryGetVariableValue(variableName, out object currentValue))
+                {
+                    if (currentValue is float floatVal)
+                        defaultValue = floatVal;
+                    else if (currentValue is int intVal)
+                        defaultValue = intVal;
+                    else if (currentValue is double doubleVal)
+                        defaultValue = (float)doubleVal;
+                }
+
+                // For UdonSharp behaviors, check for RangeAttribute
+                if (udon.programSource is UdonSharpProgramAsset udonSharpProgramAsset)
+                {
+                    if (udonSharpProgramAsset.fieldDefinitions != null &&
+                        udonSharpProgramAsset.fieldDefinitions.TryGetValue(variableName, out var fieldDef))
+                    {
+                        // Try to get RangeAttribute for min/max values
+                        var rangeAttr = fieldDef.GetAttribute<RangeAttribute>();
+                        if (rangeAttr != null)
+                        {
+                            minValue = rangeAttr.min;
+                            maxValue = rangeAttr.max;
+                            return true;
+                        }
+                    }
+                }
+
+                // If no RangeAttribute, use sensible defaults based on the current value
+                if (defaultValue < minValue)
+                    minValue = defaultValue;
+                if (defaultValue > maxValue)
+                {
+                    // Handle both positive and negative values appropriately
+                    if (defaultValue >= 0)
+                        maxValue = defaultValue * FloatRangeExpansionFactor;
+                    else
+                        maxValue = defaultValue; // For negative values, just use the value as max
+                }
+                if (maxValue <= minValue)
+                    maxValue = minValue + 1f;
+
+                return true;
+            }
+            catch (System.Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Autofills the static fader min/max/default values based on the selected Udon variable.
+        /// Uses the first UdonBehaviour target to extract values.
+        /// </summary>
+        private void AutofillStaticFaderUdonValues(int faderIndex, string variableName, List<UdonBehaviour> udonTargets)
+        {
+            if (udonTargets == null || udonTargets.Count == 0 || string.IsNullOrEmpty(variableName))
+            {
+                return;
+            }
+
+            // Use the first valid UdonBehaviour to get values
+            UdonBehaviour firstUdon = udonTargets.FirstOrDefault(u => u != null);
+            if (firstUdon == null)
+            {
+                return;
+            }
+
+            if (TryGetUdonVariableValues(firstUdon, variableName, out float defaultValue, out float minValue, out float maxValue))
+            {
+                SetStaticFaderMinValue(faderIndex, minValue);
+                SetStaticFaderMaxValue(faderIndex, maxValue);
+                SetStaticFaderDefaultValue(faderIndex, defaultValue);
+            }
+        }
+
+        private void OpenUdonVariableSearchWindow(List<string> variableNames, Action<string> onSelect)
+        {
+            var searchWindow = new PropertySearchWindow("Udon Variables");
+            var mainGroup = searchWindow.GetMainGroup();
+            
+            foreach (string varName in variableNames)
+            {
+                mainGroup.Add(varName, varName);
+            }
+
+            searchWindow.Open(onSelect);
+        }
+
         // ==================== Shader Target Building ====================
 
         private FaderShaderTarget BuildDynamicFaderShaderTarget(ToggleFolderType folderType, int folderIndex, int toggleIndex, int dynamicIndex = -1)
@@ -2468,7 +3767,7 @@ namespace Cozen
                     return BuildObjectFolderShaderTarget(folderIndex, toggleIndex, dynamicIndex);
 
                 case ToggleFolderType.Properties:
-                    return BuildPropertiesFolderShaderTarget(folderIndex);
+                    return BuildPropertiesFolderShaderTarget(folderIndex, toggleIndex);
 
                 case ToggleFolderType.Materials:
                     return BuildMaterialsFolderShaderTarget(folderIndex, toggleIndex);
@@ -2561,7 +3860,9 @@ namespace Cozen
             switch (folderType)
             {
                 case ToggleFolderType.Properties:
-                    return BuildPropertiesFolderShaderTarget(folderIndex);
+                    // Properties folder entries have per-entry renderers, so folder-level targeting
+                    // doesn't apply. Static faders should use custom targeting for Properties folders.
+                    return PrepareFaderShaderTarget(Array.Empty<Renderer>(), materialIndex);
 
                 case ToggleFolderType.Materials:
                     return BuildMaterialsFolderShaderTarget(folderIndex, -1);
@@ -2627,7 +3928,7 @@ namespace Cozen
             return PrepareFaderShaderTarget(new[] { targetRenderer }, materialIndex);
         }
 
-        private FaderShaderTarget BuildPropertiesFolderShaderTarget(int folderIndex)
+        private FaderShaderTarget BuildPropertiesFolderShaderTarget(int folderIndex, int toggleIndex)
         {
             SerializedObject propHandlerObj = GetPropertyHandlerObjectForFolder(folderIndex);
             if (propHandlerObj == null)
@@ -2635,20 +3936,48 @@ namespace Cozen
                 return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0);
             }
 
-            SerializedProperty renderersProperty = propHandlerObj.FindProperty("propertyRenderers");
-            if (renderersProperty == null || !renderersProperty.isArray || renderersProperty.arraySize == 0)
+            SerializedProperty renderersProperty = propHandlerObj.FindProperty("propertyShaderRenderers");
+            SerializedProperty rendererCountsProperty = propHandlerObj.FindProperty("propertyShaderRendererCounts");
+            
+            if (renderersProperty == null || rendererCountsProperty == null || 
+                !renderersProperty.isArray || !rendererCountsProperty.isArray ||
+                toggleIndex < 0 || toggleIndex >= rendererCountsProperty.arraySize)
             {
                 return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0);
             }
 
-            Renderer[] renderers = new Renderer[renderersProperty.arraySize];
-            for (int i = 0; i < renderersProperty.arraySize; i++)
+            // Calculate start index for this entry
+            int startIndex = 0;
+            for (int i = 0; i < toggleIndex; i++)
             {
-                SerializedProperty rendererProp = renderersProperty.GetArrayElementAtIndex(i);
-                renderers[i] = rendererProp.objectReferenceValue as Renderer;
+                SerializedProperty countProp = rendererCountsProperty.GetArrayElementAtIndex(i);
+                startIndex += Mathf.Max(0, countProp?.intValue ?? 0);
             }
 
-            return PrepareFaderShaderTarget(renderers, 0);
+            SerializedProperty entryCountProp = rendererCountsProperty.GetArrayElementAtIndex(toggleIndex);
+            int entryCount = Mathf.Max(0, entryCountProp?.intValue ?? 0);
+
+            if (entryCount == 0 || startIndex >= renderersProperty.arraySize)
+            {
+                return PrepareFaderShaderTarget(Array.Empty<Renderer>(), 0);
+            }
+
+            List<Renderer> rendererList = new List<Renderer>();
+            for (int i = 0; i < entryCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex < renderersProperty.arraySize)
+                {
+                    SerializedProperty rendererProp = renderersProperty.GetArrayElementAtIndex(flatIndex);
+                    Renderer renderer = rendererProp?.objectReferenceValue as Renderer;
+                    if (renderer != null)
+                    {
+                        rendererList.Add(renderer);
+                    }
+                }
+            }
+
+            return PrepareFaderShaderTarget(rendererList.ToArray(), 0);
         }
 
         private FaderShaderTarget BuildMaterialsFolderShaderTarget(int folderIndex, int toggleIndex)

@@ -1,6 +1,8 @@
 using UdonSharp;
 using UnityEngine;
+using UnityEngine.UI;
 using VRC.SDKBase;
+using VRC.Udon;
 
 namespace Cozen
 {
@@ -41,8 +43,41 @@ namespace Cozen
         [Tooltip("Texture values to apply when toggled on.")]
         public Texture[] propertyTextureValues;
 
-        [Tooltip("Renderers controlled by this properties folder.")]
-        public Renderer[] propertyRenderers;
+        [Header("Shader Property Targeting")]
+        [Tooltip("Whether each entry targets shader properties on renderers.")]
+        public bool[] propertyTargetsShader;
+
+        [Tooltip("Renderers for shader property entries (flat array, use propertyShaderRendererCounts for per-entry counts).")]
+        public Renderer[] propertyShaderRenderers;
+
+        [Tooltip("Number of renderers for each entry.")]
+        public int[] propertyShaderRendererCounts;
+
+        [Header("UdonBehaviour Targeting")]
+        [Tooltip("Whether each entry targets UdonBehaviour variables.")]
+        public bool[] propertyTargetsUdon;
+
+        [Tooltip("UdonBehaviour targets for entries (flat array, use propertyUdonCounts for per-entry counts).")]
+        public UdonBehaviour[] propertyUdonBehaviours;
+
+        [Tooltip("Number of UdonBehaviours for each entry.")]
+        public int[] propertyUdonCounts;
+
+        [Tooltip("Variable name on the UdonBehaviour for each entry.")]
+        public string[] propertyUdonVariableNames;
+
+        [Header("Unity UI Slider Targeting")]
+        [Tooltip("Whether each entry targets Unity UI Slider components.")]
+        public bool[] propertyTargetsSlider;
+
+        [Tooltip("Unity UI Slider targets for entries (flat array, use propertySliderCounts for per-entry counts).")]
+        public Slider[] propertySliders;
+
+        [Tooltip("Number of Sliders for each entry.")]
+        public int[] propertySliderCounts;
+
+        [Tooltip("Whether each slider's direction is reversed (flat array, aligned with propertySliders).")]
+        public bool[] propertySliderReversed;
 
         [UdonSynced] private bool[] entryStates;
         [UdonSynced] private int currentPage;
@@ -524,17 +559,97 @@ namespace Cozen
 
         private Renderer[] GetPropertyRenderers()
         {
-            if (propertyRenderers == null || propertyRenderers.Length == 0)
+            // Collect all unique renderers from all entries for property block management
+            if (propertyShaderRenderers == null || propertyShaderRenderers.Length == 0)
             {
                 if (emptyRendererArray == null)
                 {
                     emptyRendererArray = new Renderer[0];
                 }
-
                 return emptyRendererArray;
             }
 
-            return propertyRenderers;
+            // Return all renderers (may contain duplicates, but that's handled by property block logic)
+            return propertyShaderRenderers;
+        }
+
+        public Renderer[] GetRenderersForEntry(int localIndex)
+        {
+            if (propertyShaderRenderers == null || propertyShaderRendererCounts == null)
+            {
+                return null;
+            }
+
+            if (localIndex < 0 || localIndex >= propertyShaderRendererCounts.Length)
+            {
+                return null;
+            }
+
+            int count = propertyShaderRendererCounts[localIndex];
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            int startIndex = GetShaderRendererStartIndex(localIndex);
+            int available = propertyShaderRenderers.Length;
+            int actualCount = Mathf.Min(count, Mathf.Max(0, available - startIndex));
+
+            if (actualCount <= 0)
+            {
+                return null;
+            }
+
+            // Count valid renderers first
+            int validCount = 0;
+            for (int i = 0; i < actualCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < available && propertyShaderRenderers[flatIndex] != null)
+                {
+                    validCount++;
+                }
+            }
+
+            if (validCount <= 0)
+            {
+                return null;
+            }
+
+            Renderer[] renderers = new Renderer[validCount];
+            int insert = 0;
+            for (int i = 0; i < actualCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < available && propertyShaderRenderers[flatIndex] != null)
+                {
+                    renderers[insert] = propertyShaderRenderers[flatIndex];
+                    insert++;
+                }
+            }
+
+            return renderers;
+        }
+
+        private int GetShaderRendererStartIndex(int localIndex)
+        {
+            int start = 0;
+            if (propertyShaderRendererCounts == null || localIndex <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(localIndex, propertyShaderRendererCounts.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                int count = propertyShaderRendererCounts[i];
+                if (count > 0)
+                {
+                    start += count;
+                }
+            }
+
+            return start;
         }
 
         private void ApplyAllEntryStates()
@@ -594,14 +709,180 @@ namespace Cozen
                 return;
             }
 
+            bool targetsShader = IsEntryTargetingShader(localIndex);
+            bool targetsUdon = IsEntryTargetingUdon(localIndex);
+            bool targetsSlider = IsEntryTargetingSlider(localIndex);
+
+            // Apply to shader properties if shader targeting is enabled
+            if (targetsShader)
+            {
+                ApplyShaderPropertyState(localIndex, active);
+            }
+
+            // Apply to UdonBehaviour if Udon targeting is enabled
+            if (targetsUdon)
+            {
+                ApplyUdonPropertyState(localIndex, active);
+            }
+
+            // Apply to Unity UI Sliders if slider targeting is enabled
+            if (targetsSlider)
+            {
+                ApplySliderPropertyState(localIndex, active);
+            }
+        }
+
+        private bool IsEntryTargetingShader(int localIndex)
+        {
+            return propertyTargetsShader != null && localIndex >= 0 && localIndex < propertyTargetsShader.Length && propertyTargetsShader[localIndex];
+        }
+
+        private bool IsEntryTargetingSlider(int localIndex)
+        {
+            return propertyTargetsSlider != null && localIndex >= 0 && localIndex < propertyTargetsSlider.Length && propertyTargetsSlider[localIndex];
+        }
+
+        private void ApplySliderPropertyState(int localIndex, bool active)
+        {
+            Slider[] sliders = GetSlidersForEntry(localIndex);
+            if (sliders == null || sliders.Length == 0)
+            {
+                return;
+            }
+
+            if (active)
+            {
+                float value = GetFloatValue(localIndex);
+                bool[] reversed = GetSliderReversedForEntry(localIndex);
+
+                for (int i = 0; i < sliders.Length; i++)
+                {
+                    Slider slider = sliders[i];
+                    if (slider != null)
+                    {
+                        bool isReversed = reversed != null && i < reversed.Length && reversed[i];
+                        float range = slider.maxValue - slider.minValue;
+                        
+                        if (isReversed && range > 0f)
+                        {
+                            // For reversed direction, invert the value within the slider's range
+                            float normalizedValue = (value - slider.minValue) / range;
+                            float reversedValue = slider.maxValue - (normalizedValue * range);
+                            slider.value = Mathf.Clamp(reversedValue, slider.minValue, slider.maxValue);
+                        }
+                        else
+                        {
+                            slider.value = Mathf.Clamp(value, slider.minValue, slider.maxValue);
+                        }
+                    }
+                }
+            }
+        }
+
+        private Slider[] GetSlidersForEntry(int localIndex)
+        {
+            if (propertySliders == null || propertySliderCounts == null)
+            {
+                return null;
+            }
+
+            if (localIndex < 0 || localIndex >= propertySliderCounts.Length)
+            {
+                return null;
+            }
+
+            int count = propertySliderCounts[localIndex];
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            int startIndex = 0;
+            for (int i = 0; i < localIndex; i++)
+            {
+                if (i < propertySliderCounts.Length)
+                {
+                    startIndex += Mathf.Max(0, propertySliderCounts[i]);
+                }
+            }
+
+            int available = propertySliders.Length;
+            int actualCount = Mathf.Min(count, available - startIndex);
+            if (actualCount <= 0)
+            {
+                return null;
+            }
+
+            Slider[] result = new Slider[actualCount];
+            for (int i = 0; i < actualCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < available)
+                {
+                    result[i] = propertySliders[flatIndex];
+                }
+            }
+
+            return result;
+        }
+
+        private bool[] GetSliderReversedForEntry(int localIndex)
+        {
+            if (propertySliderReversed == null || propertySliderCounts == null)
+            {
+                return null;
+            }
+
+            if (localIndex < 0 || localIndex >= propertySliderCounts.Length)
+            {
+                return null;
+            }
+
+            int count = propertySliderCounts[localIndex];
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            int startIndex = 0;
+            for (int i = 0; i < localIndex; i++)
+            {
+                if (i < propertySliderCounts.Length)
+                {
+                    startIndex += Mathf.Max(0, propertySliderCounts[i]);
+                }
+            }
+
+            int available = propertySliderReversed.Length;
+            int actualCount = Mathf.Min(count, available - startIndex);
+            if (actualCount <= 0)
+            {
+                return null;
+            }
+
+            bool[] result = new bool[actualCount];
+            for (int i = 0; i < actualCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < available)
+                {
+                    result[i] = propertySliderReversed[flatIndex];
+                }
+            }
+
+            return result;
+        }
+
+        private void ApplyShaderPropertyState(int localIndex, bool active)
+        {
             string propertyName = GetPropertyName(localIndex);
             if (string.IsNullOrEmpty(propertyName))
             {
                 return;
             }
 
-            Renderer[] renderers = GetPropertyRenderers();
-            if (renderers.Length == 0)
+            Renderer[] renderers = GetRenderersForEntry(localIndex);
+            if (renderers == null || renderers.Length == 0)
             {
                 return;
             }
@@ -615,6 +896,141 @@ namespace Cozen
             {
                 ApplyPropertyToRenderer(renderers[i], i, materialIndex, propertyName, propertyType, localIndex, active);
             }
+        }
+
+        private bool IsEntryTargetingUdon(int localIndex)
+        {
+            return propertyTargetsUdon != null && localIndex >= 0 && localIndex < propertyTargetsUdon.Length && propertyTargetsUdon[localIndex];
+        }
+
+        private void ApplyUdonPropertyState(int localIndex, bool active)
+        {
+            string variableName = GetUdonVariableName(localIndex);
+            if (string.IsNullOrEmpty(variableName))
+            {
+                return;
+            }
+
+            UdonBehaviour[] targets = GetUdonBehavioursForEntry(localIndex);
+            if (targets == null || targets.Length == 0)
+            {
+                return;
+            }
+
+            // For UdonBehaviour properties, we only apply float values when active.
+            // Unlike shader properties which reset to material defaults when inactive,
+            // UdonBehaviour variables don't have a "default" state we can restore to.
+            // The script's initial value or last applied value remains. This is intentional
+            // as resetting could interfere with other scripts that may have modified the variable.
+            if (active)
+            {
+                float value = GetFloatValue(localIndex);
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    UdonBehaviour target = targets[i];
+                    if (target != null)
+                    {
+                        target.SetProgramVariable(variableName, value);
+                    }
+                }
+            }
+        }
+
+        private string GetUdonVariableName(int localIndex)
+        {
+            if (propertyUdonVariableNames == null || localIndex < 0 || localIndex >= propertyUdonVariableNames.Length)
+            {
+                return string.Empty;
+            }
+            return propertyUdonVariableNames[localIndex] ?? string.Empty;
+        }
+
+        private float GetFloatValue(int localIndex)
+        {
+            if (propertyFloatValues == null || localIndex < 0 || localIndex >= propertyFloatValues.Length)
+            {
+                return 0f;
+            }
+            return propertyFloatValues[localIndex];
+        }
+
+        private UdonBehaviour[] GetUdonBehavioursForEntry(int localIndex)
+        {
+            if (propertyUdonBehaviours == null || propertyUdonCounts == null)
+            {
+                return null;
+            }
+
+            if (localIndex < 0 || localIndex >= propertyUdonCounts.Length)
+            {
+                return null;
+            }
+
+            int count = propertyUdonCounts[localIndex];
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            int startIndex = GetUdonStartIndex(localIndex);
+            int available = propertyUdonBehaviours.Length;
+            int actualCount = Mathf.Min(count, Mathf.Max(0, available - startIndex));
+
+            if (actualCount <= 0)
+            {
+                return null;
+            }
+
+            // Count valid behaviours first
+            int validCount = 0;
+            for (int i = 0; i < actualCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < available && propertyUdonBehaviours[flatIndex] != null)
+                {
+                    validCount++;
+                }
+            }
+
+            if (validCount <= 0)
+            {
+                return null;
+            }
+
+            UdonBehaviour[] targets = new UdonBehaviour[validCount];
+            int insert = 0;
+            for (int i = 0; i < actualCount; i++)
+            {
+                int flatIndex = startIndex + i;
+                if (flatIndex >= 0 && flatIndex < available && propertyUdonBehaviours[flatIndex] != null)
+                {
+                    targets[insert] = propertyUdonBehaviours[flatIndex];
+                    insert++;
+                }
+            }
+
+            return targets;
+        }
+
+        private int GetUdonStartIndex(int localIndex)
+        {
+            int start = 0;
+            if (propertyUdonCounts == null || localIndex <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(localIndex, propertyUdonCounts.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                int count = propertyUdonCounts[i];
+                if (count > 0)
+                {
+                    start += count;
+                }
+            }
+
+            return start;
         }
 
         private void ApplyPropertyToRenderer(Renderer renderer, int rendererIndex, int materialIndex, string propertyName, int propertyType, int localIndex, bool active)
@@ -723,12 +1139,6 @@ namespace Cozen
                 }
             }
 
-            Renderer[] renderers = GetPropertyRenderers();
-            if (renderers.Length == 0)
-            {
-                return;
-            }
-
             for (int i = 0; i < entryStates.Length; i++)
             {
                 entryStates[i] = false;
@@ -736,6 +1146,18 @@ namespace Cozen
 
             for (int i = 0; i < entryStates.Length; i++)
             {
+                // Skip entries that don't target shader properties
+                if (!IsEntryTargetingShader(i))
+                {
+                    continue;
+                }
+
+                Renderer[] renderers = GetRenderersForEntry(i);
+                if (renderers == null || renderers.Length == 0)
+                {
+                    continue;
+                }
+
                 string propertyName = GetPropertyName(i);
                 int materialIndex = GetMaterialIndex(i);
                 int propertyType = GetPropertyType(i);
@@ -992,8 +1414,41 @@ namespace Cozen
                 return false;
             }
 
-            string propertyName = GetPropertyName(localIndex);
-            return !string.IsNullOrEmpty(propertyName) && GetPropertyRenderers().Length > 0;
+            bool targetsShader = IsEntryTargetingShader(localIndex);
+            bool targetsUdon = IsEntryTargetingUdon(localIndex);
+            bool targetsSlider = IsEntryTargetingSlider(localIndex);
+
+            // Entry is valid if it has at least one valid target
+            if (targetsShader)
+            {
+                string propertyName = GetPropertyName(localIndex);
+                Renderer[] renderers = GetRenderersForEntry(localIndex);
+                if (!string.IsNullOrEmpty(propertyName) && renderers != null && renderers.Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            if (targetsUdon)
+            {
+                string varName = GetUdonVariableName(localIndex);
+                UdonBehaviour[] udonTargets = GetUdonBehavioursForEntry(localIndex);
+                if (!string.IsNullOrEmpty(varName) && udonTargets != null && udonTargets.Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            if (targetsSlider)
+            {
+                Slider[] sliderTargets = GetSlidersForEntry(localIndex);
+                if (sliderTargets != null && sliderTargets.Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void EnsureIntArraySize(ref int[] array, int count, int defaultValue)

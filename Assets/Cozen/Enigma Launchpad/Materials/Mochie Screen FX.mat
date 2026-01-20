@@ -11,7 +11,13 @@ Material:
   m_Shader: {fileID: 4800000, guid: 0d1d977ca72938b4bb8f3ed06b9a8645, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _AUDIOLINK_ON
+  - _BLUR_PIXEL_ON
+  - _COLOR_ON
+  - _DISTORTION_ON
+  - _NOISE_ON
+  - _SHAKE_ON
   m_InvalidKeywords:
   - _SHAPE_BOX
   m_LightmapFlags: 4
@@ -38,6 +44,14 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OutlineCubeAlt:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineTexAlt:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -108,7 +122,7 @@ Material:
     - _AudioLinkShakeMin: 0
     - _AudioLinkShakeStrength: 0
     - _AudioLinkStrength: 1
-    - _AudioLinkToggle: 0
+    - _AudioLinkToggle: 1
     - _AudioLinkTriplanarBand: 0
     - _AudioLinkTriplanarMax: 1
     - _AudioLinkTriplanarMin: 0
@@ -120,7 +134,7 @@ Material:
     - _AudioLinkZoomStrength: 0
     - _AuraFade: 0.5
     - _AuraSampleCount: 43
-    - _AuraStr: 0.25
+    - _AuraStr: 0.15
     - _AutoRotate: 0
     - _AutoRotateAlt: 0
     - _AutoRotateBG: 0
@@ -129,7 +143,7 @@ Material:
     - _BlendMode: 0
     - _BlurMaxRange: 15
     - _BlurMinRange: 8
-    - _BlurModel: 0
+    - _BlurModel: 1
     - _BlurOpacity: 1
     - _BlurRadius: 1
     - _BlurSamples: 10
@@ -144,25 +158,25 @@ Material:
     - _ColorUseGlobal: 1
     - _Contrast: 1
     - _CrushBlur: 0
-    - _DBOpacity: 1
+    - _DBOpacity: 0
     - _DeepFry: 0
     - _DepthBufferToggle: 0
     - _DisplayGlobalGizmo: 0
     - _DistortionFade: 1
     - _DistortionMaxRange: 15
     - _DistortionMinRange: 8
-    - _DistortionModel: 0
+    - _DistortionModel: 1
     - _DistortionP2O: 1
     - _DistortionRadius: 2
     - _DistortionSpeed: 0
-    - _DistortionStr: 0.5
+    - _DistortionStr: 0
     - _DistortionUseGlobal: 1
     - _DoF: 0
     - _DoFFade: 1
     - _DoFP2O: 1
     - _DoFRadius: 2
     - _DstBlend: 0
-    - _FilterModel: 0
+    - _FilterModel: 1
     - _FilterStrength: 1
     - _Flavor: 0
     - _Fog: 0
@@ -174,7 +188,7 @@ Material:
     - _FogP2O: 0
     - _FogRadius: 2
     - _FogSafeMaxRange: 6
-    - _FogSafeOpacity: 1
+    - _FogSafeOpacity: 0
     - _FogSafeRadius: 4
     - _FogSafeZone: 0
     - _FogUseGlobal: 0
@@ -192,15 +206,16 @@ Material:
     - _Letterbox: 0
     - _LetterboxStr: 0
     - _ManualScrub: 0
+    - _MaterialResetCheck: 0
     - _MaxRange: 30
     - _MinRange: 1
     - _MonoTint: 0
-    - _NMFOpacity: 1
+    - _NMFOpacity: 0
     - _NMFToggle: 0
     - _Noise: 0
     - _NoiseMaxRange: 15
     - _NoiseMinRange: 8
-    - _NoiseMode: 0
+    - _NoiseMode: 1
     - _NoiseStrength: 1
     - _NoiseUseGlobal: 0
     - _NormalMapFilter: 0.75
@@ -215,7 +230,7 @@ Material:
     - _OutlineHueShiftSpeed: 1
     - _OutlineThiccN: 0.5
     - _OutlineThiccS: 0.49
-    - _OutlineThresh: 1000
+    - _OutlineThresh: 20
     - _OutlineThreshAlt: 100
     - _OutlineType: 0
     - _PixelBlurSamples: 43
@@ -226,7 +241,7 @@ Material:
     - _RGBSplit: 0
     - _RippleGridStr: 0
     - _Rounding: 1
-    - _RoundingOpacity: 1
+    - _RoundingOpacity: 0
     - _RoundingToggle: 0
     - _SST: 0
     - _SSTAnimatedDist: 0
@@ -256,7 +271,7 @@ Material:
     - _ScrubPos: 0
     - _ShakeMaxRange: 15
     - _ShakeMinRange: 8
-    - _ShakeModel: 0
+    - _ShakeModel: 1
     - _ShakeSpeedX: 0.5234375
     - _ShakeSpeedXY: 5
     - _ShakeSpeedY: 0.78125
@@ -266,7 +281,7 @@ Material:
     - _ShiftY: 0
     - _Sizzle: 0
     - _SobelClearInner: 1
-    - _SobelFilterOpacity: 1
+    - _SobelFilterOpacity: 0
     - _SobelFilterToggle: 0
     - _SrcBlend: 1
     - _TPFade: 0.5
@@ -301,11 +316,13 @@ Material:
     - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
     - _OutlineCol: {r: 0, g: 0, b: 0, a: 1}
     - _OutlineColAlt: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineTexCoord: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _OutlineTexCoordAlt: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _RGB: {r: 1, g: 1, b: 1, a: 0}
-    - _SSTColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SSTColor: {r: 1, g: 1, b: 1, a: 0}
     - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
     - _SobelFilterColor: {r: 1, g: 1, b: 1, a: 1}
-    - _TPColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TPColor: {r: 1, g: 1, b: 1, a: 0}
     - _TPNoiseScroll: {r: 0, g: 0, b: 0, a: 0}
     - _TPScroll: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

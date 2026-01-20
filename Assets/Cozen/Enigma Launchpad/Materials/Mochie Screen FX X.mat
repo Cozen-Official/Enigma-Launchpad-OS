@@ -19,7 +19,6 @@ Material:
   - _FOG_ON
   - _IMAGE_OVERLAY_ON
   - _NOISE_ON
-  - _OUTLINE_ON
   - _SHAKE_ON
   - _SOBEL_FILTER_ON
   - _TRIPLANAR_ON
@@ -48,6 +47,14 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OutlineCubeAlt:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineTexAlt:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -202,6 +209,7 @@ Material:
     - _Letterbox: 0
     - _LetterboxStr: 0
     - _ManualScrub: 0
+    - _MaterialResetCheck: 0
     - _MaxRange: 30
     - _MinRange: 1
     - _MonoTint: 0
@@ -311,6 +319,8 @@ Material:
     - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
     - _OutlineCol: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColAlt: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineTexCoord: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _OutlineTexCoordAlt: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _RGB: {r: 1, g: 1, b: 1, a: 0}
     - _SSTColor: {r: 1, g: 1, b: 1, a: 0}
     - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}

@@ -1149,7 +1149,8 @@ namespace Cozen
                         false) as Material;
                     }
                     
-                    bool hasXShader = mochieShaderXAvailable || (mochieMaterialXProperty?.objectReferenceValue != null);
+                    // Check for valid X shader: prefer shader availability detection, but also check if assigned material has valid X shader
+                    bool hasXShader = mochieShaderXAvailable || IsValidXMochieMaterial(mochieMaterialXProperty?.objectReferenceValue as Material);
                     using (new EditorGUI.DisabledScope(!hasXShader))
                     {
                         if (mochieMaterialXProperty != null)

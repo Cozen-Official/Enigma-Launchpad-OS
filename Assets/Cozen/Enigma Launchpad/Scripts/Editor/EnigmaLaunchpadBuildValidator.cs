@@ -18,6 +18,9 @@ namespace Cozen
         private const string MochieXShaderName = "Mochie/Screen FX X";
         private const string JuneShaderNameFragment = "June";
         
+        // Unity fallback shader when a shader is not found (e.g., X shader in free version)
+        private const string InternalErrorShaderName = "Hidden/InternalErrorShader";
+        
         private static bool s_playModeCallbackRegistered = false;
         
         [InitializeOnLoadMethod]
@@ -748,7 +751,7 @@ namespace Cozen
 
                 int folderIndex = handler.folderIndex;
                 string folderLabel = BuildFolderDescription(launchpad, folderIndex, ToggleFolderType.Properties);
-                ValidateRendererArray(handler.propertyRenderers, folderLabel, location, errors);
+                ValidateRendererArray(handler.propertyShaderRenderers, folderLabel, location, errors);
             }
         }
 
@@ -943,6 +946,14 @@ namespace Cozen
                     {
                         string location = string.IsNullOrEmpty(context) ? launchpad.name : context;
                         errors.Add($"Mochie folder is configured in {location} but the assigned X material has no shader.");
+                    }
+                    else if (xMat.shader.name == InternalErrorShaderName)
+                    {
+                        // The X material has fallen back to the internal error shader, which means
+                        // the paid Mochie SFX X shader is not installed (free version only).
+                        // This is not an error - we'll use the Standard material instead.
+                        // The editor UI shows "Upgrade to SFX X to unlock greyed out features" for this case.
+                        // Skip validation for this material and allow Standard to work alone.
                     }
                     else if (xMat.shader.name != MochieXShaderName)
                     {

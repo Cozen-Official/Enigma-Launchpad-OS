@@ -675,8 +675,9 @@ namespace Cozen
             {
                 GetMochieMaterialStatus(out bool standardMaterialAssigned, out bool xMaterialAssigned);
                 bool anyMaterialAssigned = standardMaterialAssigned || xMaterialAssigned;
-                bool hasStandardShader = mochieShaderStandardAvailable || (mochieMaterialStandard?.objectReferenceValue != null);
-                bool hasXShader = mochieShaderXAvailable || (mochieMaterialX?.objectReferenceValue != null);
+                // Check for valid shaders: prefer shader availability detection, but also check if assigned materials have valid shaders
+                bool hasStandardShader = mochieShaderStandardAvailable || standardMaterialAssigned;
+                bool hasXShader = mochieShaderXAvailable || xMaterialAssigned;
 
                 if (!hasStandardShader && !hasXShader)
                 {
@@ -708,28 +709,32 @@ namespace Cozen
                 DrawMochieMaterialSettings();
                 EditorGUILayout.Space(6f);
 
-                EditorGUILayout.LabelField("Outline Settings", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField("Select outline settings for each Mode level (Low/Normal/High)");
-                EditorGUILayout.Space(2f);
+                // Outline Settings are X-only features
+                using (new EditorGUI.DisabledScope(!hasXShader))
+                {
+                    EditorGUILayout.LabelField("Outline Settings", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("Select outline settings for each Mode level (Low/Normal/High)");
+                    EditorGUILayout.Space(2f);
 
-                EditorGUILayout.LabelField("Mode: Low", EditorStyles.boldLabel);
-                DrawMochieSlider(mochieOutlineAuraLow, MochieHandler.MochieAuraStrengthMin, MochieHandler.MochieAuraStrengthMax, "Low Aura Strength");
-                DrawMochieSlider(mochieOutlineThresholdLow, MochieHandler.MochieOutlineThresholdMin, MochieHandler.MochieOutlineThresholdMax, "Low Outline Threshold");
-                DrawMochieSlider(mochieOutlineSobelLow, MochieHandler.MochieSobelOpacityMin, MochieHandler.MochieSobelOpacityMax, "Low Sobel Opacity");
+                    EditorGUILayout.LabelField("Mode: Low", EditorStyles.boldLabel);
+                    DrawMochieSlider(mochieOutlineAuraLow, MochieHandler.MochieAuraStrengthMin, MochieHandler.MochieAuraStrengthMax, "Low Aura Strength");
+                    DrawMochieSlider(mochieOutlineThresholdLow, MochieHandler.MochieOutlineThresholdMin, MochieHandler.MochieOutlineThresholdMax, "Low Outline Threshold");
+                    DrawMochieSlider(mochieOutlineSobelLow, MochieHandler.MochieSobelOpacityMin, MochieHandler.MochieSobelOpacityMax, "Low Sobel Opacity");
 
-                EditorGUILayout.Space(2f);
-                EditorGUILayout.LabelField("Mode: Normal", EditorStyles.boldLabel);
-                DrawMochieSlider(mochieOutlineAuraNormal, MochieHandler.MochieAuraStrengthMin, MochieHandler.MochieAuraStrengthMax, "Normal Aura Strength");
-                DrawMochieSlider(mochieOutlineThresholdNormal, MochieHandler.MochieOutlineThresholdMin, MochieHandler.MochieOutlineThresholdMax, "Normal Outline Threshold");
-                DrawMochieSlider(mochieOutlineSobelNormal, MochieHandler.MochieSobelOpacityMin, MochieHandler.MochieSobelOpacityMax, "Normal Sobel Opacity");
+                    EditorGUILayout.Space(2f);
+                    EditorGUILayout.LabelField("Mode: Normal", EditorStyles.boldLabel);
+                    DrawMochieSlider(mochieOutlineAuraNormal, MochieHandler.MochieAuraStrengthMin, MochieHandler.MochieAuraStrengthMax, "Normal Aura Strength");
+                    DrawMochieSlider(mochieOutlineThresholdNormal, MochieHandler.MochieOutlineThresholdMin, MochieHandler.MochieOutlineThresholdMax, "Normal Outline Threshold");
+                    DrawMochieSlider(mochieOutlineSobelNormal, MochieHandler.MochieSobelOpacityMin, MochieHandler.MochieSobelOpacityMax, "Normal Sobel Opacity");
 
-                EditorGUILayout.Space(2f);
-                EditorGUILayout.LabelField("Mode: High", EditorStyles.boldLabel);
-                DrawMochieSlider(mochieOutlineAuraHigh, MochieHandler.MochieAuraStrengthMin, MochieHandler.MochieAuraStrengthMax, "High Aura Strength");
-                DrawMochieSlider(mochieOutlineThresholdHigh, MochieHandler.MochieOutlineThresholdMin, MochieHandler.MochieOutlineThresholdMax, "High Outline Threshold");
-                DrawMochieSlider(mochieOutlineSobelHigh, MochieHandler.MochieSobelOpacityMin, MochieHandler.MochieSobelOpacityMax, "High Sobel Opacity");
+                    EditorGUILayout.Space(2f);
+                    EditorGUILayout.LabelField("Mode: High", EditorStyles.boldLabel);
+                    DrawMochieSlider(mochieOutlineAuraHigh, MochieHandler.MochieAuraStrengthMin, MochieHandler.MochieAuraStrengthMax, "High Aura Strength");
+                    DrawMochieSlider(mochieOutlineThresholdHigh, MochieHandler.MochieOutlineThresholdMin, MochieHandler.MochieOutlineThresholdMax, "High Outline Threshold");
+                    DrawMochieSlider(mochieOutlineSobelHigh, MochieHandler.MochieSobelOpacityMin, MochieHandler.MochieSobelOpacityMax, "High Sobel Opacity");
 
-                DrawOutlineColorsFoldout(anyMaterialAssigned, hasStandardShader);
+                    DrawOutlineColorsFoldout(anyMaterialAssigned, hasXShader);
+                }
 
                 EditorGUILayout.Space(6f);
                 EditorGUILayout.LabelField("FX Settings", EditorStyles.boldLabel);
@@ -741,8 +746,8 @@ namespace Cozen
                 DrawMochieSlider(mochieNoiseStrength, MochieHandler.MochieEffectStrengthMin, MochieHandler.MochieEffectStrengthMax, "Noise Strength");
                 DrawMochieSlider(mochieScanLineStrength, MochieHandler.MochieEffectStrengthMin, MochieHandler.MochieEffectStrengthMax, "Scan Line Strength");
 
-                bool hasDepthOrNormal = hasXShader || (mochieMaterialX?.objectReferenceValue as Material) != null;
-                using (new EditorGUI.DisabledScope(!hasDepthOrNormal))
+                // Depth Buffer and Normal Map are X-only features
+                using (new EditorGUI.DisabledScope(!hasXShader))
                 {
                     DrawMochieSlider(mochieDepthBufferOpacity, MochieHandler.MochieEffectStrengthMin, MochieHandler.MochieEffectStrengthMax, "Depth Buffer Opacity");
                     DrawMochieSlider(mochieNormalMapOpacity, MochieHandler.MochieEffectStrengthMin, MochieHandler.MochieEffectStrengthMax, "Normal Map Opacity");
@@ -840,7 +845,7 @@ namespace Cozen
             }
         }
 
-        private void DrawOutlineColorsFoldout(bool anyMaterialAssigned, bool hasStandardShader)
+        private void DrawOutlineColorsFoldout(bool anyMaterialAssigned, bool hasXShader)
         {
             bool updatedOutlineExpanded = EditorGUILayout.Foldout(mochieOutlineListExpanded, "Outline Colors", true);
             if (updatedOutlineExpanded != mochieOutlineListExpanded)
@@ -859,7 +864,8 @@ namespace Cozen
 
                 EnsureOutlineListReady();
 
-                using (new EditorGUI.DisabledScope(!anyMaterialAssigned || !hasStandardShader))
+                // Outline Colors are X-only features
+                using (new EditorGUI.DisabledScope(!anyMaterialAssigned || !hasXShader))
                 {
                     outlineColorEntriesList?.DoLayoutList();
                 }
@@ -878,7 +884,8 @@ namespace Cozen
             {
                 EnsureOverlayArrayParity();
                 EnsureOverlayListReady();
-                using (new EditorGUI.DisabledScope(!anyMaterialAssigned || (!hasStandardShader && !hasXShader)))
+                // Screen Overlays are X-only features
+                using (new EditorGUI.DisabledScope(!anyMaterialAssigned || !hasXShader))
                 {
                     overlayEntriesList?.DoLayoutList();
                 }

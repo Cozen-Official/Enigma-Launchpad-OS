@@ -1331,6 +1331,8 @@ namespace Cozen
                         
                         if (handlerChanged)
                         {
+                            // Ensure ownership before serialization
+                            EnsureOwnershipOf(handler.gameObject);
                             handler.ApplyStates();
                             handler.RequestSerialization();
                             changed = true;
@@ -1378,6 +1380,8 @@ namespace Cozen
                         
                         if (matHandlerChanged)
                         {
+                            // Ensure ownership before serialization
+                            EnsureOwnershipOf(handler.gameObject);
                             handler.ApplyMaterial();
                             handler.RequestSerialization();
                             changed = true;
@@ -1421,6 +1425,8 @@ namespace Cozen
                     
                     if (handlerChanged)
                     {
+                        // Ensure ownership before serialization
+                        EnsureOwnershipOf(handler.gameObject);
                         handler.ApplyStates();
                         handler.RequestSerialization();
                         changed = true;
@@ -1463,6 +1469,8 @@ namespace Cozen
                     
                     if (handlerChanged)
                     {
+                        // Ensure ownership before serialization
+                        EnsureOwnershipOf(handler.gameObject);
                         handler.RequestSerialization();
                         changed = true;
                     }
@@ -1480,6 +1488,9 @@ namespace Cozen
             
             int targetIndex = GetPresetSkyboxIndex(presetIndex);
             if (targetIndex < 0) return false;
+            
+            // Ensure ownership before serialization
+            EnsureOwnershipOf(handler.gameObject);
             
             // Note: We no longer store skybox page in presets, just the index
             return handler.ApplyPresetSnapshot(targetIndex, 0);
@@ -1528,6 +1539,8 @@ namespace Cozen
                     
                     if (handlerChanged)
                     {
+                        // Ensure ownership before serialization
+                        EnsureOwnershipOf(handler.gameObject);
                         handler.ApplyToggles();
                         handler.RequestSerialization();
                         changed = true;
@@ -1546,6 +1559,9 @@ namespace Cozen
             if (handler == null) return false;
             
             if (syncedPresetValues == null) return false;
+            
+            // Ensure ownership before serialization
+            EnsureOwnershipOf(handler.gameObject);
             
             // Apply Mochie indices
             handler.SetOutlineType(GetPresetValue(presetIndex, PV_MOCHIE_OUTLINE_TYPE));
@@ -1580,6 +1596,9 @@ namespace Cozen
             if (faderHandler == null) return false;
             
             if (syncedPresetValues == null) return false;
+            
+            // Ensure ownership of the fader system handler before modifying faders
+            EnsureOwnershipOf(faderHandler.gameObject);
             
             int faderCount = faderHandler.GetFaderCount();
             bool changed = false;
@@ -1911,6 +1930,20 @@ namespace Cozen
             if (!Networking.IsOwner(gameObject))
             {
                 Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            }
+        }
+        
+        /// <summary>
+        /// Ensures the local player owns the specified GameObject before modifying synced data.
+        /// Used when applying presets to take ownership of handlers before calling RequestSerialization.
+        /// </summary>
+        private void EnsureOwnershipOf(GameObject target)
+        {
+            if (target == null) return;
+            
+            if (!Networking.IsOwner(target))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, target);
             }
         }
         

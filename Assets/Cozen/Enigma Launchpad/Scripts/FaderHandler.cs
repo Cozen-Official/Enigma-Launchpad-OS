@@ -1,6 +1,7 @@
 ﻿// Portions of this behaviour are adapted from Wo1fie's original fader implementation.
 using UdonSharp;
 using UnityEngine;
+using UnityEngine.UI;
 using VRC.SDKBase;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
@@ -55,6 +56,20 @@ namespace Cozen
         public string materialPropertyId = string.Empty;
         [Tooltip("Property type: 0=Float, 1=Range, 2=Color")]
         public int propertyType = 0;
+
+        [Tooltip("Whether this fader targets UdonBehaviour variables instead of shader properties.")]
+        public bool targetsUdon = false;
+        [Tooltip("UdonBehaviour targets for this fader.")]
+        public UdonBehaviour[] targetUdonBehaviours;
+        [Tooltip("Variable name on the UdonBehaviour targets.")]
+        public string udonVariableName = string.Empty;
+
+        [Tooltip("Whether this fader targets Unity UI Slider components.")]
+        public bool targetsSlider = false;
+        [Tooltip("Unity UI Slider targets for this fader.")]
+        public Slider[] targetSliders;
+        [Tooltip("Whether each slider's direction is reversed (Right to Left or Top to Bottom).")]
+        public bool[] sliderDirectionsReversed;
 
         [UdonSynced] public float currentValue = 0f;
         [UdonSynced] private Vector3 syncedSliderPosition;
@@ -348,6 +363,24 @@ namespace Cozen
 
         public void UpdateTargetFloat(float val)
         {
+            // Check if targeting Unity UI Sliders
+            if (targetsSlider)
+            {
+                UpdateTargetSliders(val);
+                // If also targeting other types, continue; otherwise return
+                if (!targetsUdon && (targetMaterials == null || targetMaterials.Length == 0))
+                {
+                    return;
+                }
+            }
+
+            // Check if targeting UdonBehaviour instead of shader properties
+            if (targetsUdon)
+            {
+                UpdateTargetUdon(val);
+                return;
+            }
+            
             int propID = VRCShader.PropertyToID(materialPropertyId);
             int count = targetMaterials != null ? targetMaterials.Length : 0;
             
@@ -367,6 +400,60 @@ namespace Cozen
                     {
                         target.SetFloat(propID, val);
                     }
+                }
+            }
+        }
+
+        private void UpdateTargetSliders(float val)
+        {
+            int count = targetSliders != null ? targetSliders.Length : 0;
+            if (count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                Slider slider = targetSliders[i];
+                if (slider != null)
+                {
+                    // Check if direction is reversed for this slider
+                    bool reversed = sliderDirectionsReversed != null && i < sliderDirectionsReversed.Length && sliderDirectionsReversed[i];
+                    
+                    if (reversed)
+                    {
+                        // Map the value in reverse: when fader is at max, slider is at min
+                        float range = valueMax - valueMin;
+                        float normalizedVal = range > 0f ? (val - valueMin) / range : 0f;
+                        float reversedVal = slider.maxValue - (normalizedVal * (slider.maxValue - slider.minValue));
+                        slider.value = Mathf.Clamp(reversedVal, slider.minValue, slider.maxValue);
+                    }
+                    else
+                    {
+                        // Direct mapping: fader value maps to slider value
+                        float range = valueMax - valueMin;
+                        float normalizedVal = range > 0f ? (val - valueMin) / range : 0f;
+                        float sliderVal = slider.minValue + (normalizedVal * (slider.maxValue - slider.minValue));
+                        slider.value = Mathf.Clamp(sliderVal, slider.minValue, slider.maxValue);
+                    }
+                }
+            }
+        }
+
+        private void UpdateTargetUdon(float val)
+        {
+            int count = targetUdonBehaviours != null ? targetUdonBehaviours.Length : 0;
+            if (count == 0 || string.IsNullOrEmpty(udonVariableName))
+            {
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                UdonBehaviour target = targetUdonBehaviours[i];
+                if (target != null)
+                {
+                    target.SetProgramVariable(udonVariableName, val);
                 }
             }
         }
@@ -590,6 +677,10 @@ namespace Cozen
         /// </summary>
         public bool IsAssigned()
         {
+            if (targetsUdon)
+            {
+                return !string.IsNullOrEmpty(udonVariableName) && targetUdonBehaviours != null && targetUdonBehaviours.Length > 0;
+            }
             return !string.IsNullOrEmpty(materialPropertyId);
         }
 

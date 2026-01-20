@@ -19017,7 +19017,6 @@ GameObject:
   - component: {fileID: 2721546277441937868}
   - component: {fileID: 5654513759695254841}
   - component: {fileID: 4253947072883355711}
-  - component: {fileID: 289450076821631115}
   m_Layer: 0
   m_Name: BODY
   m_TagString: Untagged
@@ -19103,26 +19102,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &289450076821631115
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561382623993161077}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24fb3eb29eeebd04d87475bbfb984a31, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  createMultiMaterialMesh: 1
-  combineInactiveChildren: 0
-  deactivateCombinedChildren: 1
-  deactivateCombinedChildrenMeshRenderers: 0
-  generateUVMap: 1
-  destroyCombinedChildren: 0
-  folderPath: Cozen/Enigma Launchpad/Meshes
-  meshFiltersToSkip: []
 --- !u!1 &1568461467416053401
 GameObject:
   m_ObjectHideFlags: 0
@@ -51398,7 +51377,7 @@ Transform:
   m_GameObject: {fileID: 3932854133275603443}
   serializedVersion: 2
   m_LocalRotation: {x: 1.5553292e-10, y: -0.8057343, z: -0.5922773, w: -0.0000000010043615}
-  m_LocalPosition: {x: 0.050937846, y: 0.13770312, z: 0.68437004}
+  m_LocalPosition: {x: 0.050937846, y: 0.1169, z: 0.6909}
   m_LocalScale: {x: -0.15104356, y: 0.15104361, z: 0.15104362}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -62145,7 +62124,6 @@ GameObject:
   - component: {fileID: 8085981210903770430}
   - component: {fileID: 3861560802175431599}
   - component: {fileID: 6713683542586100226}
-  - component: {fileID: 1083424604201218794}
   m_Layer: 0
   m_Name: FEET
   m_TagString: Untagged
@@ -62222,26 +62200,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &1083424604201218794
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4765901202474283953}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24fb3eb29eeebd04d87475bbfb984a31, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  createMultiMaterialMesh: 1
-  combineInactiveChildren: 0
-  deactivateCombinedChildren: 1
-  deactivateCombinedChildrenMeshRenderers: 0
-  generateUVMap: 1
-  destroyCombinedChildren: 0
-  folderPath: Cozen/Enigma Launchpad/Meshes
-  meshFiltersToSkip: []
 --- !u!1 &4770941778279787309
 GameObject:
   m_ObjectHideFlags: 0
@@ -69868,7 +69826,7 @@ Transform:
   m_GameObject: {fileID: 5407905266178349913}
   serializedVersion: 2
   m_LocalRotation: {x: 1.5553292e-10, y: -0.8057343, z: -0.5922773, w: -0.0000000010043615}
-  m_LocalPosition: {x: 0.050937846, y: 0.10163159, z: 0.56899875}
+  m_LocalPosition: {x: 0.050937846, y: 0.0808, z: 0.5755}
   m_LocalScale: {x: -0.15104356, y: 0.15104361, z: 0.15104362}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -73262,7 +73220,6 @@ GameObject:
   - component: {fileID: 2730765521320731241}
   - component: {fileID: 5808574428174787907}
   - component: {fileID: 6534112100264071872}
-  - component: {fileID: 3738603777283418065}
   m_Layer: 0
   m_Name: PORTS
   m_TagString: Untagged
@@ -73374,26 +73331,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &3738603777283418065
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5677958777521415214}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24fb3eb29eeebd04d87475bbfb984a31, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  createMultiMaterialMesh: 1
-  combineInactiveChildren: 0
-  deactivateCombinedChildren: 1
-  deactivateCombinedChildrenMeshRenderers: 0
-  generateUVMap: 1
-  destroyCombinedChildren: 0
-  folderPath: Cozen/Enigma Launchpad/Meshes
-  meshFiltersToSkip: []
 --- !u!1 &5688914552809977579
 GameObject:
   m_ObjectHideFlags: 0
@@ -82757,7 +82694,7 @@ Transform:
   m_GameObject: {fileID: 6434018773209757798}
   serializedVersion: 2
   m_LocalRotation: {x: 1.5553292e-10, y: -0.8057343, z: -0.5922773, w: -0.0000000010043615}
-  m_LocalPosition: {x: 0.050937846, y: 0.17377509, z: 0.7997394}
+  m_LocalPosition: {x: 0.050937846, y: 0.1529, z: 0.8062}
   m_LocalScale: {x: -0.15104356, y: 0.15104361, z: 0.15104362}
   m_ConstrainProportionsScale: 0
   m_Children: []

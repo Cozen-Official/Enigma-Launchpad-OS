@@ -79,6 +79,30 @@ namespace Cozen
         [Tooltip("If true, the static fader indicator lights only when the value is above Min.")]
         public bool[] staticFaderIndicatorConditional;
 
+        [Tooltip("Whether each static fader targets an UdonBehaviour instead of a shader property.")]
+        public bool[] staticFaderTargetsUdon;
+
+        [Tooltip("UdonBehaviour targets for each static fader (flat array, use staticFaderUdonCounts for per-fader counts).")]
+        public UdonBehaviour[] staticFaderUdonBehaviours;
+
+        [Tooltip("Number of UdonBehaviours for each static fader.")]
+        public int[] staticFaderUdonCounts;
+
+        [Tooltip("Variable name on the UdonBehaviour for each static fader.")]
+        public string[] staticFaderUdonVariableNames;
+
+        [Tooltip("Whether each static fader targets Unity UI Slider components.")]
+        public bool[] staticFaderTargetsSlider;
+
+        [Tooltip("Unity UI Slider targets for each static fader (flat array, use staticFaderSliderCounts for per-fader counts).")]
+        public UnityEngine.UI.Slider[] staticFaderSliders;
+
+        [Tooltip("Number of Sliders for each static fader.")]
+        public int[] staticFaderSliderCounts;
+
+        [Tooltip("Whether each slider's direction is reversed (flat array, aligned with staticFaderSliders).")]
+        public bool[] staticFaderSliderReversed;
+
         [Header("Dynamic Fader Configuration")]
         [Tooltip("Metadata for dynamic fader labels.")]
         public string[] dynamicFaderNames;
@@ -118,6 +142,30 @@ namespace Cozen
 
         [Tooltip("If true, the dynamic fader indicator lights only when the value is above Min.")]
         public bool[] dynamicFaderIndicatorConditional;
+
+        [Tooltip("Whether each dynamic fader targets an UdonBehaviour instead of a shader property.")]
+        public bool[] dynamicFaderTargetsUdon;
+
+        [Tooltip("UdonBehaviour targets for each dynamic fader (flat array, use dynamicFaderUdonCounts for per-fader counts).")]
+        public UdonBehaviour[] dynamicFaderUdonBehaviours;
+
+        [Tooltip("Number of UdonBehaviours for each dynamic fader.")]
+        public int[] dynamicFaderUdonCounts;
+
+        [Tooltip("Variable name on the UdonBehaviour for each dynamic fader.")]
+        public string[] dynamicFaderUdonVariableNames;
+
+        [Tooltip("Whether each dynamic fader targets Unity UI Slider components.")]
+        public bool[] dynamicFaderTargetsSlider;
+
+        [Tooltip("Unity UI Slider targets for each dynamic fader (flat array, use dynamicFaderSliderCounts for per-fader counts).")]
+        public UnityEngine.UI.Slider[] dynamicFaderSliders;
+
+        [Tooltip("Number of Sliders for each dynamic fader.")]
+        public int[] dynamicFaderSliderCounts;
+
+        [Tooltip("Whether each slider's direction is reversed (flat array, aligned with dynamicFaderSliders).")]
+        public bool[] dynamicFaderSliderReversed;
 
         // Runtime state
         private string[] faderSlotLabels;
@@ -804,11 +852,51 @@ namespace Cozen
                 return;
             }
 
-            string propertyName = GetDynamicFaderPropertyName(dynamicIndex);
-            Material[] targets = BuildDynamicFaderMaterials(dynamicIndex, propertyName);
+            // Check if this fader targets Unity UI Sliders
+            bool targetsSlider = IsDynamicFaderTargetingSlider(dynamicIndex);
+            if (targetsSlider)
+            {
+                UnityEngine.UI.Slider[] sliderTargets = BuildDynamicFaderSliderTargets(dynamicIndex);
+                bool[] sliderReversed = BuildDynamicFaderSliderReversed(dynamicIndex);
+                
+                fader.targetSliders = sliderTargets;
+                fader.sliderDirectionsReversed = sliderReversed;
+                fader.targetsSlider = true;
+            }
+            else
+            {
+                fader.targetSliders = new UnityEngine.UI.Slider[0];
+                fader.sliderDirectionsReversed = new bool[0];
+                fader.targetsSlider = false;
+            }
 
-            fader.materialPropertyId = propertyName;
-            fader.targetMaterials = targets;
+            // Check if this fader targets UdonBehaviour instead of shader properties
+            bool targetsUdon = IsDynamicFaderTargetingUdon(dynamicIndex);
+            if (targetsUdon)
+            {
+                // Configure for UdonBehaviour targeting
+                UdonBehaviour[] udonTargets = BuildDynamicFaderUdonTargets(dynamicIndex);
+                string variableName = GetDynamicFaderUdonVariableName(dynamicIndex);
+                
+                fader.targetUdonBehaviours = udonTargets;
+                fader.udonVariableName = variableName;
+                fader.targetsUdon = true;
+                fader.targetMaterials = new Material[0];
+                fader.materialPropertyId = string.Empty;
+            }
+            else
+            {
+                // Configure for shader property targeting
+                string propertyName = GetDynamicFaderPropertyName(dynamicIndex);
+                Material[] targets = BuildDynamicFaderMaterials(dynamicIndex, propertyName);
+
+                fader.materialPropertyId = propertyName;
+                fader.targetMaterials = targets;
+                fader.targetsUdon = false;
+                fader.targetUdonBehaviours = new UdonBehaviour[0];
+                fader.udonVariableName = string.Empty;
+            }
+
             fader.propertyType = GetDynamicFaderPropertyType(dynamicIndex);
             fader.valueMin = GetDynamicFaderMinValue(dynamicIndex);
             fader.valueMax = GetDynamicFaderMaxValue(dynamicIndex);
@@ -829,6 +917,49 @@ namespace Cozen
             }
         }
 
+        private UdonBehaviour[] BuildDynamicFaderUdonTargets(int dynamicIndex)
+        {
+            int udonCount = GetDynamicFaderUdonCount(dynamicIndex);
+            int udonStart = GetDynamicFaderUdonStartIndex(dynamicIndex);
+            int available = dynamicFaderUdonBehaviours != null ? dynamicFaderUdonBehaviours.Length : 0;
+            int count = Mathf.Clamp(udonCount, 0, Mathf.Max(0, available - udonStart));
+
+            if (count <= 0)
+            {
+                return new UdonBehaviour[0];
+            }
+
+            // Count valid behaviours first
+            int validCount = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = udonStart + i;
+                if (flatIndex >= 0 && flatIndex < available && dynamicFaderUdonBehaviours[flatIndex] != null)
+                {
+                    validCount++;
+                }
+            }
+
+            if (validCount <= 0)
+            {
+                return new UdonBehaviour[0];
+            }
+
+            UdonBehaviour[] targets = new UdonBehaviour[validCount];
+            int insert = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = udonStart + i;
+                if (flatIndex >= 0 && flatIndex < available && dynamicFaderUdonBehaviours[flatIndex] != null)
+                {
+                    targets[insert] = dynamicFaderUdonBehaviours[flatIndex];
+                    insert++;
+                }
+            }
+
+            return targets;
+        }
+
         private void ClearFaderSlot(int faderIndex)
         {
             FaderHandler fader = faders != null && faderIndex >= 0 && faderIndex < faders.Length ? faders[faderIndex] : null;
@@ -839,6 +970,9 @@ namespace Cozen
 
             fader.materialPropertyId = string.Empty;
             fader.targetMaterials = new Material[0];
+            fader.targetsUdon = false;
+            fader.targetUdonBehaviours = new UdonBehaviour[0];
+            fader.udonVariableName = string.Empty;
             fader.valueMin = 0f;
             fader.valueMax = 1f;
             fader.defaultValue = 0f;
@@ -963,11 +1097,51 @@ namespace Cozen
                 return;
             }
 
-            string propertyName = GetStaticFaderPropertyName(faderIndex);
-            Material[] targets = BuildStaticFaderMaterials(faderIndex, propertyName);
+            // Check if this fader targets Unity UI Sliders
+            bool targetsSlider = IsStaticFaderTargetingSlider(faderIndex);
+            if (targetsSlider)
+            {
+                UnityEngine.UI.Slider[] sliderTargets = BuildStaticFaderSliderTargets(faderIndex);
+                bool[] sliderReversed = BuildStaticFaderSliderReversed(faderIndex);
+                
+                fader.targetSliders = sliderTargets;
+                fader.sliderDirectionsReversed = sliderReversed;
+                fader.targetsSlider = true;
+            }
+            else
+            {
+                fader.targetSliders = new UnityEngine.UI.Slider[0];
+                fader.sliderDirectionsReversed = new bool[0];
+                fader.targetsSlider = false;
+            }
 
-            fader.materialPropertyId = propertyName;
-            fader.targetMaterials = targets;
+            // Check if this fader targets UdonBehaviour instead of shader properties
+            bool targetsUdon = IsStaticFaderTargetingUdon(faderIndex);
+            if (targetsUdon)
+            {
+                // Configure for UdonBehaviour targeting
+                UdonBehaviour[] udonTargets = BuildStaticFaderUdonTargets(faderIndex);
+                string variableName = GetStaticFaderUdonVariableName(faderIndex);
+                
+                fader.targetUdonBehaviours = udonTargets;
+                fader.udonVariableName = variableName;
+                fader.targetsUdon = true;
+                fader.targetMaterials = new Material[0];
+                fader.materialPropertyId = string.Empty;
+            }
+            else
+            {
+                // Configure for shader property targeting
+                string propertyName = GetStaticFaderPropertyName(faderIndex);
+                Material[] targets = BuildStaticFaderMaterials(faderIndex, propertyName);
+
+                fader.materialPropertyId = propertyName;
+                fader.targetMaterials = targets;
+                fader.targetsUdon = false;
+                fader.targetUdonBehaviours = new UdonBehaviour[0];
+                fader.udonVariableName = string.Empty;
+            }
+            
             fader.propertyType = GetStaticFaderPropertyType(faderIndex);
             fader.valueMin = GetStaticFaderMinValue(faderIndex);
             fader.valueMax = GetStaticFaderMaxValue(faderIndex);
@@ -978,6 +1152,49 @@ namespace Cozen
             {
                 fader.ResetFaderPosition();
             }
+        }
+
+        private UdonBehaviour[] BuildStaticFaderUdonTargets(int faderIndex)
+        {
+            int udonCount = GetStaticFaderUdonCount(faderIndex);
+            int udonStart = GetStaticFaderUdonStartIndex(faderIndex);
+            int available = staticFaderUdonBehaviours != null ? staticFaderUdonBehaviours.Length : 0;
+            int count = Mathf.Clamp(udonCount, 0, Mathf.Max(0, available - udonStart));
+
+            if (count <= 0)
+            {
+                return new UdonBehaviour[0];
+            }
+
+            // Count valid behaviours first
+            int validCount = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = udonStart + i;
+                if (flatIndex >= 0 && flatIndex < available && staticFaderUdonBehaviours[flatIndex] != null)
+                {
+                    validCount++;
+                }
+            }
+
+            if (validCount <= 0)
+            {
+                return new UdonBehaviour[0];
+            }
+
+            UdonBehaviour[] targets = new UdonBehaviour[validCount];
+            int insert = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = udonStart + i;
+                if (flatIndex >= 0 && flatIndex < available && staticFaderUdonBehaviours[flatIndex] != null)
+                {
+                    targets[insert] = staticFaderUdonBehaviours[flatIndex];
+                    insert++;
+                }
+            }
+
+            return targets;
         }
 
         private Material[] BuildStaticFaderMaterials(int faderIndex, string propertyName)
@@ -1143,6 +1360,29 @@ namespace Cozen
                 }
 
                 case ToggleFolderType.Properties:
+                {
+                    // For Properties folders, get the renderers for the specific toggle entry
+                    int toggleIndex = GetDynamicFaderToggleIndex(dynamicIndex);
+                    int materialIndex = GetDynamicFaderMaterialIndex(dynamicIndex);
+                    PropertyHandler propHandler = launchpad.GetPropertyHandlerForFolder(folderIndex);
+                    if (propHandler != null && toggleIndex >= 0)
+                    {
+                        Renderer[] entryRenderers = propHandler.GetRenderersForEntry(toggleIndex);
+                        if (entryRenderers != null && entryRenderers.Length > 0)
+                        {
+                            int[] propMaterialIndices = new int[entryRenderers.Length];
+                            for (int i = 0; i < propMaterialIndices.Length; i++)
+                            {
+                                propMaterialIndices[i] = materialIndex;
+                            }
+                            PrepareShaderTarget(entryRenderers, propMaterialIndices, null, out renderers, out materialIndices, out directMaterials);
+                            return;
+                        }
+                    }
+                    PrepareShaderTarget(new Renderer[0], new int[0], null, out renderers, out materialIndices, out directMaterials);
+                    return;
+                }
+
                 case ToggleFolderType.Mochie:
                 case ToggleFolderType.Skybox:
                     BuildFolderStaticFaderTarget(folderIndex, 0, out renderers, out materialIndices, out directMaterials);
@@ -1224,18 +1464,8 @@ namespace Cozen
             {
                 case ToggleFolderType.Properties:
                 {
-                    PropertyHandler propHandler = launchpad.GetPropertyHandlerForFolder(folderIndex);
-                    if (propHandler != null && propHandler.propertyRenderers != null && propHandler.propertyRenderers.Length > 0)
-                    {
-                        Renderer[] propRenderers = propHandler.propertyRenderers;
-                        int[] propMaterialIndices = new int[propRenderers.Length];
-                        for (int i = 0; i < propMaterialIndices.Length; i++)
-                        {
-                            propMaterialIndices[i] = materialIndex;
-                        }
-                        PrepareShaderTarget(propRenderers, propMaterialIndices, null, out renderers, out materialIndices, out directMaterials);
-                        return;
-                    }
+                    // Properties folder entries have per-entry renderers, so folder-level targeting
+                    // doesn't apply. Static faders should use custom targeting for Properties folders.
                     PrepareShaderTarget(new Renderer[0], new int[0], null, out renderers, out materialIndices, out directMaterials);
                     return;
                 }
@@ -1447,6 +1677,308 @@ namespace Cozen
 
             int count = staticFaderRendererCounts[faderIndex];
             return count < 0 ? 0 : count;
+        }
+
+        private bool IsStaticFaderTargetingUdon(int faderIndex)
+        {
+            return staticFaderTargetsUdon != null && faderIndex >= 0 && faderIndex < staticFaderTargetsUdon.Length && staticFaderTargetsUdon[faderIndex];
+        }
+
+        private int GetStaticFaderUdonStartIndex(int faderIndex)
+        {
+            int start = 0;
+            if (staticFaderUdonCounts == null || faderIndex <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(faderIndex, staticFaderUdonCounts.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                int count = staticFaderUdonCounts[i];
+                if (count > 0)
+                {
+                    start += count;
+                }
+            }
+
+            return start;
+        }
+
+        private int GetStaticFaderUdonCount(int faderIndex)
+        {
+            if (staticFaderUdonCounts == null || faderIndex < 0 || faderIndex >= staticFaderUdonCounts.Length)
+            {
+                return 0;
+            }
+
+            int count = staticFaderUdonCounts[faderIndex];
+            return count < 0 ? 0 : count;
+        }
+
+        private string GetStaticFaderUdonVariableName(int faderIndex)
+        {
+            if (staticFaderUdonVariableNames == null || faderIndex < 0 || faderIndex >= staticFaderUdonVariableNames.Length)
+            {
+                return string.Empty;
+            }
+
+            string name = staticFaderUdonVariableNames[faderIndex];
+            return name ?? string.Empty;
+        }
+
+        private bool IsDynamicFaderTargetingUdon(int index)
+        {
+            return dynamicFaderTargetsUdon != null && index >= 0 && index < dynamicFaderTargetsUdon.Length && dynamicFaderTargetsUdon[index];
+        }
+
+        private int GetDynamicFaderUdonStartIndex(int index)
+        {
+            int start = 0;
+            if (dynamicFaderUdonCounts == null || index <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(index, dynamicFaderUdonCounts.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                int count = dynamicFaderUdonCounts[i];
+                if (count > 0)
+                {
+                    start += count;
+                }
+            }
+
+            return start;
+        }
+
+        private int GetDynamicFaderUdonCount(int index)
+        {
+            if (dynamicFaderUdonCounts == null || index < 0 || index >= dynamicFaderUdonCounts.Length)
+            {
+                return 0;
+            }
+
+            int count = dynamicFaderUdonCounts[index];
+            return count < 0 ? 0 : count;
+        }
+
+        private string GetDynamicFaderUdonVariableName(int index)
+        {
+            if (dynamicFaderUdonVariableNames == null || index < 0 || index >= dynamicFaderUdonVariableNames.Length)
+            {
+                return string.Empty;
+            }
+
+            string name = dynamicFaderUdonVariableNames[index];
+            return name ?? string.Empty;
+        }
+
+        // ==================== Slider Targeting Helper Methods ====================
+
+        private bool IsStaticFaderTargetingSlider(int faderIndex)
+        {
+            return staticFaderTargetsSlider != null && faderIndex >= 0 && faderIndex < staticFaderTargetsSlider.Length && staticFaderTargetsSlider[faderIndex];
+        }
+
+        private int GetStaticFaderSliderStartIndex(int faderIndex)
+        {
+            int start = 0;
+            if (staticFaderSliderCounts == null || faderIndex <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(faderIndex, staticFaderSliderCounts.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                int count = staticFaderSliderCounts[i];
+                if (count > 0)
+                {
+                    start += count;
+                }
+            }
+
+            return start;
+        }
+
+        private int GetStaticFaderSliderCount(int faderIndex)
+        {
+            if (staticFaderSliderCounts == null || faderIndex < 0 || faderIndex >= staticFaderSliderCounts.Length)
+            {
+                return 0;
+            }
+
+            int count = staticFaderSliderCounts[faderIndex];
+            return count < 0 ? 0 : count;
+        }
+
+        private UnityEngine.UI.Slider[] BuildStaticFaderSliderTargets(int faderIndex)
+        {
+            int sliderCount = GetStaticFaderSliderCount(faderIndex);
+            int sliderStart = GetStaticFaderSliderStartIndex(faderIndex);
+            int available = staticFaderSliders != null ? staticFaderSliders.Length : 0;
+            int count = Mathf.Clamp(sliderCount, 0, Mathf.Max(0, available - sliderStart));
+
+            if (count <= 0)
+            {
+                return new UnityEngine.UI.Slider[0];
+            }
+
+            // Count valid sliders first
+            int validCount = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = sliderStart + i;
+                if (flatIndex >= 0 && flatIndex < available && staticFaderSliders[flatIndex] != null)
+                {
+                    validCount++;
+                }
+            }
+
+            if (validCount <= 0)
+            {
+                return new UnityEngine.UI.Slider[0];
+            }
+
+            UnityEngine.UI.Slider[] targets = new UnityEngine.UI.Slider[validCount];
+            int insert = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = sliderStart + i;
+                if (flatIndex >= 0 && flatIndex < available && staticFaderSliders[flatIndex] != null)
+                {
+                    targets[insert] = staticFaderSliders[flatIndex];
+                    insert++;
+                }
+            }
+
+            return targets;
+        }
+
+        private bool[] BuildStaticFaderSliderReversed(int faderIndex)
+        {
+            int sliderCount = GetStaticFaderSliderCount(faderIndex);
+            int sliderStart = GetStaticFaderSliderStartIndex(faderIndex);
+            int available = staticFaderSliderReversed != null ? staticFaderSliderReversed.Length : 0;
+            int count = Mathf.Clamp(sliderCount, 0, Mathf.Max(0, available - sliderStart));
+
+            if (count <= 0)
+            {
+                return new bool[0];
+            }
+
+            bool[] reversed = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = sliderStart + i;
+                reversed[i] = flatIndex >= 0 && flatIndex < available && staticFaderSliderReversed[flatIndex];
+            }
+
+            return reversed;
+        }
+
+        private bool IsDynamicFaderTargetingSlider(int index)
+        {
+            return dynamicFaderTargetsSlider != null && index >= 0 && index < dynamicFaderTargetsSlider.Length && dynamicFaderTargetsSlider[index];
+        }
+
+        private int GetDynamicFaderSliderStartIndex(int index)
+        {
+            int start = 0;
+            if (dynamicFaderSliderCounts == null || index <= 0)
+            {
+                return start;
+            }
+
+            int limit = Mathf.Min(index, dynamicFaderSliderCounts.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                int count = dynamicFaderSliderCounts[i];
+                if (count > 0)
+                {
+                    start += count;
+                }
+            }
+
+            return start;
+        }
+
+        private int GetDynamicFaderSliderCount(int index)
+        {
+            if (dynamicFaderSliderCounts == null || index < 0 || index >= dynamicFaderSliderCounts.Length)
+            {
+                return 0;
+            }
+
+            int count = dynamicFaderSliderCounts[index];
+            return count < 0 ? 0 : count;
+        }
+
+        private UnityEngine.UI.Slider[] BuildDynamicFaderSliderTargets(int index)
+        {
+            int sliderCount = GetDynamicFaderSliderCount(index);
+            int sliderStart = GetDynamicFaderSliderStartIndex(index);
+            int available = dynamicFaderSliders != null ? dynamicFaderSliders.Length : 0;
+            int count = Mathf.Clamp(sliderCount, 0, Mathf.Max(0, available - sliderStart));
+
+            if (count <= 0)
+            {
+                return new UnityEngine.UI.Slider[0];
+            }
+
+            // Count valid sliders first
+            int validCount = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = sliderStart + i;
+                if (flatIndex >= 0 && flatIndex < available && dynamicFaderSliders[flatIndex] != null)
+                {
+                    validCount++;
+                }
+            }
+
+            if (validCount <= 0)
+            {
+                return new UnityEngine.UI.Slider[0];
+            }
+
+            UnityEngine.UI.Slider[] targets = new UnityEngine.UI.Slider[validCount];
+            int insert = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = sliderStart + i;
+                if (flatIndex >= 0 && flatIndex < available && dynamicFaderSliders[flatIndex] != null)
+                {
+                    targets[insert] = dynamicFaderSliders[flatIndex];
+                    insert++;
+                }
+            }
+
+            return targets;
+        }
+
+        private bool[] BuildDynamicFaderSliderReversed(int index)
+        {
+            int sliderCount = GetDynamicFaderSliderCount(index);
+            int sliderStart = GetDynamicFaderSliderStartIndex(index);
+            int available = dynamicFaderSliderReversed != null ? dynamicFaderSliderReversed.Length : 0;
+            int count = Mathf.Clamp(sliderCount, 0, Mathf.Max(0, available - sliderStart));
+
+            if (count <= 0)
+            {
+                return new bool[0];
+            }
+
+            bool[] reversed = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                int flatIndex = sliderStart + i;
+                reversed[i] = flatIndex >= 0 && flatIndex < available && dynamicFaderSliderReversed[flatIndex];
+            }
+
+            return reversed;
         }
 
         private string GetStaticFaderLabel(int faderIndex)
@@ -1825,6 +2357,12 @@ namespace Cozen
                 return;
             }
 
+            // Ensure ownership of the fader before modifying synced data
+            if (!Networking.IsOwner(fader.gameObject))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, fader.gameObject);
+            }
+            
             fader.SetPositionFromStep(step);
             fader.RequestSerialization();
         }
