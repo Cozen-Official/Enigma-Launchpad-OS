@@ -41,13 +41,13 @@ Material:
     - _Glow: 1.5
     - _LatencyPixels: 0
     - _LineThickness: 0.144
-    - _Metallic: 0.429
+    - _Metallic: 1
     - _Mode: 4
     - _OverlapBlend: 2
     - _PlayheadBrightness: 2
     - _PlayheadWidth: 1.18
     - _ScrollSpeed: 0
-    - _Smoothness: 0.356
+    - _Smoothness: 0.295
     - _WaveformRow: 0
     - _YOffset: 0
     m_Colors:

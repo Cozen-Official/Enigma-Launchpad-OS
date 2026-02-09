@@ -279,6 +279,30 @@ namespace Cozen
         public bool supportsAudioLinkTriplanar;
         public bool supportsAudioLinkMisc;
         
+        /// <summary>
+        /// Checks if a shader property on the Mochie renderer is controlled by an active fader.
+        /// Returns true if the property should be managed by the fader instead of MochieHandler.
+        /// Used to skip writing property values in UpdateMochieShaderProperties.
+        /// </summary>
+        private bool IsPropertyFaderControlled(string propertyName)
+        {
+            if (launchpad == null) return false;
+            FaderSystemHandler faderHandler = launchpad.GetFaderHandler();
+            if (faderHandler == null) return false;
+            return faderHandler.IsMochiePropertyControlledByFader(propertyName);
+        }
+        
+        /// <summary>
+        /// Checks if a shader property has any fader configured for it, including inactive dynamic faders.
+        /// Used to disable +/- buttons and hide numeric values from labels even when the fader isn't active.
+        /// </summary>
+        private bool IsPropertyConfiguredForFader(string propertyName)
+        {
+            if (launchpad == null) return false;
+            FaderSystemHandler faderHandler = launchpad.GetFaderHandler();
+            if (faderHandler == null) return false;
+            return faderHandler.IsMochiePropertyConfiguredForFader(propertyName);
+        }
         
         /// <summary>
         /// Initializes the synced arrays with default values.
@@ -835,6 +859,12 @@ namespace Cozen
         
         private bool HandleMochieSelection(int displayPage, int buttonIndex)
         {
+            // Block button presses for buttons whose property is controlled by a fader
+            if (IsButtonDisabledByFader(displayPage, buttonIndex))
+            {
+                return false;
+            }
+            
             bool stateChanged;
             switch (displayPage)
             {
@@ -1098,6 +1128,12 @@ namespace Cozen
                 case 1:
                 if (Mathf.Approximately(saturation, 1f))
                 {
+                    // When fader-controlled, toggle on one step (matching +/- step size) so the effect becomes active
+                    if (IsPropertyConfiguredForFader("_Saturation"))
+                    {
+                        saturation = 0.9f; // one step (0.1) below default of 1.0
+                        return true;
+                    }
                     return false;
                 }
                 
@@ -1141,6 +1177,11 @@ namespace Cozen
                 {
                     if (!HasAdjustmentActivation(roundingOpacity))
                     {
+                        if (IsPropertyConfiguredForFader("_RoundingOpacity"))
+                        {
+                            roundingOpacity = 0.1f; // one step above default of 0.0
+                            return true;
+                        }
                         return false;
                     }
 
@@ -1150,6 +1191,11 @@ namespace Cozen
                 
                 if (!HasAdjustmentActivation(_HDR))
                 {
+                    if (IsPropertyConfiguredForFader("_HDR"))
+                    {
+                        _HDR = 0.1f; // one step above default of 0.0
+                        return true;
+                    }
                     return false;
                 }
 
@@ -1191,6 +1237,11 @@ namespace Cozen
                 case 7:
                 if (!HasAdjustmentActivation(fogSafeOpacity))
                 {
+                    if (IsPropertyConfiguredForFader("_FogSafeOpacity"))
+                    {
+                        fogSafeOpacity = 0.05f; // one step (matching +/- step) above default of 0.0
+                        return true;
+                    }
                     return false;
                 }
 
@@ -1230,6 +1281,11 @@ namespace Cozen
                 case 1:
                 if (Mathf.Approximately(_Brightness, 1f))
                 {
+                    if (IsPropertyConfiguredForFader("_Brightness"))
+                    {
+                        _Brightness = 1.1f; // one step (0.1) above default of 1.0
+                        return true;
+                    }
                     return false;
                 }
                 
@@ -1260,6 +1316,11 @@ namespace Cozen
                 case 4:
                 if (Mathf.Approximately(_Contrast, 1f))
                 {
+                    if (IsPropertyConfiguredForFader("_Contrast"))
+                    {
+                        _Contrast = 1.02f; // one step (0.02) above default of 1.0
+                        return true;
+                    }
                     return false;
                 }
                 
@@ -1293,8 +1354,18 @@ namespace Cozen
                     return true;
                 }
                 case 7:
-                if (!hasSfxXFeatures || !HasAdjustmentActivation(_HDR))
+                if (!hasSfxXFeatures)
                 {
+                    return false;
+                }
+                
+                if (!HasAdjustmentActivation(_HDR))
+                {
+                    if (IsPropertyConfiguredForFader("_HDR"))
+                    {
+                        _HDR = 0.1f; // one step above default of 0.0
+                        return true;
+                    }
                     return false;
                 }
 
@@ -1804,6 +1875,12 @@ namespace Cozen
                 return false;
             }
             
+            // Disable buttons whose property is controlled by a fader (+/- buttons only; reset buttons remain enabled)
+            if (IsButtonDisabledByFader(displayPage, localIndex))
+            {
+                return false;
+            }
+            
             // On the audio link selection page, disable overlay/scan buttons that have no texture
             if (displayPage == AudioLinkSelectionPage && hasSfxXFeatures)
             {
@@ -1835,6 +1912,68 @@ namespace Cozen
             }
             
             return overlayTextures[index] != null;
+        }
+        
+        /// <summary>
+        /// Checks if a specific button on a given display page should be disabled because a fader
+        /// is configured for the same shader property. Only +/- buttons are disabled; toggle and
+        /// reset buttons remain enabled so the user can activate/deactivate the effect (and thus
+        /// the dynamic fader). Uses IsPropertyConfiguredForFader to include inactive dynamic faders.
+        /// </summary>
+        private bool IsButtonDisabledByFader(int displayPage, int localIndex)
+        {
+            switch (displayPage)
+            {
+                case 0: // Outline page
+                    // Buttons 0,1: outline type toggles → _OutlineType
+                    if ((localIndex == 0 || localIndex == 1) && IsPropertyConfiguredForFader("_OutlineType"))
+                        return true;
+                    // Button 2: sobel filter toggle → _SobelFilterOpacity
+                    if (localIndex == 2 && IsPropertyConfiguredForFader("_SobelFilterOpacity"))
+                        return true;
+                    // Buttons 3-5: outline strength → _AuraStr / _OutlineThresh
+                    if (localIndex >= 3 && localIndex <= 5 && (IsPropertyConfiguredForFader("_AuraStr") || IsPropertyConfiguredForFader("_OutlineThresh")))
+                        return true;
+                    // Buttons 7,8: color apply/cycle → _OutlineCol (button 6 is display-only)
+                    if ((localIndex == 7 || localIndex == 8) && IsPropertyConfiguredForFader("_OutlineCol"))
+                        return true;
+                    return false;
+                    
+                case 1: // Core effects page — all buttons are on/off toggles; keep enabled for fader activation
+                    return false;
+                    
+                case 2: // Adjustments page
+                    // Buttons 0,2: saturation +/- → _Saturation (button 1 is reset, stays enabled)
+                    if ((localIndex == 0 || localIndex == 2) && IsPropertyConfiguredForFader("_Saturation"))
+                        return true;
+                    // Buttons 3,5: rounding(X)/HDR(std) +/- (button 4 is reset)
+                    if (localIndex == 3 || localIndex == 5)
+                    {
+                        if (hasSfxXFeatures && IsPropertyConfiguredForFader("_RoundingOpacity"))
+                            return true;
+                        if (!hasSfxXFeatures && IsPropertyConfiguredForFader("_HDR"))
+                            return true;
+                    }
+                    // Buttons 6,8: fog safe +/- (button 7 is reset)
+                    if ((localIndex == 6 || localIndex == 8) && IsPropertyConfiguredForFader("_FogSafeOpacity"))
+                        return true;
+                    return false;
+                    
+                case 3: // Image controls page
+                    // Buttons 0,2: brightness +/- (button 1 is reset)
+                    if ((localIndex == 0 || localIndex == 2) && IsPropertyConfiguredForFader("_Brightness"))
+                        return true;
+                    // Buttons 3,5: contrast +/- (button 4 is reset)
+                    if ((localIndex == 3 || localIndex == 5) && IsPropertyConfiguredForFader("_Contrast"))
+                        return true;
+                    // Buttons 6,8: HDR(X) +/- (button 7 is reset)
+                    if ((localIndex == 6 || localIndex == 8) && hasSfxXFeatures && IsPropertyConfiguredForFader("_HDR"))
+                        return true;
+                    return false;
+                    
+                default:
+                    return false;
+            }
         }
         
         public void OnLaunchpadDeserialized()
@@ -2137,32 +2276,51 @@ namespace Cozen
                 break;
             }
             
-            activeMochieMaterial.SetFloat("_AuraStr", auraStrength);
-            activeMochieMaterial.SetFloat("_OutlineThresh", outlineThreshold);
+            // Skip setting properties that are currently controlled by a fader.
+            // The fader directly drives these properties on the material, so MochieHandler
+            // should not overwrite them with its synced values.
+            if (!IsPropertyFaderControlled("_AuraStr"))
+                activeMochieMaterial.SetFloat("_AuraStr", auraStrength);
+            if (!IsPropertyFaderControlled("_OutlineThresh"))
+                activeMochieMaterial.SetFloat("_OutlineThresh", outlineThreshold);
             
-            activeMochieMaterial.SetInt("_OutlineType", outlineType);
-            activeMochieMaterial.SetFloat("_SobelFilterOpacity", sobelFilterOpacity);
-            activeMochieMaterial.SetFloat("_Invert", Mathf.Clamp(invertStrength, MochieEffectStrengthMin, MochieEffectStrengthMax));
-            activeMochieMaterial.SetFloat("_Amplitude", _amplitude);
-            activeMochieMaterial.SetColor("_OutlineCol", currentOutlineColor);
-            activeMochieMaterial.SetFloat("_BlurStr", blurStrength);
-            activeMochieMaterial.SetFloat("_DistortionStr", distortionStrength);
-            activeMochieMaterial.SetFloat("_Noise", noiseStrength);
-            activeMochieMaterial.SetFloat("_ScanLine", scanLineStrength);
-            activeMochieMaterial.SetFloat("_DBOpacity", depthBufferOpacity);
-            activeMochieMaterial.SetFloat("_NMFOpacity", normalMapOpacity);
-            activeMochieMaterial.SetFloat("_Saturation", saturation);
-            activeMochieMaterial.SetFloat("_RoundingOpacity", roundingOpacity);
-            activeMochieMaterial.SetFloat("_FogSafeOpacity", fogSafeOpacity);
-            if (activeMochieMaterial.HasProperty("_Brightness"))
+            if (!IsPropertyFaderControlled("_OutlineType"))
+                activeMochieMaterial.SetInt("_OutlineType", outlineType);
+            if (!IsPropertyFaderControlled("_SobelFilterOpacity"))
+                activeMochieMaterial.SetFloat("_SobelFilterOpacity", sobelFilterOpacity);
+            if (!IsPropertyFaderControlled("_Invert"))
+                activeMochieMaterial.SetFloat("_Invert", Mathf.Clamp(invertStrength, MochieEffectStrengthMin, MochieEffectStrengthMax));
+            if (!IsPropertyFaderControlled("_Amplitude"))
+                activeMochieMaterial.SetFloat("_Amplitude", _amplitude);
+            if (!IsPropertyFaderControlled("_OutlineCol"))
+                activeMochieMaterial.SetColor("_OutlineCol", currentOutlineColor);
+            if (!IsPropertyFaderControlled("_BlurStr"))
+                activeMochieMaterial.SetFloat("_BlurStr", blurStrength);
+            if (!IsPropertyFaderControlled("_DistortionStr"))
+                activeMochieMaterial.SetFloat("_DistortionStr", distortionStrength);
+            if (!IsPropertyFaderControlled("_Noise"))
+                activeMochieMaterial.SetFloat("_Noise", noiseStrength);
+            if (!IsPropertyFaderControlled("_ScanLine"))
+                activeMochieMaterial.SetFloat("_ScanLine", scanLineStrength);
+            if (!IsPropertyFaderControlled("_DBOpacity"))
+                activeMochieMaterial.SetFloat("_DBOpacity", depthBufferOpacity);
+            if (!IsPropertyFaderControlled("_NMFOpacity"))
+                activeMochieMaterial.SetFloat("_NMFOpacity", normalMapOpacity);
+            if (!IsPropertyFaderControlled("_Saturation"))
+                activeMochieMaterial.SetFloat("_Saturation", saturation);
+            if (!IsPropertyFaderControlled("_RoundingOpacity"))
+                activeMochieMaterial.SetFloat("_RoundingOpacity", roundingOpacity);
+            if (!IsPropertyFaderControlled("_FogSafeOpacity"))
+                activeMochieMaterial.SetFloat("_FogSafeOpacity", fogSafeOpacity);
+            if (activeMochieMaterial.HasProperty("_Brightness") && !IsPropertyFaderControlled("_Brightness"))
             {
                 activeMochieMaterial.SetFloat("_Brightness", _Brightness);
             }
-            if (activeMochieMaterial.HasProperty("_Contrast"))
+            if (activeMochieMaterial.HasProperty("_Contrast") && !IsPropertyFaderControlled("_Contrast"))
             {
                 activeMochieMaterial.SetFloat("_Contrast", _Contrast);
             }
-            if (activeMochieMaterial.HasProperty("_HDR"))
+            if (activeMochieMaterial.HasProperty("_HDR") && !IsPropertyFaderControlled("_HDR"))
             {
                 activeMochieMaterial.SetFloat("_HDR", _HDR);
             }
@@ -2699,13 +2857,16 @@ namespace Cozen
             switch (localIndex)
             {
                 case 0: return "-";
-                case 1: return $"Satur\n{saturation:F1}";
+                case 1: return IsPropertyConfiguredForFader("_Saturation") ? "Satur" : $"Satur\n{saturation:F1}";
                 case 2: return "+";
                 case 3: return hasSfxXFeatures ? (IsRoundingActive() ? "-" : string.Empty) : (_HDR > -2f ? "-" : string.Empty);
-                case 4: return hasSfxXFeatures ? $"Round\n{roundingOpacity:F1}" : $"HDR\n{_HDR:F1}";
+                case 4:
+                    if (hasSfxXFeatures)
+                        return IsPropertyConfiguredForFader("_RoundingOpacity") ? "Round" : $"Round\n{roundingOpacity:F1}";
+                    return IsPropertyConfiguredForFader("_HDR") ? "HDR" : $"HDR\n{_HDR:F1}";
                 case 5: return hasSfxXFeatures ? (roundingOpacity < 1f ? "+" : string.Empty) : (_HDR < 2f ? "+" : string.Empty);
                 case 6: return HasAdjustmentActivation(fogSafeOpacity) ? "-" : string.Empty;
-                case 7: return $"Fog\n{(fogSafeOpacity * 2):F1}";
+                case 7: return IsPropertyConfiguredForFader("_FogSafeOpacity") ? "Fog" : $"Fog\n{(fogSafeOpacity * 2):F1}";
                 case 8: return fogSafeOpacity < 1f ? "+" : string.Empty;
                 case 9: return pageLabel;
                 default: return string.Empty;
@@ -2717,13 +2878,15 @@ namespace Cozen
             switch (localIndex)
             {
                 case 0: return _Brightness > -2f ? "-" : string.Empty;
-                case 1: return $"Bright\n{_Brightness:F1}";
+                case 1: return IsPropertyConfiguredForFader("_Brightness") ? "Bright" : $"Bright\n{_Brightness:F1}";
                 case 2: return _Brightness < 4f ? "+" : string.Empty;
                 case 3: return _Contrast > 0.5f ? "-" : string.Empty;
-                case 4: return $"Contr\n{_Contrast:F2}";
+                case 4: return IsPropertyConfiguredForFader("_Contrast") ? "Contr" : $"Contr\n{_Contrast:F2}";
                 case 5: return _Contrast < 1.5f ? "+" : string.Empty;
                 case 6: return hasSfxXFeatures ? (_HDR > -2f ? "-" : string.Empty) : string.Empty;
-                case 7: return hasSfxXFeatures ? $"HDR\n{_HDR:F1}" : "Upgrade";
+                case 7:
+                    if (!hasSfxXFeatures) return "Upgrade";
+                    return IsPropertyConfiguredForFader("_HDR") ? "HDR" : $"HDR\n{_HDR:F1}";
                 case 8: return hasSfxXFeatures ? (_HDR < 2f ? "+" : string.Empty) : "for";
                 case 9: return pageLabel;
                 default: return string.Empty;

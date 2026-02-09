@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Cozen
@@ -130,10 +131,6 @@ namespace Cozen
                         EditorUtility.SetDirty(handler.gameObject);
                     }
                 }
-
-                handler.folderIndex = folderIdx;
-                handler.launchpad = launchpad;
-                EditorUtility.SetDirty(handler);
             }
 
             // Clean up any unused handlers
@@ -159,15 +156,41 @@ namespace Cozen
             shaderHandlers.arraySize = assigned.Length;
             for (int i = 0; i < assigned.Length; i++)
             {
+                ShaderHandler handler = assigned[i];
+                int folderIdx = shaderFolders[i];
+                if (handler != null)
+                {
+                    // Only record undo and modify when values actually differ
+                    bool needsUpdate = handler.folderIndex != folderIdx ||
+                                       handler.launchpad != launchpad ||
+                                       handler.transform.parent != foldersTransform ||
+                                       handler.gameObject.hideFlags != HandlerHideFlags;
+                    if (needsUpdate)
+                    {
+                        Undo.RecordObject(handler, "Configure ShaderHandler");
+                        handler.folderIndex = folderIdx;
+                        handler.launchpad = launchpad;
+                        handler.transform.SetParent(foldersTransform);
+                        if (handler.gameObject.hideFlags != HandlerHideFlags)
+                        {
+                            handler.gameObject.hideFlags = HandlerHideFlags;
+                        }
+                    }
+                }
+
                 SerializedProperty element = shaderHandlers.GetArrayElementAtIndex(i);
                 element.objectReferenceValue = assigned[i];
 
-                if (assigned[i] != null)
+                shaderHandlerFolderIndices.Add(folderIdx);
+                if (handler != null)
                 {
-                    var handlerObject = new SerializedObject(assigned[i]);
+                    var handlerObject = new SerializedObject(handler);
                     handlerObject.Update();
                     shaderHandlerObjects.Add(handlerObject);
-                    shaderHandlerFolderIndices.Add(shaderFolders[i]);
+                }
+                else
+                {
+                    shaderHandlerObjects.Add(null);
                 }
             }
         }
@@ -435,20 +458,41 @@ namespace Cozen
         private void SynchronizeShaderGameObjects(SerializedObject handlerObject)
         {
             if (handlerObject == null) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
 
             SerializedProperty templateGameObjectProp = handlerObject.FindProperty("templateGameObject");
             SerializedProperty shaderMaterialsProp = handlerObject.FindProperty("shaderMaterials");
             SerializedProperty shaderNamesProp = handlerObject.FindProperty("shaderNames");
             SerializedProperty shaderGameObjectsProp = handlerObject.FindProperty("shaderGameObjects");
             SerializedProperty defaultShaderIndexProp = handlerObject.FindProperty("defaultShaderIndex");
+            SerializedProperty shaderParentProp = handlerObject.FindProperty("shaderParent");
+            
+            bool createdNewObjects = false;
 
             GameObject templateGO = templateGameObjectProp.objectReferenceValue as GameObject;
             if (templateGO == null)
             {
-                // No template, clear gameobjects array
+                // No template, clear gameobjects array and parent reference
                 ClearShaderGameObjects(shaderGameObjectsProp);
+                if (shaderParentProp != null) shaderParentProp.objectReferenceValue = null;
                 handlerObject.ApplyModifiedProperties();
                 return;
+            }
+            
+            // Always set shaderParent to the template's parent transform
+            // so the runtime can discover children if the array fails to serialize
+            if (shaderParentProp != null && templateGO.transform.parent != null)
+            {
+                shaderParentProp.objectReferenceValue = templateGO.transform.parent;
+            }
+            
+            // Store the full scene path as a string fallback - strings serialize reliably
+            // even when Transform/GameObject references fail through UdonSharp's proxy system.
+            // Uses "/" prefix for root objects (e.g., "/Shaders") or full path (e.g., "/Enigma Mixer/Shaders")
+            SerializedProperty shaderParentPathProp = handlerObject.FindProperty("shaderParentPath");
+            if (shaderParentPathProp != null && templateGO.transform.parent != null)
+            {
+                shaderParentPathProp.stringValue = GetGameObjectScenePath(templateGO.transform.parent.gameObject);
             }
 
             MeshRenderer templateRenderer = templateGO.GetComponent<MeshRenderer>();
@@ -511,17 +555,34 @@ namespace Cozen
                     // Create a new duplicate of the template
                     shaderGO = UnityEngine.Object.Instantiate(templateGO);
                     
+                    // Do NOT use Undo.RegisterCreatedObjectUndo here.
+                    // When the undo buffer overflows (from subsequent editor changes),
+                    // Unity discards old undo records and DESTROYS objects registered
+                    // with RegisterCreatedObjectUndo, causing shader GameObjects to
+                    // vanish from the scene.
+                    
                     // Set to Untagged (not EditorOnly like the template)
                     shaderGO.tag = "Untagged";
                     
                     // Place it as a sibling of the template (same parent, right after template)
-                    shaderGO.transform.SetParent(templateGO.transform.parent, true);
+                    Transform parentTransform = templateGO.transform.parent;
+                    shaderGO.transform.SetParent(parentTransform, true);
                     shaderGO.transform.SetSiblingIndex(templateGO.transform.GetSiblingIndex() + 1 + i);
                     
                     // Copy transform from template
                     shaderGO.transform.localPosition = templateGO.transform.localPosition;
                     shaderGO.transform.localRotation = templateGO.transform.localRotation;
                     shaderGO.transform.localScale = templateGO.transform.localScale;
+                    
+                    // If the parent is part of a prefab instance, record the modification
+                    // so Unity properly tracks this as a prefab override and includes the
+                    // object in the play mode scene copy
+                    if (parentTransform != null && PrefabUtility.IsPartOfPrefabInstance(parentTransform))
+                    {
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(parentTransform);
+                    }
+                    
+                    createdNewObjects = true;
                 }
 
                 // Name the GameObject based on the shader name
@@ -589,6 +650,19 @@ namespace Cozen
 
             handlerObject.ApplyModifiedProperties();
             EditorUtility.SetDirty(handlerObject.targetObject);
+            
+            // Always mark the scene dirty when new shader objects were created.
+            // This ensures Unity includes the Instantiate'd objects in the scene
+            // serialization, which is required for them to survive play mode transitions.
+            if (createdNewObjects)
+            {
+                // handlerObject.targetObject is always a ShaderHandler (MonoBehaviour/Component)
+                var handler = (Component)handlerObject.targetObject;
+                if (handler != null)
+                {
+                    EditorSceneManager.MarkSceneDirty(handler.gameObject.scene);
+                }
+            }
         }
 
         private void ClearShaderGameObjects(SerializedProperty shaderGameObjectsProp)
@@ -714,6 +788,24 @@ namespace Cozen
             string folderName = GetResolvedFolderName(folderIndex);
             string sanitizedFolderName = SanitizeForHandlerName(folderName);
             return $"ShaderHandler_{sanitizedFolderName}";
+        }
+        
+        /// <summary>
+        /// Gets the full scene hierarchy path for a GameObject, compatible with
+        /// GameObject.Find() at runtime. Format: "/RootObject/Child/GrandChild"
+        /// </summary>
+        private static string GetGameObjectScenePath(GameObject go)
+        {
+            if (go == null) return "";
+            
+            string path = "/" + go.name;
+            Transform current = go.transform.parent;
+            while (current != null)
+            {
+                path = "/" + current.name + path;
+                current = current.parent;
+            }
+            return path;
         }
     }
 }

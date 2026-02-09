@@ -41,14 +41,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AutoGain: 0
+    - _AutoGain: 1
     - _Autogain: 0
     - _CornerRadius: 0.0526
     - _ElementMargin: 0.03
     - _ExpFalloff: 0.75
     - _FadeSliderHeight: 0.19
     - _FrameMargin: 0.03
-    - _Gain: 0.25277433
+    - _Gain: 1
     - _GainSliderHeight: 0.13
     - _HandleRadius: 0.011
     - _HighMidThreshold: 0.5
@@ -62,10 +62,10 @@ Material:
     - _Saturation: 0.9843137
     - _SelectedColor: 0
     - _ThemeColorMode: 0
-    - _Threshold0: 0.6073952
-    - _Threshold1: 0.43017244
-    - _Threshold2: 0.6479099
-    - _Threshold3: 0.5780962
+    - _Threshold0: 0.45
+    - _Threshold1: 0.45
+    - _Threshold2: 0.45
+    - _Threshold3: 0.45
     - _TopAreaHeight: 0.35
     - _Value: 1
     - _VerticalScale: 0.79

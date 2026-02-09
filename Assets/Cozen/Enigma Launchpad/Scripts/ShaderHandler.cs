@@ -25,6 +25,12 @@ namespace Cozen
         [Tooltip("Names corresponding to each shader entry.")]
         public string[] shaderNames;
         
+        [Tooltip("Parent transform that holds the shader GameObjects. Used at runtime to discover children when shaderGameObjects array is empty.")]
+        public Transform shaderParent;
+        
+        [Tooltip("Full path to the shader parent object in the scene hierarchy. Used as last-resort fallback to find the parent at runtime via GameObject.Find.")]
+        public string shaderParentPath;
+        
         [Header("Editor Configuration")]
         [Tooltip("Template GameObject with MeshRenderer. Used in editor to create shader instances.")]
         public GameObject templateGameObject;
@@ -69,7 +75,59 @@ namespace Cozen
                 return;
             }
             
-            Debug.Log($"[ShaderHandler] Initializing folder {folderIndex} with {(shaderGameObjects != null ? shaderGameObjects.Length : 0)} shader GameObjects");
+            int arrayCount = shaderGameObjects != null ? shaderGameObjects.Length : -1;
+            bool hasParent = shaderParent != null;
+            int parentChildCount = hasParent ? shaderParent.childCount : -1;
+            string pathValue = !string.IsNullOrEmpty(shaderParentPath) ? shaderParentPath : "EMPTY";
+            Debug.Log($"[ShaderHandler] Pre-init folder {folderIndex}: shaderGameObjects={arrayCount}, shaderParent={(hasParent ? shaderParent.name : "NULL")}, parentChildren={parentChildCount}, shaderParentPath={pathValue}");
+            
+            // If shaderGameObjects is empty/null, try to discover children from the
+            // scene hierarchy. The editor creates duplicated GameObjects under shaderParent,
+            // and the template is destroyed at runtime (EditorOnly tag), leaving only the
+            // duplicated shader objects as children.
+            if (shaderGameObjects == null || shaderGameObjects.Length == 0)
+            {
+                // Try shaderParent reference first
+                Transform discoveryParent = shaderParent;
+                
+                // Fallback: find by full path using GameObject.Find
+                // The shader parent may be at the scene root or anywhere in the hierarchy,
+                // so we store the full path (e.g., "/Shaders" or "/Enigma Mixer/Shaders")
+                if (discoveryParent == null && !string.IsNullOrEmpty(shaderParentPath))
+                {
+                    GameObject parentGO = GameObject.Find(shaderParentPath);
+                    if (parentGO != null)
+                    {
+                        discoveryParent = parentGO.transform;
+                        Debug.Log($"[ShaderHandler] Found shader parent by path '{shaderParentPath}'");
+                    }
+                }
+                
+                if (discoveryParent != null)
+                {
+                    int childCount = discoveryParent.childCount;
+                    if (childCount > 0)
+                    {
+                        Debug.Log($"[ShaderHandler] Discovering shader GameObjects from parent '{discoveryParent.name}' ({childCount} children)");
+                        shaderGameObjects = new GameObject[childCount];
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            shaderGameObjects[i] = discoveryParent.GetChild(i).gameObject;
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[ShaderHandler] Shader parent '{discoveryParent.name}' has 0 children - shader GameObjects may have been lost");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[ShaderHandler] Both shaderGameObjects and shaderParent are empty/null for folder {folderIndex}");
+                }
+            }
+            
+            int goCount = shaderGameObjects != null ? shaderGameObjects.Length : 0;
+            Debug.Log($"[ShaderHandler] Initializing folder {folderIndex} with {goCount} shader GameObjects");
             
             InitializeHandler();
             CaptureInitialState();

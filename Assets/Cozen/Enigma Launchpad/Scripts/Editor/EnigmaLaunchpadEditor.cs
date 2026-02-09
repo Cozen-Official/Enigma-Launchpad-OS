@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Globalization;
 using VRC.SDKBase;
 using UdonSharp;
 using AudioLink;
@@ -139,6 +140,7 @@ namespace Cozen
         private bool stylesReady = false;
         
         // Version checking
+        private const string LaunchpadRootPath = "Assets/Cozen/Enigma Launchpad";
         private const string VersionFilePath = "Assets/Cozen/Enigma Launchpad/VERSION";
         private const string GitHubReleasesApiUrl = "https://api.github.com/repos/Cozen-Official/Enigma-Launchpad-OS/releases";
         private const string RepoUrl = "https://github.com/Cozen-Official/Enigma-Launchpad-OS";
@@ -721,6 +723,13 @@ namespace Cozen
                     handlerObject?.Update();
                 }
             }
+            if (shaderHandlerObjects != null)
+            {
+                foreach (SerializedObject handlerObject in shaderHandlerObjects)
+                {
+                    handlerObject?.Update();
+                }
+            }
             BindSkyboxHandlerSerializedObject();
             if (skyboxHandlerObject != null)
             {
@@ -1256,6 +1265,13 @@ namespace Cozen
             if (propertyHandlerObjects != null)
             {
                 foreach (SerializedObject handlerObject in propertyHandlerObjects)
+                {
+                    handlerObject?.ApplyModifiedProperties();
+                }
+            }
+            if (shaderHandlerObjects != null)
+            {
+                foreach (SerializedObject handlerObject in shaderHandlerObjects)
                 {
                     handlerObject?.ApplyModifiedProperties();
                 }
@@ -2308,6 +2324,13 @@ namespace Cozen
                     handlerObject?.ApplyModifiedProperties();
                 }
             }
+            if (shaderHandlerObjects != null)
+            {
+                foreach (SerializedObject handlerObject in shaderHandlerObjects)
+                {
+                    handlerObject?.ApplyModifiedProperties();
+                }
+            }
             if (mochiHandlerObject != null)
             {
                 mochiHandlerObject.ApplyModifiedProperties();
@@ -3190,26 +3213,55 @@ namespace Cozen
                     string tempPath = Path.Combine(Path.GetTempPath(), $"EnigmaLaunchpad_v{safeVersion}.unitypackage");
                     File.WriteAllBytes(tempPath, packageDownloadRequest.downloadHandler.data);
                     
-                    Debug.Log($"[EnigmaLaunchpad Editor] Download complete. Importing package...");
-                    
-                    // Import the package with interactive mode so user can select what to import
-                    AssetDatabase.ImportPackage(tempPath, true);
-                    
-                    // Clean up temp file after a delay to allow import dialog to read it
+                    Debug.Log($"[EnigmaLaunchpad Editor] Download complete. Preparing update...");
+
                     EditorApplication.delayCall += () =>
                     {
-                        try
+                        if (AssetDatabase.IsValidFolder(LaunchpadRootPath))
                         {
-                            if (File.Exists(tempPath))
+                            if (!AssetDatabase.DeleteAsset(LaunchpadRootPath))
                             {
-                                File.Delete(tempPath);
+                                Debug.LogError($"[EnigmaLaunchpad Editor] Failed to delete existing launchpad folder at {LaunchpadRootPath}. Close any open assets or check file permissions, then run the update again.");
+                                try
+                                {
+                                    if (File.Exists(tempPath))
+                                    {
+                                        File.Delete(tempPath);
+                                    }
+                                }
+                                catch (Exception cleanupEx)
+                                {
+                                    // Log cleanup errors for debugging but don't treat as critical
+                                    Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not clean up temp file: {cleanupEx.Message}");
+                                }
+                                return;
                             }
+
+                            AssetDatabase.Refresh();
                         }
-                        catch (Exception cleanupEx)
+
+                        EditorApplication.delayCall += () =>
                         {
-                            // Log cleanup errors for debugging but don't treat as critical
-                            Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not clean up temp file: {cleanupEx.Message}");
-                        }
+                            // Import the package with interactive mode so user can select what to import
+                            AssetDatabase.ImportPackage(tempPath, true);
+
+                            // Clean up temp file after a delay to allow import dialog to read it
+                            EditorApplication.delayCall += () =>
+                            {
+                                try
+                                {
+                                    if (File.Exists(tempPath))
+                                    {
+                                        File.Delete(tempPath);
+                                    }
+                                }
+                                catch (Exception cleanupEx)
+                                {
+                                    // Log cleanup errors for debugging but don't treat as critical
+                                    Debug.LogWarning($"[EnigmaLaunchpad Editor] Could not clean up temp file: {cleanupEx.Message}");
+                                }
+                            };
+                        };
                     };
                 }
                 catch (Exception ex)
@@ -3252,9 +3304,9 @@ namespace Cozen
         }
         
         /// <summary>
-        /// Compares two version strings using semantic versioning rules.
-        /// Supports numeric version parts only (e.g., "1.0", "1.2.3").
-        /// Pre-release identifiers (e.g., "1.0-alpha") are not supported.
+        /// Compares two version strings using numeric comparison.
+        /// Supports decimal-style versions (e.g., "1.03", "1.025") and
+        /// falls back to semantic-style part comparison (e.g., "1.2.3").
         /// </summary>
         /// <param name="version1">First version string to compare</param>
         /// <param name="version2">Second version string to compare</param>
@@ -3271,6 +3323,12 @@ namespace Cozen
                 return 0; // Consider equal if remote version is unknown
             }
             
+            if (decimal.TryParse(version1, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal decimalVersion1) &&
+                decimal.TryParse(version2, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal decimalVersion2))
+            {
+                return decimalVersion1.CompareTo(decimalVersion2);
+            }
+
             // Parse version numbers (e.g., "0.9" -> [0, 9])
             var parts1 = version1.Split('.');
             var parts2 = version2.Split('.');

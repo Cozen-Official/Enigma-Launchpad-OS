@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Callbacks;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -60,6 +61,33 @@ namespace Cozen
         public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report)
         {
             ValidateAndPrepareAll();
+        }
+        
+        /// <summary>
+        /// Runs after UdonSharp's [PostProcessScene] (order 0) to verify that
+        /// ShaderHandler has the shaderParent reference set, which enables
+        /// runtime discovery of shader GameObjects from the scene hierarchy.
+        /// </summary>
+        [PostProcessScene(1)]
+        private static void VerifyShaderHandlersPostProcess()
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (ShaderHandler handler in root.GetComponentsInChildren<ShaderHandler>(true))
+                {
+                    if (handler == null) continue;
+                    
+                    int proxyCount = handler.shaderGameObjects != null ? handler.shaderGameObjects.Length : 0;
+                    bool hasParent = handler.shaderParent != null;
+                    int childCount = hasParent ? handler.shaderParent.childCount : 0;
+                    string pathValue = !string.IsNullOrEmpty(handler.shaderParentPath) ? handler.shaderParentPath : "EMPTY";
+                    
+                    Debug.Log($"[EnigmaLaunchpadBuildValidator] PostProcess verify folder {handler.folderIndex}: " +
+                              $"shaderGameObjects={proxyCount}, shaderParent={(hasParent ? handler.shaderParent.name : "NULL")}, " +
+                              $"parentChildren={childCount}, shaderParentPath={pathValue}");
+                }
+            }
         }
         
         private static void ValidateAndPrepareAll()
@@ -553,54 +581,39 @@ namespace Cozen
                     continue;
                 
                 GameObject[] shaderGameObjects = handler.shaderGameObjects;
-                if (shaderGameObjects == null || shaderGameObjects.Length == 0)
-                    continue;
+                int goCount = shaderGameObjects != null ? shaderGameObjects.Length : 0;
+                bool hasParent = handler.shaderParent != null;
+                int parentChildCount = hasParent ? handler.shaderParent.childCount : 0;
                 
-                int defaultShaderIndex = handler.defaultShaderIndex;
-                int tagChanges = 0;
-                int stateChanges = 0;
+                Debug.Log($"[EnigmaLaunchpadBuildValidator] Shader folder {handler.folderIndex}: " +
+                          $"{goCount} GameObjects, shaderParent={(hasParent ? handler.shaderParent.name : "null")} ({parentChildCount} children), " +
+                          $"materials={(handler.shaderMaterials != null ? handler.shaderMaterials.Length : 0)}");
                 
-                for (int i = 0; i < shaderGameObjects.Length; i++)
+                if (shaderGameObjects != null && shaderGameObjects.Length > 0)
                 {
-                    GameObject shaderGO = shaderGameObjects[i];
-                    if (shaderGO == null)
-                        continue;
+                    int defaultShaderIndex = handler.defaultShaderIndex;
                     
-                    // Ensure the GameObject is tagged as "Untagged"
-                    if (shaderGO.tag != "Untagged")
+                    for (int i = 0; i < shaderGameObjects.Length; i++)
                     {
-                        Undo.RecordObject(shaderGO, "Set Shader GameObject Tag");
-                        shaderGO.tag = "Untagged";
-                        EditorUtility.SetDirty(shaderGO);
-                        tagChanges++;
+                        GameObject shaderGO = shaderGameObjects[i];
+                        if (shaderGO == null)
+                            continue;
+                        
+                        // Ensure the GameObject is tagged as "Untagged"
+                        if (shaderGO.tag != "Untagged")
+                        {
+                            shaderGO.tag = "Untagged";
+                            EditorUtility.SetDirty(shaderGO);
+                        }
+                        
+                        // Ensure only the default shader is enabled
+                        bool shouldBeActive = (defaultShaderIndex >= 0 && i == defaultShaderIndex);
+                        if (shaderGO.activeSelf != shouldBeActive)
+                        {
+                            shaderGO.SetActive(shouldBeActive);
+                            EditorUtility.SetDirty(shaderGO);
+                        }
                     }
-                    
-                    // Ensure only the default shader is enabled
-                    bool shouldBeActive = (defaultShaderIndex >= 0 && i == defaultShaderIndex);
-                    if (shaderGO.activeSelf != shouldBeActive)
-                    {
-                        Undo.RecordObject(shaderGO, "Set Shader GameObject Active State");
-                        shaderGO.SetActive(shouldBeActive);
-                        EditorUtility.SetDirty(shaderGO);
-                        stateChanges++;
-                    }
-                }
-                
-                if (tagChanges > 0 || stateChanges > 0)
-                {
-                    int folderIndex = handler.folderIndex;
-                    string folderName = launchpad.GetFolderLabelForIndex(folderIndex, false);
-                    if (string.IsNullOrEmpty(folderName))
-                    {
-                        folderName = $"Shader Folder {folderIndex}";
-                    }
-                    
-                    string defaultInfo = defaultShaderIndex >= 0 
-                        ? $"default shader at index {defaultShaderIndex}" 
-                        : "no default shader (all disabled)";
-                    
-                    Debug.Log($"[EnigmaLaunchpadBuildValidator] Prepared shader folder '{folderName}': " +
-                              $"Updated {tagChanges} tag(s) to 'Untagged', adjusted {stateChanges} active state(s) ({defaultInfo})");
                 }
             }
         }

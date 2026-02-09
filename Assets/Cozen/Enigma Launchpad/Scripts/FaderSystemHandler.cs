@@ -968,6 +968,10 @@ namespace Cozen
                 return;
             }
 
+            // Reset the fader to its default value BEFORE clearing target materials,
+            // so the material property is properly restored (e.g. _Saturation back to 1.0).
+            fader.ResetFaderPosition();
+
             fader.materialPropertyId = string.Empty;
             fader.targetMaterials = new Material[0];
             fader.targetsUdon = false;
@@ -976,7 +980,6 @@ namespace Cozen
             fader.valueMin = 0f;
             fader.valueMax = 1f;
             fader.defaultValue = 0f;
-            fader.ResetFaderPosition();
         }
 
         private void UpdateFaderIndicators()
@@ -2365,6 +2368,153 @@ namespace Cozen
             
             fader.SetPositionFromStep(step);
             fader.RequestSerialization();
+        }
+
+        #endregion
+
+        #region Mochie Fader Conflict Detection
+
+        /// <summary>
+        /// Checks if a shader property on the Mochie renderer is currently controlled by any active fader.
+        /// Used by MochieHandler to disable conflicting controls when a fader is driving the same property.
+        /// </summary>
+        public bool IsMochiePropertyControlledByFader(string propertyName)
+        {
+            if (string.IsNullOrEmpty(propertyName) || launchpad == null)
+            {
+                return false;
+            }
+
+            int faderCount = faders != null ? Mathf.Min(MaxFaders, faders.Length) : 0;
+            if (faderCount <= 0)
+            {
+                return false;
+            }
+
+            int staticSlotCount = faderCount - Mathf.Clamp(dynamicFaderCount, 0, faderCount);
+
+            // Check static faders
+            for (int i = 0; i < staticSlotCount; i++)
+            {
+                if (IsStaticFaderTargetingUdon(i) || IsStaticFaderTargetingSlider(i))
+                {
+                    continue;
+                }
+
+                int folderIndex = GetStaticFaderFolderIndex(i);
+                if (folderIndex < 0)
+                {
+                    continue;
+                }
+
+                ToggleFolderType folderType = launchpad.GetFolderTypeForIndex(folderIndex);
+                if (folderType != ToggleFolderType.Mochie)
+                {
+                    continue;
+                }
+
+                string faderProp = GetStaticFaderPropertyName(i);
+                if (faderProp == propertyName)
+                {
+                    return true;
+                }
+            }
+
+            // Check dynamic faders currently assigned to a slot. A dynamic fader is only assigned
+            // to a slot when its activation condition is met, so slot assignment implies active control.
+            // Inactive dynamic faders should not block MochieHandler from writing reset values.
+            if (faderDynamicSources == null)
+            {
+                return false;
+            }
+
+            for (int i = staticSlotCount; i < faderCount; i++)
+            {
+                int dynamicIndex = faderDynamicSources[i];
+                if (dynamicIndex < 0)
+                {
+                    continue;
+                }
+
+                if (IsDynamicFaderTargetingUdon(dynamicIndex) || IsDynamicFaderTargetingSlider(dynamicIndex))
+                {
+                    continue;
+                }
+
+                int folderIndex = GetDynamicFaderFolderIndex(dynamicIndex);
+                if (folderIndex < 0)
+                {
+                    continue;
+                }
+
+                ToggleFolderType folderType = launchpad.GetFolderTypeForIndex(folderIndex);
+                if (folderType != ToggleFolderType.Mochie)
+                {
+                    continue;
+                }
+
+                string faderProp = GetDynamicFaderPropertyName(dynamicIndex);
+                if (faderProp == propertyName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if a shader property on the Mochie renderer has any fader configured for it,
+        /// including dynamic faders whose activation condition is not currently met.
+        /// Used by MochieHandler to disable +/- buttons in the UI even when the fader isn't active yet.
+        /// </summary>
+        public bool IsMochiePropertyConfiguredForFader(string propertyName)
+        {
+            // First check if it's actively controlled (static faders + active dynamic faders)
+            if (IsMochiePropertyControlledByFader(propertyName))
+            {
+                return true;
+            }
+
+            // Also check inactive dynamic fader entries
+            if (string.IsNullOrEmpty(propertyName) || launchpad == null)
+            {
+                return false;
+            }
+
+            int dynamicEntryCount = GetDynamicFaderEntryCount();
+            for (int i = 0; i < dynamicEntryCount; i++)
+            {
+                if (!IsDynamicFaderValid(i))
+                {
+                    continue;
+                }
+
+                if (IsDynamicFaderTargetingUdon(i) || IsDynamicFaderTargetingSlider(i))
+                {
+                    continue;
+                }
+
+                int folderIndex = GetDynamicFaderFolderIndex(i);
+                if (folderIndex < 0)
+                {
+                    continue;
+                }
+
+                ToggleFolderType folderType = launchpad.GetFolderTypeForIndex(folderIndex);
+                if (folderType != ToggleFolderType.Mochie)
+                {
+                    continue;
+                }
+
+                string faderProp = GetDynamicFaderPropertyName(i);
+                if (faderProp == propertyName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion

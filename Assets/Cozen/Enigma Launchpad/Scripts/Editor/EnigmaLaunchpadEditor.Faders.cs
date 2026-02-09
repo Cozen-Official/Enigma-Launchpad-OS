@@ -3204,6 +3204,16 @@ namespace Cozen
                 });
             }
             EditorGUILayout.EndHorizontal();
+            
+            // Show note when fader property conflicts with Mochie controls
+            if (folderType == ToggleFolderType.Mochie && !string.IsNullOrEmpty(currentName))
+            {
+                string conflictNote = GetMochieFaderConflictNote(currentName);
+                if (!string.IsNullOrEmpty(conflictNote))
+                {
+                    EditorGUILayout.HelpBox(conflictNote, MessageType.Info);
+                }
+            }
         }
 
         private bool IsPropertyEntryTargetingUdon(int folderIndex, int entryIndex)
@@ -3469,6 +3479,17 @@ namespace Cozen
                 });
             }
             EditorGUILayout.EndHorizontal();
+            
+            // Show note when fader property conflicts with Mochie controls
+            int staticFolderIndex = GetStaticFaderFolderIndex(faderIndex);
+            if (staticFolderIndex >= 0 && GetFolderType(staticFolderIndex) == ToggleFolderType.Mochie && !string.IsNullOrEmpty(currentName))
+            {
+                string conflictNote = GetMochieFaderConflictNote(currentName);
+                if (!string.IsNullOrEmpty(conflictNote))
+                {
+                    EditorGUILayout.HelpBox(conflictNote, MessageType.Info);
+                }
+            }
         }
 
         private void DrawStaticFaderUdonVariableField(int faderIndex)
@@ -4915,6 +4936,57 @@ namespace Cozen
                         folderIndexProp.intValue++;
                     }
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Returns a user-facing note describing which Mochie layout controls will be disabled
+        /// when a fader drives the given shader property. Returns null if no conflict exists.
+        /// </summary>
+        private string GetMochieFaderConflictNote(string propertyName)
+        {
+            switch (propertyName)
+            {
+                case "_Saturation":
+                    return "The Saturation +/\u2212 buttons in the Mochie layout will be disabled. The middle button will toggle the effect on/off.";
+                case "_RoundingOpacity":
+                    return "The Rounding +/\u2212 buttons in the Mochie layout (SFX X) will be disabled. The middle button will toggle the effect on/off.";
+                case "_FogSafeOpacity":
+                    return "The Fog Safe +/\u2212 buttons in the Mochie layout will be disabled. The middle button will toggle the effect on/off.";
+                case "_Brightness":
+                    return "The Brightness +/\u2212 buttons in the Mochie layout will be disabled. The middle button will toggle the effect on/off.";
+                case "_Contrast":
+                    return "The Contrast +/\u2212 buttons in the Mochie layout will be disabled. The middle button will toggle the effect on/off.";
+                case "_HDR":
+                    return "The HDR +/\u2212 buttons in the Mochie layout will be disabled. The middle button will toggle the effect on/off.";
+                case "_Invert":
+                    return "The Invert and Invert+ buttons will act as on/off toggles. The fader controls the strength.";
+                case "_Amplitude":
+                    return "The Shake button will act as an on/off toggle. The fader controls the strength.";
+                case "_BlurStr":
+                    return "The Blur button will act as an on/off toggle. The fader controls the strength.";
+                case "_DistortionStr":
+                    return "The Distortion button will act as an on/off toggle. The fader controls the strength.";
+                case "_Noise":
+                    return "The Noise button will act as an on/off toggle. The fader controls the strength.";
+                case "_ScanLine":
+                    return "The Scan Line button will act as an on/off toggle. The fader controls the strength.";
+                case "_DBOpacity":
+                    return "The Depth Buffer button will act as an on/off toggle. The fader controls the strength.";
+                case "_NMFOpacity":
+                    return "The Normal Map button will act as an on/off toggle. The fader controls the strength.";
+                case "_SobelFilterOpacity":
+                    return "The Sobel Filter toggle button in the Mochie layout will be disabled.";
+                case "_OutlineCol":
+                    return "The outline color selector (Apply and Cycle buttons) in the Mochie layout will be disabled.";
+                case "_OutlineType":
+                    return "The Aura and Sobel outline type buttons in the Mochie layout will be disabled.";
+                case "_AuraStr":
+                    return "The outline strength buttons (Low/Normal/High) in the Mochie layout will be disabled.";
+                case "_OutlineThresh":
+                    return "The outline strength buttons (Low/Normal/High) in the Mochie layout will be disabled.";
+                default:
+                    return null;
             }
         }
     }
