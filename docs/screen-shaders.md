@@ -5,7 +5,7 @@ There are two ways to go about using screen shaders with Enigma OS,
 using one material/renderer or using multiple materials and a templated
 renderer.
 
-Multiple Material Setup
+### Multiple Material Setup
 
 If you already have a collection of materials with separate effects
 configured on each material, you can use the multiple materials
@@ -26,7 +26,7 @@ importer, or in the “Toggle Shader” action.
 
 ![](assets/docs-images/image15.png)
 
-Single Material Setup
+### Single Material Setup
 
 You can also control screen shaders using just a single material /
 renderer. This is the approach used by the shader set templates. For
