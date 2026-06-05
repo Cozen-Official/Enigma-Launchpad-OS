@@ -32,4 +32,4 @@ Enigma OS detects supported packages at edit time and lights up matching feature
 
 ## License
 
-MIT. See [`LICENSE.md`](LICENSE.md).
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0). See [`LICENSE.md`](LICENSE.md).
