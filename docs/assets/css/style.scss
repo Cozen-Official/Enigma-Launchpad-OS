@@ -63,6 +63,33 @@ $sidebar-width: 240px;
       font-weight: 600;
     }
   }
+
+  .docs-subnav {
+    list-style: none;
+    list-style-image: none;
+    margin: 4px 0 8px;
+    padding: 0 0 0 10px;
+    border-left: 1px solid #3a3a3a;
+
+    a {
+      padding: 4px 10px;
+      font-size: 13px;
+      color: #a8a8a8;
+      font-weight: 400;
+      background: transparent;
+
+      &:hover {
+        background: #2a2a2a;
+        color: #ffcc00;
+      }
+
+      &.active {
+        background: transparent;
+        color: #ffcc00;
+        font-weight: 500;
+      }
+    }
+  }
 }
 
 #docs-sidebar-toggle {

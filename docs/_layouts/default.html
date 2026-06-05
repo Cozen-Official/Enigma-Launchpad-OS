@@ -55,15 +55,69 @@
       (function () {
         var btn = document.getElementById('docs-sidebar-toggle');
         var side = document.getElementById('docs-sidebar');
-        if (!btn || !side) return;
-        btn.addEventListener('click', function () {
-          side.classList.toggle('open');
+        if (btn && side) {
+          btn.addEventListener('click', function () {
+            side.classList.toggle('open');
+          });
+          document.addEventListener('click', function (e) {
+            if (!side.classList.contains('open')) return;
+            if (side.contains(e.target) || btn.contains(e.target)) return;
+            side.classList.remove('open');
+          });
+        }
+
+        var active = document.querySelector('#docs-sidebar a.active');
+        if (!active) return;
+        var headings = document.querySelectorAll('section h2[id], section h3[id]');
+        var children = [];
+        headings.forEach(function (h) {
+          if (h.id === 'using-enigma-os' || h.id === 'using-faders' || h.closest('#title')) return;
+          children.push(h);
         });
-        document.addEventListener('click', function (e) {
-          if (!side.classList.contains('open')) return;
-          if (side.contains(e.target) || btn.contains(e.target)) return;
-          side.classList.remove('open');
+        if (!children.length) return;
+
+        var sub = document.createElement('ul');
+        sub.className = 'docs-subnav';
+        children.forEach(function (h) {
+          var li = document.createElement('li');
+          li.className = 'docs-subnav-' + h.tagName.toLowerCase();
+          var a = document.createElement('a');
+          a.href = '#' + h.id;
+          a.textContent = h.textContent;
+          li.appendChild(a);
+          sub.appendChild(li);
         });
+        active.parentNode.appendChild(sub);
+
+        var subLinks = sub.querySelectorAll('a');
+        function setActiveSubLink(id) {
+          subLinks.forEach(function (a) {
+            if (a.getAttribute('href') === '#' + id) a.classList.add('active');
+            else a.classList.remove('active');
+          });
+        }
+
+        if (location.hash) {
+          setActiveSubLink(location.hash.slice(1));
+        }
+
+        var ticking = false;
+        function updateOnScroll() {
+          if (ticking) return;
+          ticking = true;
+          window.requestAnimationFrame(function () {
+            var pos = window.scrollY + 120;
+            var current = null;
+            for (var i = 0; i < children.length; i++) {
+              if (children[i].offsetTop <= pos) current = children[i];
+              else break;
+            }
+            if (current) setActiveSubLink(current.id);
+            ticking = false;
+          });
+        }
+        window.addEventListener('scroll', updateOnScroll, { passive: true });
+        updateOnScroll();
       })();
     </script>
   </body>
