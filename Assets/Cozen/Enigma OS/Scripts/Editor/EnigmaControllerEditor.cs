@@ -537,24 +537,13 @@ namespace Cozen.EnigmaOS.Editor
             GUILayout.Space(4);
             if (_logoTexture != null)
             {
-                float inspectorWidth = EditorGUIUtility.currentViewWidth - 41f;
                 float logoH = 40f;
                 float logoW = logoH * ((float)_logoTexture.width / _logoTexture.height);
 
-                // Build a style whose font size makes "OS" visually the same height as the logo
-                var osStyle = new GUIStyle(_headerStyle) { fontSize = 36, fontStyle = FontStyle.Normal };
-                Vector2 osSize = osStyle.CalcSize(new GUIContent("OS"));
-                float totalW = logoW + osSize.x;
-                float rowH = Mathf.Max(logoH, osSize.y);
-
-                Rect rowRect = GUILayoutUtility.GetRect(totalW, rowH);
-                float startX = rowRect.x + (rowRect.width - totalW) * 0.5f;
-
-                Rect imgRect = new Rect(startX, rowRect.y + (rowH - logoH) * 0.5f, logoW, logoH);
+                Rect rowRect = GUILayoutUtility.GetRect(logoW, logoH);
+                float startX = rowRect.x + (rowRect.width - logoW) * 0.5f;
+                Rect imgRect = new Rect(startX, rowRect.y, logoW, logoH);
                 GUI.DrawTexture(imgRect, _logoTexture, ScaleMode.ScaleToFit);
-
-                Rect osRect = new Rect(startX + logoW + 8f, rowRect.y, osSize.x, rowH);
-                GUI.Label(osRect, "OS", osStyle);
             }
             else
             {
