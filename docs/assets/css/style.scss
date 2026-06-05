@@ -10,6 +10,14 @@ img {
   object-fit: contain;
 }
 
+/* Offset anchor jumps so the fixed header doesn't cover the heading */
+section h1[id],
+section h2[id],
+section h3[id],
+section h4[id] {
+  scroll-margin-top: 80px;
+}
+
 $sidebar-width: 240px;
 
 #docs-sidebar {
