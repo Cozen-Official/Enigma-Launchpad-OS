@@ -89,7 +89,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/StarleidoscopeSkybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -231,7 +231,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/GentleRings2Skybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -373,7 +373,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/FurSpaceSkybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -515,7 +515,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/MatrixSkybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -657,7 +657,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/MilkyWay2Skybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -799,7 +799,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/EndlessCircles2Skybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -941,7 +941,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/EndlessCirclesSkybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -1083,7 +1083,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/SingularitySkybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
@@ -1225,7 +1225,7 @@
                         "w": 0.0
                     },
                     "alsoSetEffectToggle": true,
-                    "targetMaterialPath": "Assets/Cozen/Materials/Skybox/RainbowTangleSkybox.mat",
+                    "targetMaterialPath": "",
                     "targetTexturePath": "",
                     "useStep": false,
                     "stepAmount": 0.10000000149011612,
