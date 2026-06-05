@@ -8,6 +8,8 @@ Out of the box, Enigma OS ships with two ready-to-use prefabs (a button-only Lau
 
 The Mixer prefab's design is inspired by the Roland VR-50HD AV Mixer.
 
+![Enigma OS editor in Unity](docs/assets/editor-screenshot.png)
+
 ## Installation
 
 1. Import [AudioLink](https://github.com/llealloo/audiolink) via VRChat Creator Companion.
