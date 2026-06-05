@@ -1,0 +1,51 @@
+{
+  "templateName": "Screen Shaders",
+  "folderName": "Screen Shaders",
+  "entries": [
+    {
+      "label": "Shader 1",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 2",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 3",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 4",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 5",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 6",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 7",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 8",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    },
+    {
+      "label": "Shader 9",
+      "buttonType": 0,
+      "actions": [{ "actionType": 26, "category": 0, "target": 15, "operation": 0, "shaderTemplateIndex": 1 }]
+    }
+  ]
+}

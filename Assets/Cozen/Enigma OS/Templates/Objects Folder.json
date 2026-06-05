@@ -1,0 +1,303 @@
+{
+    "templateName": "Objects Folder (blank)",
+    "folderName": "Objects",
+    "entries": [
+        {
+            "label": "Object 1",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 2",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 3",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 4",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 5",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 6",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 7",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 8",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        },
+        {
+            "label": "Object 9",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": false,
+            "exclusiveGroup": "",
+            "actions": [
+                {
+                    "actionType": 0,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 0,
+                    "operation": 0
+                }
+            ]
+        }
+    ]
+}

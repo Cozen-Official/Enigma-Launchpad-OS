@@ -1,0 +1,303 @@
+{
+    "templateName": "Materials Folder (blank)",
+    "folderName": "Materials",
+    "entries": [
+        {
+            "label": "Material 1",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 2",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 3",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 4",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 5",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 6",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 7",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 8",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        },
+        {
+            "label": "Material 9",
+            "buttonType": 0,
+            "onByDefault": false,
+            "useExclusiveGroup": true,
+            "exclusiveGroup": "Materials_exclusive",
+            "actions": [
+                {
+                    "actionType": 1,
+                    "propertyName": "",
+                    "propertyFloatValue": 0.0,
+                    "propertyType": 0,
+                    "useStep": false,
+                    "stepAmount": 0.1,
+                    "stepMin": 0.0,
+                    "stepMax": 1.0,
+                    "colorPropertyName": "",
+                    "colorMaterialIndex": 0,
+                    "paletteColors": [],
+                    "colorSelectorRole": 0,
+                    "colorGroupName": "",
+                    "presetRole": 0,
+                    "presetName": "",
+                    "presetScope": 0,
+                    "presetIncludeFaders": true,
+                    "presetIncludeStepValues": false,
+                    "presetIncludeColorPalettes": false,
+                    "category": 0,
+                    "target": 3,
+                    "operation": 1
+                }
+            ]
+        }
+    ]
+}
