@@ -1,8 +1,16 @@
-title: Enigma Launchpad OS Documentation
-tagline: Modular control system for VRChat worlds
-description: Complete documentation for Enigma Launchpad OS - A unified interface for toggling objects, materials, shaders, and more in VRChat worlds
+title: Enigma OS Documentation
+tagline: Fully-configurable in-world control surface for VRChat
+description: Documentation for Enigma OS — material swaps, screen shaders, skyboxes, AudioLink, presets, faders, whitelists, and more, configured entirely from the Unity inspector.
 show_downloads: false
 
 remote_theme: pages-themes/midnight@v0.2.0
 plugins:
   - jekyll-remote-theme
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
+
+include:
+  - index.md
