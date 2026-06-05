@@ -16,7 +16,7 @@ The Mixer prefab's design is inspired by the Roland VR-50HD AV Mixer.
 
 ## Documentation
 
-The full documentation ships inside the package at `Assets/Cozen/Enigma OS/Enigma OS Documentation.pdf`, covering installation, every action type, the template system, faders (static + dynamic), presets, advanced features, custom controllers, and supported third-party integrations.
+The full documentation lives at **<https://cozen-official.github.io/Enigma-Launchpad-OS/>**, covering installation, every action type, the template system, faders (static + dynamic), presets, advanced features, custom controllers, and supported third-party integrations. A PDF copy also ships inside the package at `Assets/Cozen/Enigma OS/Enigma OS Documentation.pdf`.
 
 For help and community: [Discord](https://discord.gg/DQw3r9VJjZ).
 
