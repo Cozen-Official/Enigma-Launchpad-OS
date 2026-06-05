@@ -12,6 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _EMISSIONSOURCE_TEXTURE
   - _METALLICGLOSSMAP
   - _NORMALMAP
   m_InvalidKeywords:
@@ -100,6 +101,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _DropletMask:
         m_Texture: {fileID: 2800000, guid: 76ae1285472e6ce48a2f01ef7905b8fd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionCube:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
@@ -330,9 +335,13 @@ Material:
     - _EmissPulseWave: 0
     - _EmissionIntensity: 1
     - _EmissionMaskChannel: 0
+    - _EmissionMaskEnabled: 0
+    - _EmissionMaskInvert: 0
     - _EmissionPulseSpeed: 1
     - _EmissionPulseStrength: 1
     - _EmissionPulseWave: 0
+    - _EmissionSkyMip: 0
+    - _EmissionSource: 0
     - _EmissionStrength: 1
     - _Filtering: 1
     - _FlipBackfaceNormals: 0
