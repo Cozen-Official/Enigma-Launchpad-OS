@@ -74,8 +74,5 @@ world through the VRChat SDK.
 Lastly, you can quickly open these docs using the Documentation button
 or join the Enigma Discord for support or questions.
 
----
-
-**Navigation:** [Introduction](index.md) · [Installation](installation.md) · [Using Enigma OS](using-enigma-os.md) · [Using Prefabs](using-prefabs.md) · [Template System](templates.md) · [Screen Shader Setup](screen-shaders.md) · [Actions Overview](actions.md) · [Using Faders](faders.md) · [Using Presets](presets.md) · [Advanced Features](advanced.md) · [Whitelist (Access Control)](whitelist.md) · [Standalone Buttons](standalone-buttons.md) · [Custom Controllers](custom-controllers.md)
 
 [← Installation](installation.md) | [Using Prefabs →](using-prefabs.md)

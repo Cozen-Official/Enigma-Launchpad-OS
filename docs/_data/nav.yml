@@ -1,0 +1,26 @@
+- label: Introduction
+  url: /
+- label: Installation
+  url: /installation.html
+- label: Using Enigma OS
+  url: /using-enigma-os.html
+- label: Using Prefabs
+  url: /using-prefabs.html
+- label: Template System
+  url: /templates.html
+- label: Screen Shader Setup
+  url: /screen-shaders.html
+- label: Actions Overview
+  url: /actions.html
+- label: Using Faders
+  url: /faders.html
+- label: Using Presets
+  url: /presets.html
+- label: Advanced Features
+  url: /advanced.html
+- label: Whitelist (Access Control)
+  url: /whitelist.html
+- label: Standalone Buttons
+  url: /standalone-buttons.html
+- label: Custom Controllers
+  url: /custom-controllers.html

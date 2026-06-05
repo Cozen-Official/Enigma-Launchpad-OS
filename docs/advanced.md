@@ -183,8 +183,5 @@ controllers in other areas so the player only receives actions from the
 controller in the area of the world they are currently in. You can
 optionally disable the disabling behavior.
 
----
-
-**Navigation:** [Introduction](index.md) · [Installation](installation.md) · [Using Enigma OS](using-enigma-os.md) · [Using Prefabs](using-prefabs.md) · [Template System](templates.md) · [Screen Shader Setup](screen-shaders.md) · [Actions Overview](actions.md) · [Using Faders](faders.md) · [Using Presets](presets.md) · [Advanced Features](advanced.md) · [Whitelist (Access Control)](whitelist.md) · [Standalone Buttons](standalone-buttons.md) · [Custom Controllers](custom-controllers.md)
 
 [← Using Presets](presets.md) | [Whitelist (Access Control) →](whitelist.md)

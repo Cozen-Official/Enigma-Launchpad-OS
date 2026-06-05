@@ -69,8 +69,5 @@ try to import with unassigned references, a warning will pop-up.
 Note: Templates are great for learning how to make your own layouts! You
 can copy/paste buttons from a template into your own custom folder.
 
----
-
-**Navigation:** [Introduction](index.md) · [Installation](installation.md) · [Using Enigma OS](using-enigma-os.md) · [Using Prefabs](using-prefabs.md) · [Template System](templates.md) · [Screen Shader Setup](screen-shaders.md) · [Actions Overview](actions.md) · [Using Faders](faders.md) · [Using Presets](presets.md) · [Advanced Features](advanced.md) · [Whitelist (Access Control)](whitelist.md) · [Standalone Buttons](standalone-buttons.md) · [Custom Controllers](custom-controllers.md)
 
 [← Using Prefabs](using-prefabs.md) | [Screen Shader Setup →](screen-shaders.md)

@@ -54,8 +54,5 @@ action syncs the large presets from your player data to ALL clients.
 This sync only happens once on load so it’s not that big of an issue,
 but it’s something to keep in mind.
 
----
-
-**Navigation:** [Introduction](index.md) · [Installation](installation.md) · [Using Enigma OS](using-enigma-os.md) · [Using Prefabs](using-prefabs.md) · [Template System](templates.md) · [Screen Shader Setup](screen-shaders.md) · [Actions Overview](actions.md) · [Using Faders](faders.md) · [Using Presets](presets.md) · [Advanced Features](advanced.md) · [Whitelist (Access Control)](whitelist.md) · [Standalone Buttons](standalone-buttons.md) · [Custom Controllers](custom-controllers.md)
 
 [← Using Faders](faders.md) | [Advanced Features →](advanced.md)

@@ -15,8 +15,5 @@ ever have one AudioLink controller! Make sure you delete any existing
 AudioLink controller, or remove the one under the “Screen” child object
 of the Mixer prefab.
 
----
-
-**Navigation:** [Introduction](index.md) · [Installation](installation.md) · [Using Enigma OS](using-enigma-os.md) · [Using Prefabs](using-prefabs.md) · [Template System](templates.md) · [Screen Shader Setup](screen-shaders.md) · [Actions Overview](actions.md) · [Using Faders](faders.md) · [Using Presets](presets.md) · [Advanced Features](advanced.md) · [Whitelist (Access Control)](whitelist.md) · [Standalone Buttons](standalone-buttons.md) · [Custom Controllers](custom-controllers.md)
 
 [← Using Enigma OS](using-enigma-os.md) | [Template System →](templates.md)

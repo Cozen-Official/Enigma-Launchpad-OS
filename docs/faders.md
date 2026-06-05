@@ -88,8 +88,5 @@ fixtures to the same fader to drive a whole rig.
 The same setup works for the VRSL GI variants — no extra configuration
 needed for the GI bounce color to follow.
 
----
-
-**Navigation:** [Introduction](index.md) · [Installation](installation.md) · [Using Enigma OS](using-enigma-os.md) · [Using Prefabs](using-prefabs.md) · [Template System](templates.md) · [Screen Shader Setup](screen-shaders.md) · [Actions Overview](actions.md) · [Using Faders](faders.md) · [Using Presets](presets.md) · [Advanced Features](advanced.md) · [Whitelist (Access Control)](whitelist.md) · [Standalone Buttons](standalone-buttons.md) · [Custom Controllers](custom-controllers.md)
 
 [← Actions Overview](actions.md) | [Using Presets →](presets.md)
