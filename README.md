@@ -1,6 +1,6 @@
-# Enigma OS
+![Enigma OS — Launchpad and Mixer prefabs](docs/assets/enigma-os-hero.png)
 
-> **Heads up — this is the new asset.** The original Enigma Launchpad OS (v1.x) was a different architecture and is no longer maintained on this branch. It is preserved on the [`legacy/launchpad`](https://github.com/Cozen-Official/Enigma-Launchpad-OS/tree/legacy/launchpad) branch and as the [`archive-launchpad-final`](https://github.com/Cozen-Official/Enigma-Launchpad-OS/releases/tag/archive-launchpad-final) release. Enigma OS is a complete rewrite and is **not** source-compatible with v1.x.
+# Enigma OS
 
 Enigma OS is a fully-configurable in-world control surface for VRChat worlds. It pairs the look and feel of a hardware MIDI launchpad or DJ mixer with a flexible action system that lets you wire up nearly any in-world behaviour — material swaps, screen shader effects, skybox changes, AudioLink modulation, GameObject toggles, Udon variable writes, transform changes, teleports, and more — all without writing a single line of code. Configuration happens entirely through the Unity inspector: you build folders of buttons, drop actions onto each one from a categorized picker, and Enigma OS bakes everything down to runtime arrays consumed by a single Udon executor at play time.
 
