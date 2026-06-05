@@ -30,5 +30,7 @@ from a one-button toggle to a full mixer-style FX rig.
 
 The Mixer prefab’s design is inspired by the Roland VR-50HD AV Mixer.
 
+![Enigma OS editor in Unity](assets/editor-screenshot.png)
+
 
 [Installation →](installation.md)
