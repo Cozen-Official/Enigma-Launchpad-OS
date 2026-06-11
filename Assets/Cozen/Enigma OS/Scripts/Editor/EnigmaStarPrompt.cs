@@ -19,7 +19,8 @@ namespace Cozen.EnigmaOS.Editor
     /// Closing the dialog with the window close button is treated as
     /// "Remind Me Later".
     ///
-    /// Dismissal keys (resettable via Tools → Enigma OS → Reset Star Prompt):
+    /// Dismissal keys (a dev-only reset menu item lives in the un-shipped
+    /// Cozen/Editor/EnigmaOSDevMenu — keep the key strings there in sync):
     /// <list type="bullet">
     /// <item><c>EnigmaOS.StarPrompt.NeverAsk</c> — EditorPrefs, permanent.</item>
     /// <item><c>EnigmaOS.StarPrompt.SessionDismissed</c> — SessionState,
@@ -98,19 +99,6 @@ namespace Cozen.EnigmaOS.Editor
                 // session; will re-show on next editor launch.
                 SessionState.SetBool(SessionDismissKey, true);
             }
-        }
-
-        /// <summary>
-        /// Resets both dismissal flags so the prompt fires again on the next
-        /// Unity launch (or domain reload). Handy during development and for
-        /// users who want to revisit the prompt.
-        /// </summary>
-        [MenuItem("Tools/Enigma OS/Reset Star Prompt")]
-        private static void ResetPrompt()
-        {
-            EditorPrefs.DeleteKey(NeverAskKey);
-            SessionState.EraseBool(SessionDismissKey);
-            Debug.Log("[Enigma OS] Star prompt reset. It will reappear on next domain reload.");
         }
     }
 }

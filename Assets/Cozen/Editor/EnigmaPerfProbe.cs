@@ -16,8 +16,8 @@ namespace Cozen.EnigmaOS.Editor
     /// <c>ai-editor-logs.txt</c> file-lock IOException cascade.
     ///
     /// Usage:
-    ///   Tools > Enigma > Perf Probe > Start  (clears file, attaches hook)
-    ///   Tools > Enigma > Perf Probe > Stop   (detaches hook)
+    ///   Tools > Enigma OS > Perf Probe > Start  (clears file, attaches hook)
+    ///   Tools > Enigma OS > Perf Probe > Stop   (detaches hook)
     /// The .log file at Temp/EnigmaPerfProbe.log can then be inspected to see
     /// which messages were emitted during the lag window — including which
     /// subsystem (Enigma, Mochie, UdonSharp, VRChat SDK, MCP, Unity itself)
@@ -124,7 +124,7 @@ namespace Cozen.EnigmaOS.Editor
             }
         }
 
-        [MenuItem("Tools/Enigma/Perf Probe/Start")]
+        [MenuItem("Tools/Enigma OS/Perf Probe/Start")]
         public static void Start()
         {
             lock (_gate)
@@ -149,7 +149,7 @@ namespace Cozen.EnigmaOS.Editor
             Debug.Log($"[EnigmaPerfProbe] STARTED — writing to {LogPath}");
         }
 
-        [MenuItem("Tools/Enigma/Perf Probe/Stop")]
+        [MenuItem("Tools/Enigma OS/Perf Probe/Stop")]
         public static void Stop()
         {
             lock (_gate)
@@ -163,7 +163,7 @@ namespace Cozen.EnigmaOS.Editor
             Debug.Log($"[EnigmaPerfProbe] STOPPED — log is at {LogPath}");
         }
 
-        [MenuItem("Tools/Enigma/Perf Probe/Mark (write SENTINEL line)")]
+        [MenuItem("Tools/Enigma OS/Perf Probe/Mark (write SENTINEL line)")]
         public static void Mark()
         {
             Write("LogType.Log", "----------------- USER MARK -----------------");
