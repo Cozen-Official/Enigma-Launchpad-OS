@@ -285,7 +285,8 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionIsKeywordToggle = new bool[totalActions];
             var rtActionNonStateful    = new bool[totalActions];
             var rtActionUseStep        = new bool[totalActions];
-            for (int i = 0; i < totalActions; i++) { rtActionKeywords[i] = ""; rtActionKeywordToggles[i] = ""; }
+            var rtActionAlwaysGate     = new int[totalActions];
+            for (int i = 0; i < totalActions; i++) { rtActionKeywords[i] = ""; rtActionKeywordToggles[i] = ""; rtActionAlwaysGate[i] = -1; }
 
             // Per-action conditional execution.
             var rtActionHasCondition           = new bool[totalActions];
@@ -623,6 +624,12 @@ namespace Cozen.EnigmaOS.Editor
                                     rtActionKeywordToggles[actionIdx] = kwInfo.toggleProp;
                                     rtActionIsKeywordToggle[actionIdx] = true;
                                 }
+
+                                // Mochie "Always" pass gate (_Zoom/_SST/_Letterbox).
+                                // Independent of the keyword bake — _Letterbox has
+                                // no keyword but still gates the pass.
+                                rtActionAlwaysGate[actionIdx] =
+                                    EnigmaShaderHelper.GetAlwaysPassGateId(mats[mi], act.propertyName);
                             }
                         }
                         // Bake non-stateful flag for category 1 (Set) actions.
@@ -697,7 +704,8 @@ namespace Cozen.EnigmaOS.Editor
                                 rtActionTypes, rtActionTargetRenderers, rtActionMaterialIndices,
                                 rtActionPropertyNames, rtActionFloatValues, rtActionDefaultFloatValues,
                                 rtActionPropertyTypes, rtActionNonStateful,
-                                rtActionKeywords, rtActionKeywordToggles, rtActionIsKeywordToggle);
+                                rtActionKeywords, rtActionKeywordToggles, rtActionIsKeywordToggle,
+                                rtActionAlwaysGate);
                             actionIdx++;
                         }
                     }
@@ -1095,6 +1103,7 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionIsKeywordToggle",       rtActionIsKeywordToggle);
                 WriteArray(exeSo, "rtActionNonStateful",           rtActionNonStateful);
                 WriteArray(exeSo, "rtActionUseStep",               rtActionUseStep);
+                WriteArray(exeSo, "rtActionAlwaysGate",            rtActionAlwaysGate);
                 var exeLinkedProp = exeSo.FindProperty("linkedController");
                 if (exeLinkedProp != null) exeLinkedProp.objectReferenceValue = ctrl;
                 exeSo.ApplyModifiedProperties();
@@ -1431,7 +1440,7 @@ namespace Cozen.EnigmaOS.Editor
             float[] rtActionFloatValues, float[] rtActionDefaultFloatValues,
             int[] rtActionPropertyTypes, bool[] rtActionNonStateful,
             string[] rtActionKeywords, string[] rtActionKeywordToggles,
-            bool[] rtActionIsKeywordToggle)
+            bool[] rtActionIsKeywordToggle, int[] rtActionAlwaysGate)
         {
             rtActionTypes[idx]              = 2;
             rtActionTargetRenderers[idx]    = renderer;
@@ -1441,6 +1450,10 @@ namespace Cozen.EnigmaOS.Editor
             rtActionFloatValues[idx]        = 1f;
             rtActionDefaultFloatValues[idx] = 0f;
             rtActionNonStateful[idx]        = true; // category 1 — set on activate, don't revert
+            // Mochie "Always" pass gate: synthetic toggles for _Zoom/_SST/_Letterbox
+            // sections must carry the gate id so the runtime manages the pass on
+            // both activation and entry deactivation.
+            rtActionAlwaysGate[idx] = EnigmaShaderHelper.GetAlwaysPassGateId(mat, toggleProp);
 
             // Bake the keyword association for the synthetic action so its
             // shader_feature_local variant gets enabled at runtime (e.g.
@@ -1668,7 +1681,7 @@ namespace Cozen.EnigmaOS.Editor
                 "rtActionTeleportRotations", "rtActionTeleportDestinations",
                 "rtActionStatMetrics", "rtActionHasCondition", "rtActionConditionEntryIndex",
                 "rtActionConditionRequireActive", "rtActionColorSelectorRoles",
-                "rtActionVariantSelectorRoles", "rtActionKeywords", "rtActionKeywordToggles", "rtActionIsKeywordToggle", "rtActionNonStateful", "rtActionUseStep",
+                "rtActionVariantSelectorRoles", "rtActionKeywords", "rtActionKeywordToggles", "rtActionIsKeywordToggle", "rtActionNonStateful", "rtActionUseStep", "rtActionAlwaysGate",
                 "rtActionAutoChangeGroupIds",
                 "rtActionAutoChangeIntervals", "rtAutoChangeGroupRandom",
                 "rtCondColorStart", "rtCondColorCount", "rtCondColorConditions",
@@ -1823,12 +1836,14 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionIsKeywordToggle          = new bool[totalActions];
             var rtActionNonStateful              = new bool[totalActions];
             var rtActionUseStep                  = new bool[totalActions];
+            var rtActionAlwaysGate               = new int[totalActions];
             for (int i = 0; i < totalActions; i++)
             {
                 rtActionAutoChangeGroupIds[i]  = -1;
                 rtActionAutoChangeIntervals[i] = 10f;
                 rtActionKeywords[i] = "";
                 rtActionKeywordToggles[i] = "";
+                rtActionAlwaysGate[i] = -1;
             }
 
             // ── Compile actions ──
@@ -1865,6 +1880,12 @@ namespace Cozen.EnigmaOS.Editor
                             rtActionKeywordToggles[idx] = kwInfo.toggleProp;
                             rtActionIsKeywordToggle[idx] = true;
                         }
+
+                        // Mochie "Always" pass gate (_Zoom/_SST/_Letterbox).
+                        // Independent of the keyword bake — _Letterbox has no
+                        // keyword but still gates the pass.
+                        rtActionAlwaysGate[idx] =
+                            EnigmaShaderHelper.GetAlwaysPassGateId(mats[mi], act.propertyName);
                     }
                 }
 
@@ -1952,7 +1973,8 @@ namespace Cozen.EnigmaOS.Editor
                         rtActionTypes, rtActionTargetRenderers, rtActionMaterialIndices,
                         rtActionPropertyNames, rtActionFloatValues, rtActionDefaultFloatValues,
                         rtActionPropertyTypes, rtActionNonStateful,
-                        rtActionKeywords, rtActionKeywordToggles, rtActionIsKeywordToggle);
+                        rtActionKeywords, rtActionKeywordToggles, rtActionIsKeywordToggle,
+                        rtActionAlwaysGate);
                     syntheticIdx++;
                 }
             }
@@ -2062,6 +2084,7 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionIsKeywordToggle",              rtActionIsKeywordToggle);
                 WriteArray(exeSo, "rtActionNonStateful",                  rtActionNonStateful);
                 WriteArray(exeSo, "rtActionUseStep",                      rtActionUseStep);
+                WriteArray(exeSo, "rtActionAlwaysGate",                   rtActionAlwaysGate);
                 WriteArray(exeSo, "rtActionAutoChangeGroupIds",           rtActionAutoChangeGroupIds);
                 WriteArray(exeSo, "rtActionAutoChangeIntervals",          rtActionAutoChangeIntervals);
                 WriteArray(exeSo, "rtAutoChangeGroupRandom",              rtAutoChangeGroupRandom);

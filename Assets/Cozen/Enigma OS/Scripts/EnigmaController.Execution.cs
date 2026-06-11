@@ -278,41 +278,79 @@ namespace Cozen.EnigmaOS
         }
 
         /// <summary>
-        /// Returns true if any currently-active entry owns an action that drives
-        /// <paramref name="keyword"/> on the same renderer + material slot. The
-        /// executor calls this when deactivating a non-stateful section-toggle
-        /// action to decide whether the Mochie "Always" pass can be disabled, or
-        /// whether another active entry still needs it (a default-on sibling
-        /// during init's ApplyDefaultsOff sweep — default-on entries execute
-        /// BEFORE the default-off sweep — or any future path that deactivates
-        /// after a sibling activated). All deactivation paths clear entryStates
-        /// before executing actions, so the deactivating entry excludes itself.
+        /// Decides whether Mochie's "Always" shader pass should currently be
+        /// enabled on the given renderer/material. The pass renders Zoom, Image
+        /// Overlay (_SST), and Letterbox; Mochie's own inspector enables it iff
+        /// <c>_Zoom > 0 || _SST > 0 || _Letterbox > 0</c>. The executor calls
+        /// this whenever a gate action writes an "off" value or a non-stateful
+        /// gate action deactivates, so one effect turning off doesn't kill the
+        /// pass while another still needs it.
+        ///
+        /// Two truth sources, because they disagree:
+        ///
+        ///  1. ACTIVE ENTRIES — any currently-active entry owning a gate action
+        ///     (rtActionAlwaysGate >= 0) on this material holds the pass. This is
+        ///     the only reliable source for gates written by non-stateful
+        ///     synthetic actions (the Overlay template's _SST), whose material
+        ///     value stays 1 after deactivation. All deactivation paths clear
+        ///     entryStates before executing actions, so a deactivating entry
+        ///     excludes itself; default-on entries are marked active before
+        ///     init's ApplyDefaultsOff sweep, so they hold the pass through it.
+        ///
+        ///  2. MATERIAL VALUES — _Zoom/_Letterbox are read from the material,
+        ///     covering momentary Set actions (no entry state) and matching
+        ///     Mochie's own rule. A gate's material value is trusted only when
+        ///     no non-stateful action writes that gate on this material —
+        ///     otherwise the lingering synthetic value would hold the pass on
+        ///     forever. _SST is never material-trusted for the same reason
+        ///     (the bundled Overlay template always drives it synthetically).
         /// </summary>
-        public bool IsKeywordUsedByActiveEntry(string keyword, Renderer rend, int matIdx)
+        public bool ComputeAlwaysPassHeld(Renderer rend, int matIdx, Material mat)
         {
-            if (entryStates == null || executor == null || string.IsNullOrEmpty(keyword) || rend == null)
-                return false;
+            if (executor == null || rend == null) return false;
             var exe = executor;
-            if (exe.rtActionKeywords == null || rtEntryActionStart == null || rtEntryActionCount == null)
-                return false;
+            if (exe.rtActionAlwaysGate == null) return false;
 
-            for (int e = 0; e < entryStates.Length; e++)
+            bool zoomTrusted = true;
+            bool letterboxTrusted = true;
+
+            if (entryStates != null && rtEntryActionStart != null && rtEntryActionCount != null)
             {
-                if (!entryStates[e]) continue;
-                if (e >= rtEntryActionStart.Length || e >= rtEntryActionCount.Length) continue;
-                int aStart = rtEntryActionStart[e];
-                int aCount = rtEntryActionCount[e];
-                for (int a = aStart; a < aStart + aCount; a++)
+                for (int e = 0; e < entryStates.Length; e++)
                 {
-                    if (a >= exe.rtActionKeywords.Length) break;
-                    if (exe.rtActionKeywords[a] != keyword) continue;
-                    if (exe.rtActionTargetRenderers == null || a >= exe.rtActionTargetRenderers.Length
-                        || exe.rtActionTargetRenderers[a] != rend) continue;
-                    int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
-                             ? exe.rtActionMaterialIndices[a] : 0;
-                    if (mi != matIdx) continue;
-                    return true;
+                    if (e >= rtEntryActionStart.Length || e >= rtEntryActionCount.Length) continue;
+                    int aStart = rtEntryActionStart[e];
+                    int aCount = rtEntryActionCount[e];
+                    for (int a = aStart; a < aStart + aCount; a++)
+                    {
+                        if (a >= exe.rtActionAlwaysGate.Length) break;
+                        int gate = exe.rtActionAlwaysGate[a];
+                        if (gate < 0) continue;
+                        if (exe.rtActionTargetRenderers == null || a >= exe.rtActionTargetRenderers.Length
+                            || exe.rtActionTargetRenderers[a] != rend) continue;
+                        int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
+                                 ? exe.rtActionMaterialIndices[a] : 0;
+                        if (mi != matIdx) continue;
+
+                        if (entryStates[e]) return true; // an active entry holds the pass
+
+                        bool ns = exe.rtActionNonStateful != null && a < exe.rtActionNonStateful.Length
+                                  && exe.rtActionNonStateful[a];
+                        if (ns)
+                        {
+                            if (gate == 0) zoomTrusted = false;
+                            else if (gate == 2) letterboxTrusted = false;
+                        }
+                    }
                 }
+            }
+
+            if (mat != null)
+            {
+                if (zoomTrusted && mat.HasProperty("_Zoom") && mat.GetFloat("_Zoom") > 0.5f)
+                    return true;
+                if (letterboxTrusted && mat.HasProperty("_Letterbox") && mat.GetFloat("_Letterbox") > 0.5f)
+                    return true;
             }
             return false;
         }

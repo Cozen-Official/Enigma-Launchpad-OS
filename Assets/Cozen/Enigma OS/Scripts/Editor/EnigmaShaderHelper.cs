@@ -2411,6 +2411,7 @@ namespace Cozen.EnigmaOS.Editor
                     "_Fog",
                     "_Zoom",
                     "_SST",
+                    "_Letterbox",
                     "_Triplanar",
                     "_ClampToggle",
                     "_RoundingToggle",
@@ -2433,6 +2434,31 @@ namespace Cozen.EnigmaOS.Editor
                     EditorUtility.SetDirty(material);
                     Debug.Log($"[EnigmaShaderHelper] Reset Mochie SFX baseline on '{material.name}' (master toggles=0, Always pass off, _SST=0, _ScreenTex=null; section keywords stay enabled for variant inclusion — call SyncMochieKeywordsToValues post-build to clean up).", material);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Maps a property to its Mochie "Always" pass gate id, or -1 when the
+        /// property does not gate that pass. Mochie's ScreenFXEditor enables the
+        /// "Always" pass iff <c>_Zoom > 0 || _SST > 0 || _Letterbox > 0</c> —
+        /// these three mode properties are the only gates. Baked per action into
+        /// <c>rtActionAlwaysGate</c> so the runtime executor can manage the pass
+        /// for any user-built button targeting these effects, with or without an
+        /// associated keyword (_Letterbox has none).
+        /// </summary>
+        internal static int GetAlwaysPassGateId(Material material, string propertyName)
+        {
+            if (material == null || material.shader == null || string.IsNullOrEmpty(propertyName))
+                return -1;
+            string shaderName = material.shader.name;
+            if (shaderName != "Mochie/Screen FX X" && shaderName != "Mochie/Screen FX")
+                return -1;
+            switch (propertyName)
+            {
+                case "_Zoom":      return 0;
+                case "_SST":       return 1;
+                case "_Letterbox": return 2;
+                default:           return -1;
             }
         }
 

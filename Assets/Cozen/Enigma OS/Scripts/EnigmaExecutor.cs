@@ -91,6 +91,16 @@ namespace Cozen.EnigmaOS
         [HideInInspector] public string[] rtActionKeywords      = new string[0]; // keyword name, or "" if none
         [HideInInspector] public string[] rtActionKeywordToggles = new string[0]; // toggle property name, or "" if none
         [HideInInspector] public bool[] rtActionIsKeywordToggle = new bool[0]; // pre-baked: true when action targets the keyword's toggle property
+
+        // Mochie "Always" pass gate id for type 2 actions: 0=_Zoom, 1=_SST,
+        // 2=_Letterbox, -1=not a gate. Mochie renders Zoom/Image Overlay/
+        // Letterbox in a dedicated "Always" pass that the shader does NOT
+        // value-gate on _SST (and only partially on the others), so the pass
+        // itself must be toggled at runtime — mirroring what Mochie's own
+        // inspector does at edit time. Baked from
+        // EnigmaShaderHelper.GetAlwaysPassGateId for both primary actions and
+        // synthetic section-toggle actions.
+        [HideInInspector] public int[] rtActionAlwaysGate = new int[0];
         [HideInInspector] public int[]  rtActionColorSelectorRoles   = new int[0];
         [HideInInspector] public int[]  rtActionVariantSelectorRoles = new int[0];
         [HideInInspector] public int[]   rtActionAutoChangeGroupIds  = new int[0];
@@ -244,51 +254,47 @@ namespace Cozen.EnigmaOS
                 if (!active && rtActionNonStateful != null && a < rtActionNonStateful.Length
                     && rtActionNonStateful[a])
                 {
-                    // …with one exception: synthetic section-toggle actions whose
-                    // keyword lives in Mochie's "Always" shader pass. That pass is
-                    // NOT value-gated by its toggle property (_SST) — the overlay
-                    // draws whenever the pass is enabled — so skipping deactivation
-                    // entirely leaves the pass running after the entry's primary
-                    // texture action reverts _ScreenTex to None, which renders the
-                    // shader's "white" fallback texture fullscreen. Mirror Mochie's
-                    // own inspector and disable the pass — unless another active
-                    // entry on the linked controller still drives the same keyword
-                    // on this material (e.g. a default-on overlay sibling during
-                    // init's ApplyDefaultsOff sweep). Exclusive-group switches stay
-                    // correct because peers deactivate BEFORE the pressed entry
-                    // activates, so the incoming overlay re-enables the pass in the
-                    // same frame.
-                    bool nsKwToggle = rtActionIsKeywordToggle != null && a < rtActionIsKeywordToggle.Length
-                        && rtActionIsKeywordToggle[a]
-                        && rtActionKeywords != null && a < rtActionKeywords.Length;
-                    if (nsKwToggle)
+                    // …with one exception: actions that gate Mochie's "Always"
+                    // shader pass (_Zoom / _SST / _Letterbox — including the
+                    // synthetic section-toggle actions emitted for
+                    // alsoSetEffectToggle). That pass is NOT value-gated by _SST —
+                    // the overlay draws whenever the pass is enabled — so skipping
+                    // deactivation entirely leaves the pass running after the
+                    // entry's primary texture action reverts _ScreenTex to None,
+                    // which renders the shader's "white" fallback texture
+                    // fullscreen. Mirror Mochie's own inspector and recompute the
+                    // pass from what still holds it: another active entry with a
+                    // gate action on this material (e.g. a default-on sibling
+                    // during init's ApplyDefaultsOff sweep, an active Zoom button
+                    // while an overlay deactivates), or an honestly-valued gate
+                    // property. Exclusive-group switches stay correct because
+                    // peers deactivate BEFORE the pressed entry activates, so the
+                    // incoming overlay re-enables the pass in the same frame.
+                    bool nsIsGate = rtActionAlwaysGate != null && a < rtActionAlwaysGate.Length
+                        && rtActionAlwaysGate[a] >= 0;
+                    if (nsIsGate)
                     {
-                        string nsKw = rtActionKeywords[a];
-                        if (nsKw == "_IMAGE_OVERLAY_ON" || nsKw == "_IMAGE_OVERLAY_DISTORTION_ON")
+                        Renderer nsRend = rtActionTargetRenderers != null && a < rtActionTargetRenderers.Length
+                                          ? rtActionTargetRenderers[a] : null;
+                        if (nsRend != null)
                         {
-                            Renderer nsRend = rtActionTargetRenderers != null && a < rtActionTargetRenderers.Length
-                                              ? rtActionTargetRenderers[a] : null;
-                            if (nsRend != null)
+                            int nsMatIdx = rtActionMaterialIndices != null && a < rtActionMaterialIndices.Length
+                                           ? rtActionMaterialIndices[a] : 0;
+                            Material nsMat = null;
+                            if (nsMatIdx == 0)
                             {
-                                int nsMatIdx = rtActionMaterialIndices != null && a < rtActionMaterialIndices.Length
-                                               ? rtActionMaterialIndices[a] : 0;
-                                Material nsMat = null;
-                                if (nsMatIdx == 0)
-                                {
-                                    nsMat = nsRend.sharedMaterial;
-                                }
-                                else
-                                {
-                                    Material[] nsMats = nsRend.sharedMaterials;
-                                    if (nsMatIdx < nsMats.Length) nsMat = nsMats[nsMatIdx];
-                                }
-                                if (nsMat != null)
-                                {
-                                    bool stillUsed = linkedController != null
-                                        && linkedController.IsKeywordUsedByActiveEntry(nsKw, nsRend, nsMatIdx);
-                                    if (!stillUsed)
-                                        nsMat.SetShaderPassEnabled("Always", false);
-                                }
+                                nsMat = nsRend.sharedMaterial;
+                            }
+                            else
+                            {
+                                Material[] nsMats = nsRend.sharedMaterials;
+                                if (nsMatIdx < nsMats.Length) nsMat = nsMats[nsMatIdx];
+                            }
+                            if (nsMat != null)
+                            {
+                                bool held = linkedController != null
+                                    && linkedController.ComputeAlwaysPassHeld(nsRend, nsMatIdx, nsMat);
+                                nsMat.SetShaderPassEnabled("Always", held);
                             }
                         }
                     }
@@ -345,6 +351,31 @@ namespace Cozen.EnigmaOS
                             int intVal = (int)setVal;
                             if (setVal == (float)intVal)
                                 mat.SetInt(propName, intVal);
+
+                            // Mochie "Always" pass gate (_Zoom / _SST / _Letterbox).
+                            // The pass renders Zoom/Image Overlay/Letterbox and must
+                            // be toggled alongside the gate property — Mochie's own
+                            // inspector does this at edit time, we do it at runtime.
+                            // Writing an "on" mode enables the pass directly; writing
+                            // 0 (deactivate revert or a momentary off-Set) recomputes
+                            // from whatever still holds the pass: another active
+                            // entry's gate action or an honestly-valued gate property
+                            // (covers an active Zoom surviving an Overlay turning off,
+                            // and vice versa).
+                            if (rtActionAlwaysGate != null && a < rtActionAlwaysGate.Length
+                                && rtActionAlwaysGate[a] >= 0)
+                            {
+                                if (setVal > 0.5f)
+                                {
+                                    mat.SetShaderPassEnabled("Always", true);
+                                }
+                                else
+                                {
+                                    bool gateHeld = linkedController != null
+                                        && linkedController.ComputeAlwaysPassHeld(rend, matIdx, mat);
+                                    mat.SetShaderPassEnabled("Always", gateHeld);
+                                }
+                            }
                         }
                         else if (propType == 1)  // Color
                         {
@@ -388,23 +419,14 @@ namespace Cozen.EnigmaOS
                                 Debug.Log($"[Enigma] EnableKeyword '{rtActionKeywords[a]}' on '{mat.name}' rend='{rend.gameObject.name}' (a={a} val={val} kwEnabled={kwAfter} matID={mat.GetInstanceID()})");
                             }
 
-                            // ── Mochie ScreenFX "Always" pass runtime toggle ──
-                            // Mochie's Image Overlay (and Zoom/Letterbox) live in a
-                            // dedicated "Always" shader pass that the shader itself does
-                            // NOT value-gate on _SST — the overlay renders unconditionally
-                            // whenever the pass runs AND the _IMAGE_OVERLAY_ON variant is
-                            // active. Mochie's custom inspector manages this by calling
-                            // SetShaderPassEnabled("Always", ...) based on _SST/_Zoom/
-                            // _Letterbox state. Replicate that here so runtime presses
-                            // correctly turn the overlay on and off. The editor-side
-                            // ApplyMaterialFixups leaves the pass disabled as baseline
-                            // and the keyword pre-enabled so the variant ships in the
-                            // build; the runtime only toggles the pass.
-                            if (rtActionKeywords[a] == "_IMAGE_OVERLAY_ON"
-                                || rtActionKeywords[a] == "_IMAGE_OVERLAY_DISTORTION_ON")
-                            {
-                                mat.SetShaderPassEnabled("Always", active);
-                            }
+                            // The Mochie "Always" pass toggle (Zoom/Image Overlay/
+                            // Letterbox) is handled by the rtActionAlwaysGate hook in
+                            // the float branch above — gate actions are always float
+                            // mode writes, so every activation/revert passes through
+                            // it. The editor-side ApplyMaterialFixups leaves the pass
+                            // disabled as baseline and the keyword pre-enabled so the
+                            // variant ships in the build; the runtime only toggles
+                            // the pass.
                         }
                         else if (kwToggle && !kwValid)
                         {
