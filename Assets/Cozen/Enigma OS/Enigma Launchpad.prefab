@@ -1,5 +1,37 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &535882929952197018
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3427426808716328031}
+  m_Layer: 0
+  m_Name: 8 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3427426808716328031
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 535882929952197018}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0.34999985, y: -0.08062293, z: -0.6941343}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6868480587277296730}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &619423213232854078
 GameObject:
   m_ObjectHideFlags: 0
@@ -167,6 +199,70 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &760147621330808105
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6388836997517567784}
+  m_Layer: 0
+  m_Name: 9 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6388836997517567784
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760147621330808105}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0.70000005, y: -0.08062293, z: -0.6941343}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6317251526330151154}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &771416097593194205
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2479719932276563069}
+  m_Layer: 0
+  m_Name: 1 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2479719932276563069
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771416097593194205}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0, y: -0.08062222, z: 0.0058646128}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8949794610179850707}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &837554763192479781
 GameObject:
   m_ObjectHideFlags: 0
@@ -369,7 +465,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2369501793474862719}
-  - {fileID: 6317251526330151154}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8195894969592691305
@@ -501,6 +596,38 @@ MonoBehaviour:
   - {fileID: 7244288134051463397}
   - {fileID: 5271906753334599413}
   publicVariablesSerializationDataFormat: 0
+--- !u!1 &1296481660075723151
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1625770655917993510}
+  m_Layer: 0
+  m_Name: 6 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1625770655917993510
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1296481660075723151}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0.70000005, y: -0.080622576, z: -0.34413484}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6362664272622201209}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1310192888003742101
 GameObject:
   m_ObjectHideFlags: 0
@@ -693,6 +820,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &368040254845134116
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -740,11 +869,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -766,8 +897,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -775,7 +905,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -836,6 +965,7 @@ MonoBehaviour:
   rtActionMaterialIndices: 00000000
   rtActionMaterials:
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   rtActionFloatValues:
@@ -864,8 +994,7 @@ MonoBehaviour:
   - 
   rtActionDelaySeconds:
   - 0
-  rtActionExpireSeconds:
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -883,6 +1012,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
   rtActionAutoChangeGroupIds: ffffffff
@@ -956,7 +1086,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6094026049838910465}
-  - {fileID: 11273162309171096}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &4560357114656758611
@@ -1088,6 +1217,38 @@ MonoBehaviour:
   - {fileID: 6790117764068247523}
   - {fileID: 3555044870400867836}
   publicVariablesSerializationDataFormat: 0
+--- !u!1 &1922281384589651780
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5495263700802506885}
+  m_Layer: 0
+  m_Name: 3 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5495263700802506885
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1922281384589651780}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0.70000005, y: -0.086247005, z: 0.005864327}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 9153399126499065090}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2204741939355330494
 GameObject:
   m_ObjectHideFlags: 0
@@ -1123,7 +1284,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6985013884459570370}
-  - {fileID: 9121962102766152885}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &9189533790642475986
@@ -1338,6 +1498,38 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &2384865516521474064
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6061682316561342600}
+  m_Layer: 0
+  m_Name: 7 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6061682316561342600
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2384865516521474064}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0, y: -0.08062293, z: -0.6941343}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 9121962102766152885}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2866971609925736064
 GameObject:
   m_ObjectHideFlags: 0
@@ -1579,6 +1771,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &8121990902343599886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1626,11 +1820,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -1652,8 +1848,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -1661,7 +1856,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -1722,6 +1916,7 @@ MonoBehaviour:
   rtActionMaterialIndices: 00000000
   rtActionMaterials:
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   rtActionFloatValues:
@@ -1750,8 +1945,7 @@ MonoBehaviour:
   - 
   rtActionDelaySeconds:
   - 0
-  rtActionExpireSeconds:
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -1769,6 +1963,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
   rtActionAutoChangeGroupIds: ffffffff
@@ -1965,6 +2160,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &8087181971849098759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2012,11 +2209,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -2038,8 +2237,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -2047,7 +2245,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -2108,6 +2305,7 @@ MonoBehaviour:
   rtActionMaterialIndices: 00000000
   rtActionMaterials:
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   rtActionFloatValues:
@@ -2136,8 +2334,7 @@ MonoBehaviour:
   - 
   rtActionDelaySeconds:
   - 0
-  rtActionExpireSeconds:
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -2155,6 +2352,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
   rtActionAutoChangeGroupIds: ffffffff
@@ -2311,11 +2509,13 @@ MonoBehaviour:
   rtEntryExclusivePeerFlat: 
   rtEntryExclusiveOffPeer: 
   rtEntryAutoChangeGroupId: 
+  rtEntryExpireSeconds: []
   rtAutoChangeGroupTagNames: []
   shaderInstances: []
   rtEntryActionStart: 
   rtEntryActionCount: 
   executor: {fileID: 7137410032878498144}
+  rtVariantKeeperMaterials: []
   rtEntryUseCustomColor: 
   rtEntryCustomColor: []
   rtEntryCondColorSourceType: 
@@ -2335,6 +2535,9 @@ MonoBehaviour:
   rtStaticFaderTargetsCustom: 
   rtStaticFaderRenderers: []
   rtStaticFaderMaterialIndices: 
+  rtStaticFaderExtraRenderers: []
+  rtStaticFaderExtraMaterialIndices: 
+  rtStaticFaderExtraCount: 
   rtStaticFaderPropertyNames: []
   rtStaticFaderPropertyTypes: 
   rtStaticFaderMinValues: []
@@ -2347,12 +2550,15 @@ MonoBehaviour:
   rtStaticFaderTargetsUdon: 
   rtStaticFaderUdonBehaviours: []
   rtStaticFaderUdonVariableNames: []
+  rtStaticFaderExtraUdonBehaviours: []
+  rtStaticFaderExtraUdonCount: 
   rtStaticFaderTargetsSlider: 
   rtStaticFaderSliders: []
   rtStaticFaderSliderReversed: 
   rtStaticFaderAlwaysVisible: 
   rtStaticFaderTargetsSkybox: 
   rtFaderLinkEntryIndex: 
+  rtFaderLinkNames: []
   rtFaderLinkRenderers: []
   rtFaderLinkMaterialIndices: 
   rtFaderLinkPropertyNames: []
@@ -2391,7 +2597,6 @@ MonoBehaviour:
   rtVariantItemTextures: []
   rtVariantLinkedEntry: 
   rtEntryIsPreset: 
-  rtPresetNames: []
   rtPresetScopes: 
   rtPresetIncludedFolderStart: 
   rtPresetIncludedFolderCount: 
@@ -2407,6 +2612,7 @@ MonoBehaviour:
   entryStates: 
   autoChangeActive: 0
   stepCurrentValues: []
+  faderLinkCurrentValues: []
   colorPaletteCurrentIndices: 
   colorPalettePendingIndices: 
   autoChangeGroupActive: 0
@@ -2423,12 +2629,9 @@ MonoBehaviour:
   statsPopularity: -1
   statsHeat: -1
   statsCapacity: -1
-  presetIsSaved: 
-  presetSavedEntryStates: 
-  presetSavedStepValues: []
-  presetSavedColorIndices: 
-  presetSavedFaderValues: []
-  presetSavedVariantIndices: 
+  presetStorage: {fileID: 0}
+  momentaryDispatchEntry: -1
+  momentaryDispatchSeq: 0
   lastButtonSlotCount: 9
 --- !u!114 &6971859380240260485
 MonoBehaviour:
@@ -2494,6 +2697,7 @@ MonoBehaviour:
   rtActionTargetRenderers: []
   rtActionMaterialIndices: 
   rtActionMaterials: []
+  rtActionDefaultMaterials: []
   rtActionPropertyNames: []
   rtActionFloatValues: []
   rtActionColorValues: []
@@ -2509,7 +2713,7 @@ MonoBehaviour:
   rtActionUdonVariableTypes: 
   rtActionUdonVariableStringValues: []
   rtActionDelaySeconds: []
-  rtActionExpireSeconds: []
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 
   rtActionTransformSpaces: 
   rtActionTeleportRotations: []
@@ -2523,6 +2727,7 @@ MonoBehaviour:
   rtActionKeywords: []
   rtActionKeywordToggles: []
   rtActionIsKeywordToggle: 
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 
   rtActionVariantSelectorRoles: 
   rtActionAutoChangeGroupIds: 
@@ -2686,7 +2891,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8621436203836338325}
+  m_Father: {fileID: 6388836997517567784}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -2858,7 +3063,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8506381071977278863}
+  m_Father: {fileID: 6061682316561342600}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -3290,7 +3495,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 523134570657262384}
-  - {fileID: 5438841592080875100}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7434508008385639146
@@ -3422,6 +3626,38 @@ MonoBehaviour:
   - {fileID: 8456875715920230168}
   - {fileID: 8465517209047835809}
   publicVariablesSerializationDataFormat: 0
+--- !u!1 &4195981289818980875
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7083892919228817749}
+  m_Layer: 0
+  m_Name: Page Display Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7083892919228817749
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4195981289818980875}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 1.0499998, y: -0.08062222, z: 0.0058646128}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7690204701443650289}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4264762080547211684
 GameObject:
   m_ObjectHideFlags: 0
@@ -3460,7 +3696,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5357950368717218696}
-  - {fileID: 7690204701443650289}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &4382823854601898628
@@ -3580,6 +3815,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &6146308335170184786
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3628,11 +3865,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -3654,8 +3893,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -3663,7 +3901,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -3698,11 +3935,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -3724,8 +3963,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -3733,7 +3971,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -3797,6 +4034,7 @@ MonoBehaviour:
   rtActionMaterials:
   - {fileID: 0}
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   - 
@@ -3838,9 +4076,7 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   - 0
-  rtActionExpireSeconds:
-  - 0
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 0000000000000000
   rtActionTransformSpaces: 0000000000000000
   rtActionTeleportRotations:
@@ -3862,6 +4098,7 @@ MonoBehaviour:
   - 
   - 
   rtActionIsKeywordToggle: 0000
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 0000000000000000
   rtActionVariantSelectorRoles: 0000000000000000
   rtActionAutoChangeGroupIds: ffffffffffffffff
@@ -4035,6 +4272,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &6228977436536407233
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4082,11 +4321,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -4108,8 +4349,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -4117,7 +4357,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -4178,6 +4417,7 @@ MonoBehaviour:
   rtActionMaterialIndices: 00000000
   rtActionMaterials:
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   rtActionFloatValues:
@@ -4206,8 +4446,7 @@ MonoBehaviour:
   - 
   rtActionDelaySeconds:
   - 0
-  rtActionExpireSeconds:
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -4225,6 +4464,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
   rtActionAutoChangeGroupIds: ffffffff
@@ -4346,6 +4586,38 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &5161351467208405607
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6053640116862371925}
+  m_Layer: 0
+  m_Name: 2 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6053640116862371925
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5161351467208405607}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0.34999985, y: -0.08062222, z: 0.0058646128}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 11273162309171096}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5252650874207778326
 GameObject:
   m_ObjectHideFlags: 0
@@ -4464,7 +4736,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3093632070750759066}
-  - {fileID: 6362664272622201209}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3490926461737365206
@@ -4921,6 +5192,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &4007416457225494956
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4968,11 +5241,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -4994,8 +5269,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -5003,7 +5277,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -5064,6 +5337,7 @@ MonoBehaviour:
   rtActionMaterialIndices: 00000000
   rtActionMaterials:
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   rtActionFloatValues:
@@ -5092,8 +5366,7 @@ MonoBehaviour:
   - 
   rtActionDelaySeconds:
   - 0
-  rtActionExpireSeconds:
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -5111,6 +5384,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
   rtActionAutoChangeGroupIds: ffffffff
@@ -5149,6 +5423,47 @@ MonoBehaviour:
   publicVariablesUnityEngineObjects:
   - {fileID: 6971859380240260485}
   publicVariablesSerializationDataFormat: 0
+--- !u!1 &5534772529279713054
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8974311789244105241}
+  m_Layer: 0
+  m_Name: Button Labels
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8974311789244105241
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5534772529279713054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2479719932276563069}
+  - {fileID: 6053640116862371925}
+  - {fileID: 5495263700802506885}
+  - {fileID: 6065293124512741198}
+  - {fileID: 5108982828978492997}
+  - {fileID: 1625770655917993510}
+  - {fileID: 6061682316561342600}
+  - {fileID: 3427426808716328031}
+  - {fileID: 6388836997517567784}
+  - {fileID: 7083892919228817749}
+  m_Father: {fileID: 3144156368012818299}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5581402579208729995
 GameObject:
   m_ObjectHideFlags: 0
@@ -5277,6 +5592,7 @@ Transform:
   - {fileID: 6293109440287325434}
   - {fileID: 3956547754770415450}
   - {fileID: 6058131717437966348}
+  - {fileID: 8974311789244105241}
   m_Father: {fileID: 4088162495312058455}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5791786007905182633
@@ -5392,7 +5708,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 6531664701544153941}
+  m_Father: {fileID: 5108982828978492997}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -5692,6 +6008,8 @@ MonoBehaviour:
   onByDefault: 0
   exclusiveOff: 0
   useExclusiveGroup: 0
+  useExpire: 0
+  expireSeconds: 5
 --- !u!114 &8215034194969072778
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5739,11 +6057,13 @@ MonoBehaviour:
     targetRenderer: {fileID: 0}
     materialIndex: 0
     targetMaterial: {fileID: 0}
+    defaultMaterial: {fileID: 0}
     propertyName: 
     propertyFloatValue: 0
     propertyColorValue: {r: 1, g: 1, b: 1, a: 1}
     propertyVectorValue: {x: 0, y: 0, z: 0, w: 0}
     targetTexture: {fileID: 0}
+    alsoSetEffectToggle: 1
     defaultFloatValue: 0
     defaultColorValue: {r: 1, g: 1, b: 1, a: 1}
     defaultVectorValue: {x: 0, y: 0, z: 0, w: 0}
@@ -5765,8 +6085,7 @@ MonoBehaviour:
     stepWrap: 0
     useDelay: 0
     delaySeconds: 1
-    useExpire: 0
-    expireSeconds: 5
+    delayOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -5774,7 +6093,6 @@ MonoBehaviour:
     colorSelectorRole: 0
     colorGroupName: 
     presetRole: 0
-    presetName: 
     presetScope: 0
     presetIncludedFolderIndices: 
     presetIncludeFaders: 1
@@ -5835,6 +6153,7 @@ MonoBehaviour:
   rtActionMaterialIndices: 00000000
   rtActionMaterials:
   - {fileID: 0}
+  rtActionDefaultMaterials: []
   rtActionPropertyNames:
   - 
   rtActionFloatValues:
@@ -5863,8 +6182,7 @@ MonoBehaviour:
   - 
   rtActionDelaySeconds:
   - 0
-  rtActionExpireSeconds:
-  - 0
+  rtActionDelayOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -5882,6 +6200,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
   rtActionAutoChangeGroupIds: ffffffff
@@ -6039,7 +6358,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8184474834331759056}
-  - {fileID: 9153399126499065090}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7932672419228985421
@@ -6290,7 +6608,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1700359752296048853}
-  - {fileID: 8949794610179850707}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &5001018583853009760
@@ -6457,7 +6774,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8871126723792257285}
-  - {fileID: 6868480587277296730}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1897614371981362338
@@ -6619,7 +6935,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7812889536219667279}
+  m_Father: {fileID: 5495263700802506885}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -6791,7 +7107,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 3290195012816549553}
+  m_Father: {fileID: 6065293124512741198}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -7016,6 +7332,38 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6954042659686093529
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5108982828978492997}
+  m_Layer: 0
+  m_Name: 5 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5108982828978492997
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6954042659686093529}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0.34999985, y: -0.080622576, z: -0.34413484}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5438841592080875100}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7319907784872035401
 GameObject:
   m_ObjectHideFlags: 0
@@ -7046,7 +7394,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 554246960579702606}
+  m_Father: {fileID: 2479719932276563069}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -7302,7 +7650,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4541469433494037316}
+  m_Father: {fileID: 3427426808716328031}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -7474,7 +7822,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1628649323222778928}
+  m_Father: {fileID: 1625770655917993510}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -7900,7 +8248,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3524520826733048998}
-  - {fileID: 5746401920855107176}
   m_Father: {fileID: 3144156368012818299}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &644305473598951324
@@ -8032,6 +8379,38 @@ MonoBehaviour:
   - {fileID: 9142005907770384406}
   - {fileID: 6887889699755465996}
   publicVariablesSerializationDataFormat: 0
+--- !u!1 &8157734869845310473
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6065293124512741198}
+  m_Layer: 0
+  m_Name: 4 Label Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6065293124512741198
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8157734869845310473}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: 0, y: -0.080622576, z: -0.34413484}
+  m_LocalScale: {x: 0.37498784, y: 0.14199483, z: 0.37498796}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5746401920855107176}
+  m_Father: {fileID: 8974311789244105241}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8219679737037111726
 GameObject:
   m_ObjectHideFlags: 0
@@ -8229,7 +8608,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 3926536126740432805}
+  m_Father: {fileID: 6053640116862371925}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -8401,7 +8780,7 @@ RectTransform:
   m_LocalScale: {x: 10, y: 10, z: 26.408558}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4297769641841349952}
+  m_Father: {fileID: 7083892919228817749}
   m_LocalEulerAnglesHint: {x: -270, y: -90, z: 180}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
