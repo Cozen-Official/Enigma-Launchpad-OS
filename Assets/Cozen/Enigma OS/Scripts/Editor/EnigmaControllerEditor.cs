@@ -703,7 +703,22 @@ namespace Cozen.EnigmaOS.Editor
         {
             var so = new SerializedObject(ctrl);
             BuildRuntimeArrays(so, ctrl);
-            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+
+            // Material-state mutations are FORBIDDEN during builds: Unity is
+            // about to serialize the scene's materials into the bundle, and
+            //   - ApplyDefaultMaterialState writes default property values
+            //     (the runtime re-applies them from rt arrays at Start, so the
+            //     built scene doesn't need them), and
+            //   - SyncMochieKeywordsForController DISABLES section keywords
+            //     whose master toggles are 0 (all of them, after the fixups
+            //     baseline) — which strips the shader_feature_local variants
+            //     from the build. That shipped a world with no Image Overlay
+            //     (2026-06-11): the build flag was a domain-reload-fragile
+            //     static, scene processing ran the sync, and the bundle's
+            //     material serialized with only _AUDIOLINK_ON enabled.
+            bool building = IsActiveVrcBuild();
+
+            if (!EditorApplication.isPlayingOrWillChangePlaymode && !building)
                 EnigmaPlayModeHook.ApplyDefaultMaterialStateForController(ctrl);
 
             // Sync Mochie SFX keywords to property values (mirror Mochie's
@@ -718,11 +733,7 @@ namespace Cozen.EnigmaOS.Editor
             // Runs for play-mode entry too: EnigmaController.Initialize only
             // writes property values, never keyword state, so without this pass
             // the runtime preview starts in the same bad state.
-            //
-            // Skipped during VRC SDK builds — EnigmaBuildValidator.OnPostprocessBuild
-            // runs the same sync after variant stripping completes so the build
-            // still ships the variants Enigma's runtime executor needs.
-            if (!IsActiveVrcBuild())
+            if (!building)
                 SyncMochieKeywordsForController(ctrl);
         }
 

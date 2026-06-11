@@ -44,7 +44,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 12
-      Data: 48
+      Data: 49
     - Name: 
       Entry: 7
       Data: 
@@ -2092,13 +2092,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtActionColorSelectorRoles
+      Data: rtActionAlwaysGate
     - Name: $v
       Entry: 7
       Data: 125|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtActionColorSelectorRoles
+      Data: rtActionAlwaysGate
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 8
@@ -2147,13 +2147,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtActionVariantSelectorRoles
+      Data: rtActionColorSelectorRoles
     - Name: $v
       Entry: 7
       Data: 128|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtActionVariantSelectorRoles
+      Data: rtActionColorSelectorRoles
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 8
@@ -2202,13 +2202,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtActionAutoChangeGroupIds
+      Data: rtActionVariantSelectorRoles
     - Name: $v
       Entry: 7
       Data: 131|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtActionAutoChangeGroupIds
+      Data: rtActionVariantSelectorRoles
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 8
@@ -2257,19 +2257,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtActionAutoChangeIntervals
+      Data: rtActionAutoChangeGroupIds
     - Name: $v
       Entry: 7
       Data: 134|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtActionAutoChangeIntervals
+      Data: rtActionAutoChangeGroupIds
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 34
+      Data: 8
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 34
+      Data: 8
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -2312,19 +2312,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtAutoChangeGroupRandom
+      Data: rtActionAutoChangeIntervals
     - Name: $v
       Entry: 7
       Data: 137|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtAutoChangeGroupRandom
+      Data: rtActionAutoChangeIntervals
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 82
+      Data: 34
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 82
+      Data: 34
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -2367,19 +2367,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtCondColorStart
+      Data: rtAutoChangeGroupRandom
     - Name: $v
       Entry: 7
       Data: 140|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtCondColorStart
+      Data: rtAutoChangeGroupRandom
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 8
+      Data: 82
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 8
+      Data: 82
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -2422,13 +2422,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtCondColorCount
+      Data: rtCondColorStart
     - Name: $v
       Entry: 7
       Data: 143|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtCondColorCount
+      Data: rtCondColorStart
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 8
@@ -2477,13 +2477,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtCondColorConditions
+      Data: rtCondColorCount
     - Name: $v
       Entry: 7
       Data: 146|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtCondColorConditions
+      Data: rtCondColorCount
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 8
@@ -2532,19 +2532,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtCondColorValues
+      Data: rtCondColorConditions
     - Name: $v
       Entry: 7
       Data: 149|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtCondColorValues
+      Data: rtCondColorConditions
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 34
+      Data: 8
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 34
+      Data: 8
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -2587,19 +2587,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rtCondColorColors
+      Data: rtCondColorValues
     - Name: $v
       Entry: 7
       Data: 152|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: rtCondColorColors
+      Data: rtCondColorValues
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 38
+      Data: 34
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 38
+      Data: 34
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -2642,16 +2642,71 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _initialSkybox
+      Data: rtCondColorColors
     - Name: $v
       Entry: 7
       Data: 155|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
+      Data: rtCondColorColors
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 38
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 38
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 156|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 157|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _initialSkybox
+    - Name: $v
+      Entry: 7
+      Data: 158|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
       Data: _initialSkybox
     - Name: <UserType>k__BackingField
       Entry: 7
-      Data: 156|System.RuntimeType, mscorlib
+      Data: 159|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
       Data: UnityEngine.Material, UnityEngine.CoreModule
@@ -2660,7 +2715,7 @@ MonoBehaviour:
       Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 156
+      Data: 159
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -2675,7 +2730,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 157|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 160|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
@@ -2700,7 +2755,7 @@ MonoBehaviour:
       Data: _savedTransformValues
     - Name: $v
       Entry: 7
-      Data: 158|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 161|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: _savedTransformValues
@@ -2724,7 +2779,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 159|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 162|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12

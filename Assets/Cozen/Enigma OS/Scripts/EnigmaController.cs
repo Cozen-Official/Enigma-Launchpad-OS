@@ -204,6 +204,19 @@ namespace Cozen.EnigmaOS
         // action execution — both controller and standalone buttons delegate to it.
         [HideInInspector] public EnigmaExecutor executor;
 
+        // -- Shader variant keeper materials (asset anchors, never rendered) --
+        // Baked by PrepareShaderLocking: one hidden clone of each Enigma-locked
+        // material, captured in its "hot" state (section toggles = 1, all
+        // shader_feature_local keywords enabled). Unity collects shader_feature
+        // variants from EVERY material included in a build — referencing the
+        // keepers here drags them into the world bundle, guaranteeing the
+        // variants Enigma's runtime needs are compiled regardless of what
+        // happens to the live material's keyword state mid-build (Mochie's
+        // inspector syncs keywords to values on every repaint, which during an
+        // async VRC build stripped _IMAGE_OVERLAY_ON from a shipped world).
+        // Never read at runtime.
+        [HideInInspector] public Material[] rtVariantKeeperMaterials = new Material[0];
+
         // Per-entry custom button color (static or conditional).
         [HideInInspector] public bool[]  rtEntryUseCustomColor  = new bool[0];
         [HideInInspector] public Color[] rtEntryCustomColor     = new Color[0];

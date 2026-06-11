@@ -71,6 +71,16 @@ namespace Cozen.EnigmaOS.Editor
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
+            // Any play-mode transition means no build is running. Clear the
+            // build-in-progress flag (set by EnigmaBuildValidator during VRC /
+            // player builds) so a build that never reached its clear point —
+            // VRC AssetBundle builds never fire IPostprocessBuildWithReport —
+            // can't leave RunBuild's material-state passes disabled forever.
+            // Key string duplicated from EnigmaBuildValidator.BuildFlagKey on
+            // purpose: this file must not depend on the VRC-SDK-dependent
+            // validator (see class doc).
+            SessionState.SetBool("EnigmaOS.VrcBuildInProgress", false);
+
             switch (state)
             {
                 case PlayModeStateChange.ExitingEditMode:
@@ -455,10 +465,28 @@ namespace Cozen.EnigmaOS.Editor
             // locked yet pay nothing. See EnigmaShaderHelper.UnlockMaterial
             // for the full contract.
             Debug.Log($"[EnigmaOS] PrepareShaderLocking: {materialProps.Count} material(s) collected, {keywordsToEnable.Count} keyword(s) to enable.");
+            var keeperByMatId = new System.Collections.Generic.Dictionary<int, Material>();
             foreach (var kvp in materialProps)
             {
                 EnigmaShaderHelper.UnlockMaterial(kvp.Value.mat);
                 EnigmaShaderHelper.PrepareAndLock(kvp.Value.mat, kvp.Value.props);
+
+                // Capture the variant keeper NOW, while the material is "hot"
+                // (section toggles = 1, every Enigma-needed keyword enabled by
+                // PrepareAndLock). The keeper is a hidden material asset that
+                // ships in the world bundle via EnigmaController.
+                // rtVariantKeeperMaterials — Unity collects shader_feature
+                // variants from every material in the build, so the keeper
+                // guarantees variant inclusion even if the LIVE material's
+                // keywords get disabled later in the build window (Mochie's
+                // inspector re-syncs keywords to the zeroed baseline values on
+                // every repaint; an Inspector showing the material during the
+                // async VRC build stripped _IMAGE_OVERLAY_ON from a shipped
+                // world on 2026-06-11). Because the keeper's VALUES are hot
+                // too, a Mochie-style value→keyword sync on the keeper keeps
+                // its keywords enabled — it is stable by construction.
+                var keeper = CreateOrUpdateVariantKeeper(kvp.Value.mat);
+                if (keeper != null) keeperByMatId[kvp.Key] = keeper;
 
                 // Re-apply shader-specific baseline AFTER the lock pass. PrepareAndLock
                 // leaves section toggles (e.g. Mochie _SST, _Triplanar) at 1 so the lock
@@ -479,8 +507,47 @@ namespace Cozen.EnigmaOS.Editor
             // Enable keywords from legacy type-27 (manual keyword) actions.
             // Auto-detected keywords are handled by PrepareAndLock's EnableRequiredKeywords.
             // This loop handles legacy type-27 (manual keyword) actions.
+            // Mirror onto the material's keeper so the variant ships even if
+            // the live material's keyword state changes mid-build.
             foreach (var (mat, keyword) in keywordsToEnable)
+            {
                 mat.EnableKeyword(keyword);
+                if (mat != null && keeperByMatId.TryGetValue(mat.GetInstanceID(), out var km) && km != null)
+                    km.EnableKeyword(keyword);
+            }
+
+            // Anchor the keepers in every controller's serialized data so they
+            // ship inside the world bundle (see EnigmaController.
+            // rtVariantKeeperMaterials). Copy to the backing UdonBehaviour
+            // explicitly — PrepareShaderLocking runs after the controllers'
+            // own build pass, so the standard proxy→Udon copy already happened.
+            if (keeperByMatId.Count > 0 && controllers != null)
+            {
+                var keeperList = new System.Collections.Generic.List<Material>(keeperByMatId.Values);
+                foreach (var ctrl in controllers)
+                {
+                    if (ctrl == null) continue;
+                    try
+                    {
+                        var ctrlSo = new SerializedObject(ctrl);
+                        var prop = ctrlSo.FindProperty("rtVariantKeeperMaterials");
+                        if (prop == null) continue;
+                        prop.arraySize = keeperList.Count;
+                        for (int i = 0; i < keeperList.Count; i++)
+                            prop.GetArrayElementAtIndex(i).objectReferenceValue = keeperList[i];
+                        ctrlSo.ApplyModifiedPropertiesWithoutUndo();
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(ctrl);
+                        UdonSharpEditor.UdonSharpEditorUtility.CopyProxyToUdon(
+                            ctrl, UdonSharpEditor.ProxySerializationPolicy.All);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning(
+                            $"[EnigmaOS] Failed to anchor variant keepers on '{ctrl.gameObject.name}': {ex.Message}", ctrl);
+                    }
+                }
+                Debug.Log($"[EnigmaOS] Variant keepers: {keeperList.Count} keeper material(s) anchored on {controllers.Count} controller(s).");
+            }
 
             // Disable pass-gating keywords (e.g., _TRIPLANAR_ON) on all collected
             // materials if their toggle property is off. Must run after all keyword
@@ -507,6 +574,47 @@ namespace Cozen.EnigmaOS.Editor
             // LockMaterialSilent path (our Enigma lock) was missing this step.
             if (materialProps.Count > 0)
                 AssetDatabase.SaveAssets();
+        }
+
+        // Generated variant-keeper materials live here. They are build-time
+        // asset anchors only — never assigned to a renderer, never rendered.
+        private const string KeeperFolder = "Assets/Cozen/Enigma OS/VariantKeepers";
+
+        /// <summary>
+        /// Creates (or refreshes) the hidden variant-keeper clone of
+        /// <paramref name="src"/>, capturing its current shader, property
+        /// values, and enabled keyword set. Call while the material is in its
+        /// post-PrepareAndLock "hot" state. Returns null on failure (keeper
+        /// is an optimization for build robustness, never a hard requirement).
+        /// </summary>
+        private static Material CreateOrUpdateVariantKeeper(Material src)
+        {
+            try
+            {
+                if (src == null || src.shader == null) return null;
+                if (!AssetDatabase.IsValidFolder(KeeperFolder))
+                    AssetDatabase.CreateFolder("Assets/Cozen/Enigma OS", "VariantKeepers");
+
+                string path = $"{KeeperFolder}/{src.name} Keeper.mat";
+                var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (existing == null)
+                {
+                    var clone = new Material(src) { name = src.name + " Keeper" };
+                    AssetDatabase.CreateAsset(clone, path);
+                    return clone;
+                }
+
+                existing.shader = src.shader;
+                existing.CopyPropertiesFromMaterial(src);
+                existing.shaderKeywords = src.shaderKeywords;
+                EditorUtility.SetDirty(existing);
+                return existing;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[EnigmaOS] Variant keeper creation failed for '{(src != null ? src.name : "null")}': {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
