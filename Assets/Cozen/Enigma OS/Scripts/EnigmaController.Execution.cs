@@ -278,6 +278,46 @@ namespace Cozen.EnigmaOS
         }
 
         /// <summary>
+        /// Returns true if any currently-active entry owns an action that drives
+        /// <paramref name="keyword"/> on the same renderer + material slot. The
+        /// executor calls this when deactivating a non-stateful section-toggle
+        /// action to decide whether the Mochie "Always" pass can be disabled, or
+        /// whether another active entry still needs it (a default-on sibling
+        /// during init's ApplyDefaultsOff sweep — default-on entries execute
+        /// BEFORE the default-off sweep — or any future path that deactivates
+        /// after a sibling activated). All deactivation paths clear entryStates
+        /// before executing actions, so the deactivating entry excludes itself.
+        /// </summary>
+        public bool IsKeywordUsedByActiveEntry(string keyword, Renderer rend, int matIdx)
+        {
+            if (entryStates == null || executor == null || string.IsNullOrEmpty(keyword) || rend == null)
+                return false;
+            var exe = executor;
+            if (exe.rtActionKeywords == null || rtEntryActionStart == null || rtEntryActionCount == null)
+                return false;
+
+            for (int e = 0; e < entryStates.Length; e++)
+            {
+                if (!entryStates[e]) continue;
+                if (e >= rtEntryActionStart.Length || e >= rtEntryActionCount.Length) continue;
+                int aStart = rtEntryActionStart[e];
+                int aCount = rtEntryActionCount[e];
+                for (int a = aStart; a < aStart + aCount; a++)
+                {
+                    if (a >= exe.rtActionKeywords.Length) break;
+                    if (exe.rtActionKeywords[a] != keyword) continue;
+                    if (exe.rtActionTargetRenderers == null || a >= exe.rtActionTargetRenderers.Length
+                        || exe.rtActionTargetRenderers[a] != rend) continue;
+                    int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
+                             ? exe.rtActionMaterialIndices[a] : 0;
+                    if (mi != matIdx) continue;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// When a Momentary button is pressed, propagate its Set-Shader-Property
         /// writes to the stepCurrentValues of any step-sibling entries — entries
         /// whose useStep action targets the same shader property.

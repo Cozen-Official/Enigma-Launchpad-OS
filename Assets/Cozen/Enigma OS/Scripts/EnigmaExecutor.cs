@@ -243,7 +243,57 @@ namespace Cozen.EnigmaOS
                 // They do NOT reset to default on deactivate.
                 if (!active && rtActionNonStateful != null && a < rtActionNonStateful.Length
                     && rtActionNonStateful[a])
+                {
+                    // …with one exception: synthetic section-toggle actions whose
+                    // keyword lives in Mochie's "Always" shader pass. That pass is
+                    // NOT value-gated by its toggle property (_SST) — the overlay
+                    // draws whenever the pass is enabled — so skipping deactivation
+                    // entirely leaves the pass running after the entry's primary
+                    // texture action reverts _ScreenTex to None, which renders the
+                    // shader's "white" fallback texture fullscreen. Mirror Mochie's
+                    // own inspector and disable the pass — unless another active
+                    // entry on the linked controller still drives the same keyword
+                    // on this material (e.g. a default-on overlay sibling during
+                    // init's ApplyDefaultsOff sweep). Exclusive-group switches stay
+                    // correct because peers deactivate BEFORE the pressed entry
+                    // activates, so the incoming overlay re-enables the pass in the
+                    // same frame.
+                    bool nsKwToggle = rtActionIsKeywordToggle != null && a < rtActionIsKeywordToggle.Length
+                        && rtActionIsKeywordToggle[a]
+                        && rtActionKeywords != null && a < rtActionKeywords.Length;
+                    if (nsKwToggle)
+                    {
+                        string nsKw = rtActionKeywords[a];
+                        if (nsKw == "_IMAGE_OVERLAY_ON" || nsKw == "_IMAGE_OVERLAY_DISTORTION_ON")
+                        {
+                            Renderer nsRend = rtActionTargetRenderers != null && a < rtActionTargetRenderers.Length
+                                              ? rtActionTargetRenderers[a] : null;
+                            if (nsRend != null)
+                            {
+                                int nsMatIdx = rtActionMaterialIndices != null && a < rtActionMaterialIndices.Length
+                                               ? rtActionMaterialIndices[a] : 0;
+                                Material nsMat = null;
+                                if (nsMatIdx == 0)
+                                {
+                                    nsMat = nsRend.sharedMaterial;
+                                }
+                                else
+                                {
+                                    Material[] nsMats = nsRend.sharedMaterials;
+                                    if (nsMatIdx < nsMats.Length) nsMat = nsMats[nsMatIdx];
+                                }
+                                if (nsMat != null)
+                                {
+                                    bool stillUsed = linkedController != null
+                                        && linkedController.IsKeywordUsedByActiveEntry(nsKw, nsRend, nsMatIdx);
+                                    if (!stillUsed)
+                                        nsMat.SetShaderPassEnabled("Always", false);
+                                }
+                            }
+                        }
+                    }
                     return;
+                }
 
                 if (rtActionTargetRenderers != null && a < rtActionTargetRenderers.Length
                     && rtActionTargetRenderers[a] != null)
