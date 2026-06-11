@@ -131,6 +131,7 @@ namespace Cozen.EnigmaOS
         private float _bottomBound;
         private float _topBound;
         private Vector3 _initialLocalPosition;
+        private bool _movementInitialized;
         private VRCPlayerApi _localPlayer;
         private bool _standAloneHandTrackingEnabled;
         private MaterialPropertyBlock _indicatorMpb;
@@ -145,17 +146,50 @@ namespace Cozen.EnigmaOS
         private void Start()
         {
             _localPlayer = Networking.LocalPlayer;
-            _initialLocalPosition = transform.localPosition;
-            _indicatorMpb = new MaterialPropertyBlock();
-            CacheMovementBounds();
+            EnsureMovementInitialized();
             // Standalone faders track their own hand colliders; controller-managed
             // faders rely on the controller's UpdateHandColliderPositions().
             _standAloneHandTrackingEnabled = controller == null
                 && _localPlayer != null && _localPlayer.IsUserInVR();
         }
 
+        /// <summary>
+        /// Idempotently captures the handle's authored rest position, its
+        /// movement bounds, and the indicator MaterialPropertyBlock. MUST run
+        /// before any code reads <see cref="_initialLocalPosition"/>,
+        /// <see cref="_bottomBound"/>, <see cref="_topBound"/>, or
+        /// <see cref="_indicatorMpb"/>.
+        ///
+        /// Why this isn't just Start(): VRChat does NOT guarantee this fader's
+        /// Start() runs before the controller's Start() binds it. The controller
+        /// binds every static fader from its own Start() (EnigmaController.Start
+        /// → BindStaticFaders), and Udon Start ordering across behaviours is
+        /// non-deterministic — it varies between ClientSim and uploaded builds,
+        /// and even between runs. A static fader bound before its Start() would
+        /// read _initialLocalPosition = (0,0,0) and _bottomBound/_topBound = 0,
+        /// snapping the handle to the local origin — and Bind() then writes that
+        /// zero into _syncedSliderPosition and serializes it, so the bad
+        /// position syncs to everyone and survives (OnDeserialization skips the
+        /// restore when _syncedSliderPosition == Vector3.zero). Dynamic faders
+        /// escaped this because they bind on button activation, long after all
+        /// Start()s have run. Capturing lazily on first touch — guarded so the
+        /// authored position is only ever recorded once, before any Bind moves
+        /// the handle — closes the race for both fader types.
+        /// </summary>
+        private void EnsureMovementInitialized()
+        {
+            if (_movementInitialized) return;
+            _movementInitialized = true;
+            _initialLocalPosition = transform.localPosition;
+            if (_indicatorMpb == null) _indicatorMpb = new MaterialPropertyBlock();
+            CacheMovementBounds();
+        }
+
         public override void OnDeserialization()
         {
+            // A remote sync can arrive before this fader's Start(); make sure
+            // the authored rest position is captured before we touch the handle.
+            EnsureMovementInitialized();
             ApplyValueToMaterials(currentValue);
             if (_syncedSliderPosition != Vector3.zero)
             {
@@ -189,6 +223,9 @@ namespace Cozen.EnigmaOS
                          int propType, float min, float max, float defaultVal, Color defColor,
                          bool indEnabled, Color indColor, bool indConditional)
         {
+            // Capture authored rest position / bounds before we reposition the
+            // handle below — this Bind can run before the fader's own Start().
+            EnsureMovementInitialized();
             targetMaterials    = materials;
             materialPropertyId = propertyName;
             propertyType       = propType;
@@ -247,6 +284,7 @@ namespace Cozen.EnigmaOS
 #if UNITY_UI
         public void BindSlider(string label, UnityEngine.UI.Slider slider, bool reversed, int propType, float min, float max, float defaultVal, Color defColor, bool indEnabled, Color indColor, bool indConditional)
         {
+            EnsureMovementInitialized();
             targetSliders = new UnityEngine.UI.Slider[] { slider };
             sliderDirectionsReversed = new bool[] { reversed };
             propertyType = propType;
@@ -295,6 +333,7 @@ namespace Cozen.EnigmaOS
         // components at once, e.g. lightColorTint across all VRSL lights).
         public void BindUdon(string label, UdonSharpBehaviour[] behaviours, string varName, int propType, float min, float max, float defaultVal, Color defColor, bool indEnabled, Color indColor, bool indConditional)
         {
+            EnsureMovementInitialized();
             targetUdonBehaviours = behaviours;
             udonVariableName = varName;
             propertyType = propType;
