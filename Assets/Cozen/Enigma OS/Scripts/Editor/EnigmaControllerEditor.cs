@@ -442,11 +442,8 @@ namespace Cozen.EnigmaOS.Editor
 
         public override void OnInspectorGUI()
         {
-            EnigmaPerfProbe.MarkInspectorStart();
-            using (new EnigmaPerfProbe.PerfTrace("OnInspectorGUI TOTAL", 5.0))
             {
-                using (new EnigmaPerfProbe.PerfTrace("_so.Update()"))
-                    _so.Update();
+                _so.Update();
                 InitStyles();
 
                 EnigmaController ctrl = (EnigmaController)target;
@@ -475,13 +472,11 @@ namespace Cozen.EnigmaOS.Editor
                 // Navigation (folder selection, page arrows, grid click-to-select) stays
                 // enabled during play mode. Editing (add/delete/rename/reorder) is disabled
                 // inside DrawPreview via its own isPlaying checks.
-                using (new EnigmaPerfProbe.PerfTrace("DrawPreview()"))
-                    DrawPreview();
+                DrawPreview();
 
                 EditorGUILayout.Space(4);
 
                 // ── Selected Button Settings — inline below preview, no foldout ──
-                using (new EnigmaPerfProbe.PerfTrace("DrawSelectedButtonSettings()"))
                 using (new EditorGUI.DisabledScope(isPlaying))
                     DrawSelectedButtonSettings();
 
@@ -513,14 +508,12 @@ namespace Cozen.EnigmaOS.Editor
                 // ── Footer ──
                 DrawFooter();
 
-                using (new EnigmaPerfProbe.PerfTrace("_so.ApplyModifiedProperties()"))
-                    _so.ApplyModifiedProperties();
+                _so.ApplyModifiedProperties();
 
                 // Persist editor UI state so it survives reselection/recompile.
                 SaveFoldoutState();
                 SavePreviewState();
             }
-            EnigmaPerfProbe.MarkInspectorEnd();
         }
 
         // ════════════════════════════════════════════════════════════════════════

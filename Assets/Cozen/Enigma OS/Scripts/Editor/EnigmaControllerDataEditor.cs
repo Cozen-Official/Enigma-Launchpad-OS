@@ -33,7 +33,6 @@ namespace Cozen.EnigmaOS.Editor
     {
         public override void OnInspectorGUI()
         {
-            using (new EnigmaPerfProbe.PerfTrace("DataEditor.OnInspectorGUI", 0.0))
             {
                 EditorGUILayout.HelpBox(
                     "Storage component for the EnigmaController on this GameObject.\n" +

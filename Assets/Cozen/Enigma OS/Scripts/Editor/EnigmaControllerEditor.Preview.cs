@@ -169,8 +169,7 @@ namespace Cozen.EnigmaOS.Editor
                 var dataComp = ctrl.GetComponent<EnigmaControllerData>();
                 if (dataComp != null)
                 {
-                    using (new EnigmaPerfProbe.PerfTrace("Preview.Undo.RecordObject(dataComp)"))
-                        Undo.RecordObject(dataComp, "Modify Enigma Preview");
+                    Undo.RecordObject(dataComp, "Modify Enigma Preview");
                 }
             }
 

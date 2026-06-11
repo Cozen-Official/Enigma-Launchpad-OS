@@ -127,12 +127,10 @@ namespace Cozen.EnigmaOS.Editor
                     _scrubAction = ownerAction;
                     _scrubFieldKey = fieldKey;
                     _scrubFloatBuffer = newValue;
-                    using (new EnigmaPerfProbe.PerfTrace($"DragDeferred BUFFER {label}={newValue:F3} prevEvt={prevEventType} hot={prevHotControl}", 0.0)) {}
                 }
                 else
                 {
                     // Typing / Enter / focus loss: commit immediately.
-                    using (new EnigmaPerfProbe.PerfTrace($"DragDeferred IMMEDIATE commit {label}={newValue:F3} prevEvt={prevEventType} hot={prevHotControl}", 0.0)) {}
                     if (undoTarget != null) Undo.RecordObject(undoTarget, undoLabel);
                     commit(newValue);
                     if (isActiveScrub)
@@ -155,7 +153,6 @@ namespace Cozen.EnigmaOS.Editor
                 _scrubAction = null;
                 _scrubFieldKey = 0;
                 _scrubFloatBuffer = 0f;
-                using (new EnigmaPerfProbe.PerfTrace($"DragDeferred RELEASE commit {label}={committed:F3} prevEvt={prevEventType}", 0.0)) {}
                 if (undoTarget != null) Undo.RecordObject(undoTarget, undoLabel);
                 commit(committed);
                 GUI.changed = true;
@@ -984,8 +981,7 @@ namespace Cozen.EnigmaOS.Editor
                 var prevUdon     = action.targetUdon;
 
                 EditorGUI.BeginChangeCheck();
-                using (new EnigmaPerfProbe.PerfTrace("DrawActionBody"))
-                    DrawActionBody(dirtyObj, ctrl, action);
+                DrawActionBody(dirtyObj, ctrl, action);
                 if (EditorGUI.EndChangeCheck())
                 {
                     // The change is on the action — which lives in
@@ -999,11 +995,8 @@ namespace Cozen.EnigmaOS.Editor
                     // For non-action-list callers (EnigmaButtonEditor passes
                     // the standalone EnigmaButton as dirtyObj), the SetDirty
                     // path is still correct, so gate by type.
-                    using (new EnigmaPerfProbe.PerfTrace("EditorUtility.SetDirty(dirtyObj)"))
-                    {
-                        if (dirtyObj != null && !(dirtyObj is EnigmaController))
-                            EditorUtility.SetDirty(dirtyObj);
-                    }
+                    if (dirtyObj != null && !(dirtyObj is EnigmaController))
+                        EditorUtility.SetDirty(dirtyObj);
                 }
 
                 // Auto-sync linked fader links when target references change.
