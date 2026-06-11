@@ -221,80 +221,31 @@ namespace Cozen.EnigmaOS.Editor
 
             EnigmaPlayModeHook.RebuildControllersInScene(scene, "scene-process");
 
-            // Remove stale/editor-only variables from UdonBehaviour heaps.
-            // UdonSharp serializes [SerializeField] private fields like 'folders' to the heap,
-            // but VRChat can't resolve complex nested C# objects at runtime.
-            CleanStaleUdonHeapVars(scene);
-        }
-
-        // Types whose Udon heap we're allowed to scrub. Limiting to Enigma's
-        // own behaviours is critical: third-party UdonSharpBehaviours (ProTV,
-        // VRSL, AudioLink, ClusterLit, …) commonly use the standard
-        // `[SerializeField] private Foo _bar;` pattern, and UdonSharp
-        // serialises those through `publicVariables` on the Udon heap so
-        // the runtime Udon VM can resolve them. Earlier this routine iterated
-        // EVERY UdonBehaviour in the scene and stripped any heap variable
-        // whose name didn't match a `public` field on the proxy, which wiped
-        // out every third-party private-serialised field and caused runtime
-        // NREs like "TVManagedWhitelistUI.get_childCount Object reference not
-        // set" and "AudioAdapter Index was outside the bounds of the array".
-        //
-        // We only need this scrubbing for Enigma's own behaviours because
-        // only they have the pathological `folders` field (a [SerializeField]
-        // private of a complex nested C# object that VRChat can't resolve at
-        // runtime). Type check by namespace prefix rather than by exact type
-        // so the list stays stable as the Enigma class hierarchy evolves.
-        private static bool IsEnigmaManagedType(System.Type t)
-        {
-            if (t == null) return false;
-            string ns = t.Namespace ?? "";
-            return ns == "Cozen.EnigmaOS"
-                || ns.StartsWith("Cozen.EnigmaOS.", System.StringComparison.Ordinal);
-        }
-
-        private static void CleanStaleUdonHeapVars(Scene scene)
-        {
-            var roots = scene.GetRootGameObjects();
-            foreach (var root in roots)
-            {
-                var udons = root.GetComponentsInChildren<VRC.Udon.UdonBehaviour>(true);
-                foreach (var ub in udons)
-                {
-                    var proxy = UdonSharpEditor.UdonSharpEditorUtility.GetProxyBehaviour(ub);
-                    if (proxy == null) continue;
-
-                    // Only scrub Enigma's own behaviours. Third-party Udon
-                    // behaviours legitimately keep `[SerializeField] private`
-                    // fields on the Udon heap (ProTV, VRSL, etc.) — stripping
-                    // them crashes those scripts at runtime with null-ref or
-                    // out-of-bounds accesses on the missing fields.
-                    if (!IsEnigmaManagedType(proxy.GetType())) continue;
-
-                    var expected = new System.Collections.Generic.HashSet<string>();
-                    var fields = proxy.GetType().GetFields(
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    foreach (var f in fields) expected.Add(f.Name);
-                    expected.Add("___UdonSharpBehaviourVersion___");
-
-                    var stale = new System.Collections.Generic.List<string>();
-                    if (ub.publicVariables != null && ub.publicVariables.VariableSymbols != null)
-                        foreach (string sym in ub.publicVariables.VariableSymbols)
-                            if (!expected.Contains(sym)) stale.Add(sym);
-
-                    // Also remove 'folders' — it's [SerializeField] private but shouldn't be on the Udon heap
-                    if (!stale.Contains("folders"))
-                    {
-                        bool hasIt = false;
-                        if (ub.publicVariables != null && ub.publicVariables.VariableSymbols != null)
-                            foreach (string sym in ub.publicVariables.VariableSymbols)
-                                if (sym == "folders") { hasIt = true; break; }
-                        if (hasIt) stale.Add("folders");
-                    }
-
-                    foreach (string sym in stale)
-                        ub.publicVariables.RemoveVariable(sym);
-                }
-            }
+            // A heap-scrubber (CleanStaleUdonHeapVars) used to run here to strip a
+            // stale 'folders' variable off EnigmaController's Udon heap. It was
+            // removed (2.0.4) after a build investigation proved it was both dead
+            // and unsafe:
+            //
+            //   1. Its target no longer exists. 'folders' is not a field on the
+            //      EnigmaController UdonSharpBehaviour — the editor config lives on
+            //      a separate plain MonoBehaviour (EnigmaControllerData), so it is
+            //      never serialized to any Udon heap. A scan of every Enigma Udon
+            //      heap in the demo scene found zero 'folders' symbols.
+            //   2. It never ran during builds anyway. UdonSharp's scene processing
+            //      (callbackOrder -1) strips the C# proxy components before this
+            //      callback (order 50) runs, so GetProxyBehaviour() returned null
+            //      for every UdonBehaviour. A diagnostic build measured
+            //      udons=101, nullProxy=101, symbolsRemoved=0 — a pure no-op.
+            //   3. It would have been actively harmful if it ever DID run. Its
+            //      "remove every heap symbol that isn't a public field" rule would
+            //      strip the [SerializeField] private fields the runtime depends on
+            //      — e.g. EnigmaFader.topLimiter/bottomLimiter (read by
+            //      CacheMovementBounds) and the hand colliders — breaking every
+            //      fader. Deleting it removes that landmine too.
+            //
+            // The original folders-on-the-Udon-heap problem is now prevented by
+            // architecture (folders moved off the UdonSharpBehaviour entirely),
+            // not by a build-time scrub.
         }
     }
 }
