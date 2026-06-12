@@ -324,6 +324,12 @@ namespace Cozen.EnigmaOS.Editor
             var rtFaderLinkTargetsUdon          = new bool[totalFaderLinks];
             var rtFaderLinkUdonBehaviours       = new UdonSharpBehaviour[totalFaderLinks];
             var rtFaderLinkUdonVariableNames    = new string[totalFaderLinks];
+            // Managed-write metadata (Int-declared mirror / Always gate / keyword).
+            var rtFaderLinkPropertyIsInt        = new bool[totalFaderLinks];
+            var rtFaderLinkAlwaysGate           = new int[totalFaderLinks];
+            var rtFaderLinkKeywords             = new string[totalFaderLinks];
+            for (int fl0 = 0; fl0 < totalFaderLinks; fl0++)
+            { rtFaderLinkAlwaysGate[fl0] = -1; rtFaderLinkKeywords[fl0] = ""; }
 
             // Per-entry custom color.
             var rtEntryUseCustomColor          = new bool[totalEntries];
@@ -371,6 +377,11 @@ namespace Cozen.EnigmaOS.Editor
             var rtVariantItemColorValues  = new Color[totalVariantItems];
             var rtVariantItemVectorValues = new Vector4[totalVariantItems];
             var rtVariantItemTextures     = new Texture[totalVariantItems];
+            // Per-item keyword for float-mode items: enum-mode toggle
+            // properties (Mochie _SST/_Zoom/…) gate a different keyword per
+            // value, so the keyword is resolved per item value at build time.
+            var rtVariantItemKeywords     = new string[totalVariantItems];
+            for (int vi0 = 0; vi0 < totalVariantItems; vi0++) rtVariantItemKeywords[vi0] = "";
 
             var rtStepAmounts   = new float[totalEntries];
             var rtStepMinValues = new float[totalEntries];
@@ -461,6 +472,49 @@ namespace Cozen.EnigmaOS.Editor
                     for (int entryIndex = 0; entryIndex < fol.entries.Length; entryIndex++)
                         globalEntryLookup[folderIndex][entryIndex] = fol.entries[entryIndex].isEmpty ? -1 : gIdx++;
                 }
+            }
+
+            // ── Pre-Pass: shader-specific material fixups (scoped) ──
+            // Collect every material referenced by a type-2 / variant-selector
+            // action together with the properties Enigma manages on it, then
+            // apply the Mochie baseline fixups ONCE per material, scoped to
+            // those managed toggles. Previously ApplyMaterialFixups ran
+            // per-action and zeroed EVERY Mochie master toggle — silently
+            // killing effects the user had enabled manually on the material
+            // and never put under Enigma control.
+            {
+                var fixupProps = new Dictionary<Material, HashSet<string>>();
+                foreach (var fpFolder in folders)
+                {
+                    if (fpFolder.entries == null) continue;
+                    foreach (var fpEntry in fpFolder.entries)
+                    {
+                        if (fpEntry.isEmpty || fpEntry.actions == null) continue;
+                        foreach (var fpAct in fpEntry.actions)
+                        {
+                            if (fpAct == null
+                                || (fpAct.actionType != 2
+                                    && !(fpAct.actionType == 19 && fpAct.variantSelectorRole == 1))
+                                || fpAct.targetRenderer == null
+                                || string.IsNullOrEmpty(fpAct.propertyName)) continue;
+                            var fpMats = fpAct.targetRenderer.sharedMaterials;
+                            int fpMi = fpAct.materialIndex;
+                            if (fpMats == null || fpMi < 0 || fpMi >= fpMats.Length || fpMats[fpMi] == null) continue;
+                            HashSet<string> fpSet;
+                            if (!fixupProps.TryGetValue(fpMats[fpMi], out fpSet))
+                            {
+                                fpSet = new HashSet<string>();
+                                fixupProps[fpMats[fpMi]] = fpSet;
+                            }
+                            fpSet.Add(fpAct.propertyName);
+                            if (WouldEmitSyntheticToggle(fpAct, out string fpTog, out _))
+                                fpSet.Add(fpTog);
+                        }
+                    }
+                }
+                foreach (var fpKv in fixupProps)
+                    EnigmaShaderHelper.ApplyMaterialFixups(fpKv.Key,
+                        EnigmaShaderHelper.ComputeManagedToggles(fpKv.Key, fpKv.Value));
             }
 
             // ── Pass 4: Populate ──
@@ -606,23 +660,41 @@ namespace Cozen.EnigmaOS.Editor
                         // NOT when it targets an effect parameter (e.g., _OutlineThresh,
                         // _SobelFilterOpacity). Effect parameters should change values
                         // without toggling the feature on/off.
-                        if (act.actionType == 2 && act.targetRenderer != null
-                            && !string.IsNullOrEmpty(act.propertyName))
+                        //
+                        // Variant Selector role-1 actions (type 19) reuse the same
+                        // renderer/property fields and need the Always-pass gate
+                        // baked too (their keywords are baked PER ITEM below since
+                        // each item value can gate a different keyword).
+                        //
+                        // (Material fixups moved to a once-per-material scoped
+                        // pre-pass before this loop — see Pre-Pass: fixups.)
+                        bool bakesShaderProp =
+                            (act.actionType == 2
+                             || (act.actionType == 19 && act.variantSelectorRole == 1))
+                            && act.targetRenderer != null
+                            && !string.IsNullOrEmpty(act.propertyName);
+                        if (bakesShaderProp)
                         {
                             var mats = act.targetRenderer.sharedMaterials;
                             int mi = act.materialIndex;
                             if (mats != null && mi >= 0 && mi < mats.Length && mats[mi] != null)
                             {
-                                // Apply shader-specific one-time fixups (e.g., force-enable
-                                // Mochie's "Always" shader pass so Overlay/Zoom render).
-                                EnigmaShaderHelper.ApplyMaterialFixups(mats[mi]);
-
-                                var kwInfo = EnigmaShaderHelper.GetPropertyKeywordInfo(mats[mi], act.propertyName);
-                                if (kwInfo.keyword != null && kwInfo.toggleProp == act.propertyName)
+                                if (act.actionType == 2)
                                 {
-                                    rtActionKeywords[actionIdx]       = kwInfo.keyword;
-                                    rtActionKeywordToggles[actionIdx] = kwInfo.toggleProp;
-                                    rtActionIsKeywordToggle[actionIdx] = true;
+                                    var kwInfo = EnigmaShaderHelper.GetPropertyKeywordInfo(mats[mi], act.propertyName);
+                                    if (kwInfo.keyword != null && kwInfo.toggleProp == act.propertyName)
+                                    {
+                                        // Value-aware: enum-mode toggles (Mochie
+                                        // _SST/_Zoom/_BlurModel/…) gate a DIFFERENT
+                                        // keyword per value. Resolve against this
+                                        // action's target value; fall back to the
+                                        // single auto-detected keyword.
+                                        string vkw = EnigmaShaderHelper.GetKeywordForToggleValue(
+                                            mats[mi], act.propertyName, act.propertyFloatValue);
+                                        rtActionKeywords[actionIdx]       = vkw != null ? vkw : kwInfo.keyword;
+                                        rtActionKeywordToggles[actionIdx] = kwInfo.toggleProp;
+                                        rtActionIsKeywordToggle[actionIdx] = true;
+                                    }
                                 }
 
                                 // Mochie "Always" pass gate (_Zoom/_SST/_Letterbox).
@@ -795,6 +867,14 @@ namespace Cozen.EnigmaOS.Editor
                             rtFaderLinkUdonBehaviours[faderLinkIdx]       = link.targetsUdon && link.targetUdonBehaviours != null && link.targetUdonBehaviours.Length > 0
                                                                             ? link.targetUdonBehaviours[0] : null;
                             rtFaderLinkUdonVariableNames[faderLinkIdx]    = link.targetsUdon ? link.udonVariableName : "";
+                            // Managed-write metadata for material-property links.
+                            ComputeFaderShaderWriteInfo(link.targetsSlider, link.targetsUdon,
+                                link.targetsSkybox ? null : link.targetRenderer, link.materialIndex,
+                                link.targetsSkybox ? link.skyboxMaterial : null, link.propertyName,
+                                out bool flIsInt, out int flGate, out string flKw);
+                            rtFaderLinkPropertyIsInt[faderLinkIdx] = flIsInt;
+                            rtFaderLinkAlwaysGate[faderLinkIdx]    = flGate;
+                            rtFaderLinkKeywords[faderLinkIdx]      = flKw;
                             faderLinkIdx++;
                         }
                     }
@@ -834,6 +914,19 @@ namespace Cozen.EnigmaOS.Editor
                     if (variantAction != null && variantAction.variantItems != null
                         && variantAction.variantItems.Length > 0)
                     {
+                        // Resolve the per-item keyword material once for the
+                        // whole item list (the action targets one property).
+                        Material variantMat = null;
+                        if (variantAction.propertyType == 0
+                            && variantAction.targetRenderer != null
+                            && !string.IsNullOrEmpty(variantAction.propertyName))
+                        {
+                            var vMats = variantAction.targetRenderer.sharedMaterials;
+                            int vMi = variantAction.materialIndex;
+                            if (vMats != null && vMi >= 0 && vMi < vMats.Length)
+                                variantMat = vMats[vMi];
+                        }
+
                         rtVariantItemStart[entryIdx] = variantItemIdx;
                         rtVariantItemCount[entryIdx] = variantAction.variantItems.Length;
                         for (int vi = 0; vi < variantAction.variantItems.Length; vi++)
@@ -844,6 +937,12 @@ namespace Cozen.EnigmaOS.Editor
                             rtVariantItemColorValues[variantItemIdx]  = item.colorValue;
                             rtVariantItemVectorValues[variantItemIdx] = item.vectorValue;
                             rtVariantItemTextures[variantItemIdx]     = item.textureValue;
+                            if (variantMat != null)
+                            {
+                                string vik = EnigmaShaderHelper.GetKeywordForToggleValue(
+                                    variantMat, variantAction.propertyName, item.floatValue);
+                                rtVariantItemKeywords[variantItemIdx] = vik ?? "";
+                            }
                             variantItemIdx++;
                         }
                     }
@@ -1149,6 +1248,42 @@ namespace Cozen.EnigmaOS.Editor
             WriteArray(so, "rtFaderLinkTargetsUdon",         rtFaderLinkTargetsUdon);
             WriteObjectArray(so, "rtFaderLinkUdonBehaviours", rtFaderLinkUdonBehaviours);
             WriteArray(so, "rtFaderLinkUdonVariableNames",   rtFaderLinkUdonVariableNames);
+            WriteArray(so, "rtFaderLinkPropertyIsInt",       rtFaderLinkPropertyIsInt);
+            WriteArray(so, "rtFaderLinkAlwaysGate",          rtFaderLinkAlwaysGate);
+            WriteArray(so, "rtFaderLinkKeywords",            rtFaderLinkKeywords);
+
+            // ── Static fader managed-write metadata ──
+            // Static faders are authored directly in the inspector (no build
+            // pass of their own), so their Int/gate/keyword info is derived
+            // here from the already-serialized rtStaticFader* arrays.
+            {
+                var sfNames = ctrl.rtStaticFaderPropertyNames ?? new string[0];
+                int sfCount = sfNames.Length;
+                var sfIsInt = new bool[sfCount];
+                var sfGate  = new int[sfCount];
+                var sfKw    = new string[sfCount];
+                for (int sf = 0; sf < sfCount; sf++)
+                {
+                    sfGate[sf] = -1; sfKw[sf] = "";
+                    bool sfSlider = ctrl.rtStaticFaderTargetsSlider != null
+                        && sf < ctrl.rtStaticFaderTargetsSlider.Length && ctrl.rtStaticFaderTargetsSlider[sf];
+                    bool sfUdon = ctrl.rtStaticFaderTargetsUdon != null
+                        && sf < ctrl.rtStaticFaderTargetsUdon.Length && ctrl.rtStaticFaderTargetsUdon[sf];
+                    bool sfSkybox = ctrl.rtStaticFaderTargetsSkybox != null
+                        && sf < ctrl.rtStaticFaderTargetsSkybox.Length && ctrl.rtStaticFaderTargetsSkybox[sf];
+                    Renderer sfRend = ctrl.rtStaticFaderRenderers != null
+                        && sf < ctrl.rtStaticFaderRenderers.Length ? ctrl.rtStaticFaderRenderers[sf] : null;
+                    int sfMi = ctrl.rtStaticFaderMaterialIndices != null
+                        && sf < ctrl.rtStaticFaderMaterialIndices.Length ? ctrl.rtStaticFaderMaterialIndices[sf] : 0;
+                    Material sfSky = sfSkybox ? RenderSettings.skybox : null;
+                    ComputeFaderShaderWriteInfo(sfSlider, sfUdon,
+                        sfSkybox ? null : sfRend, sfMi, sfSky, sfNames[sf],
+                        out sfIsInt[sf], out sfGate[sf], out sfKw[sf]);
+                }
+                WriteArray(so, "rtStaticFaderPropertyIsInt", sfIsInt);
+                WriteArray(so, "rtStaticFaderAlwaysGate",    sfGate);
+                WriteArray(so, "rtStaticFaderKeywords",      sfKw);
+            }
 
             WriteArray(so, "rtColorPaletteStart",           rtColorPaletteStart);
             WriteArray(so, "rtColorPaletteCount",           rtColorPaletteCount);
@@ -1166,6 +1301,7 @@ namespace Cozen.EnigmaOS.Editor
             WriteColorArray(so, "rtVariantItemColorValues",   rtVariantItemColorValues);
             WriteVector4Array(so, "rtVariantItemVectorValues",rtVariantItemVectorValues);
             WriteObjectArray(so, "rtVariantItemTextures",     rtVariantItemTextures);
+            WriteArray(so, "rtVariantItemKeywords",           rtVariantItemKeywords);
             WriteArray(so, "rtVariantLinkedEntry",            rtVariantLinkedEntry);
             // rtActionVariantSelectorRoles written to executor above
 
@@ -1401,6 +1537,42 @@ namespace Cozen.EnigmaOS.Editor
         /// toggle for this property (or the action's property already IS the
         /// section toggle).
         /// </summary>
+        /// <summary>
+        /// Resolves the managed-write metadata a fader needs to drive a shader
+        /// property safely at runtime: whether the property is Int-declared
+        /// (so writes must mirror through SetInt — Mochie declares many props
+        /// that way and SetFloat alone may not update the int uniform on
+        /// standalone), the Mochie Always-pass gate id, and the keyword to
+        /// enable when the value goes non-zero. All inert for slider/Udon
+        /// targets and unresolvable materials.
+        /// </summary>
+        internal static void ComputeFaderShaderWriteInfo(
+            bool targetsSlider, bool targetsUdon,
+            Renderer renderer, int materialIndex, Material explicitMaterial,
+            string propertyName,
+            out bool isInt, out int gate, out string keyword)
+        {
+            isInt = false; gate = -1; keyword = "";
+            if (targetsSlider || targetsUdon || string.IsNullOrEmpty(propertyName)) return;
+
+            Material mat = explicitMaterial;
+            if (mat == null && renderer != null)
+            {
+                var mats = renderer.sharedMaterials;
+                if (mats != null && materialIndex >= 0 && materialIndex < mats.Length)
+                    mat = mats[materialIndex];
+            }
+            if (mat == null || mat.shader == null) return;
+
+            gate = EnigmaShaderHelper.GetAlwaysPassGateId(mat, propertyName);
+            // Mode-1 keyword: a fader sweeping an enum-mode toggle can't bake a
+            // per-value keyword, so the first "on" mode's keyword is used —
+            // faders on multi-mode enums are a degenerate authoring case anyway.
+            string kw = EnigmaShaderHelper.GetKeywordForToggleValue(mat, propertyName, 1f);
+            keyword = kw != null ? kw : "";
+            isInt = EnigmaShaderHelper.IsIntDeclaredProperty(mat.shader, propertyName);
+        }
+
         private static bool WouldEmitSyntheticToggle(
             EnigmaActionData act, out string toggleProp, out Material mat)
         {
@@ -1457,12 +1629,16 @@ namespace Cozen.EnigmaOS.Editor
 
             // Bake the keyword association for the synthetic action so its
             // shader_feature_local variant gets enabled at runtime (e.g.
-            // _COLOR_ON for _FilterModel, _IMAGE_OVERLAY_ON for _SST).
-            EnigmaShaderHelper.ApplyMaterialFixups(mat);
+            // _COLOR_ON for _FilterModel, _IMAGE_OVERLAY_ON for _SST). The
+            // synthetic action always writes 1, so the value-aware resolution
+            // uses the mode-1 keyword. (Material fixups are handled by the
+            // once-per-material scoped pre-pass, which already includes
+            // synthetic toggle properties in the managed set.)
             var kwInfo = EnigmaShaderHelper.GetPropertyKeywordInfo(mat, toggleProp);
             if (kwInfo.keyword != null && kwInfo.toggleProp == toggleProp)
             {
-                rtActionKeywords[idx]        = kwInfo.keyword;
+                string vkw = EnigmaShaderHelper.GetKeywordForToggleValue(mat, toggleProp, 1f);
+                rtActionKeywords[idx]        = vkw != null ? vkw : kwInfo.keyword;
                 rtActionKeywordToggles[idx]  = kwInfo.toggleProp;
                 rtActionIsKeywordToggle[idx] = true;
             }
@@ -1846,6 +2022,33 @@ namespace Cozen.EnigmaOS.Editor
                 rtActionAlwaysGate[i] = -1;
             }
 
+            // ── Pre-pass: scoped material fixups (once per material) ──
+            // Same rationale as the controller build's fixups pre-pass: only
+            // reset the Mochie toggles this button actually manages.
+            {
+                var fixupProps = new Dictionary<Material, HashSet<string>>();
+                foreach (var fpAct in actions)
+                {
+                    if (fpAct == null || fpAct.actionType != 2 || fpAct.targetRenderer == null
+                        || string.IsNullOrEmpty(fpAct.propertyName)) continue;
+                    var fpMats = fpAct.targetRenderer.sharedMaterials;
+                    int fpMi = fpAct.materialIndex;
+                    if (fpMats == null || fpMi < 0 || fpMi >= fpMats.Length || fpMats[fpMi] == null) continue;
+                    HashSet<string> fpSet;
+                    if (!fixupProps.TryGetValue(fpMats[fpMi], out fpSet))
+                    {
+                        fpSet = new HashSet<string>();
+                        fixupProps[fpMats[fpMi]] = fpSet;
+                    }
+                    fpSet.Add(fpAct.propertyName);
+                    if (WouldEmitSyntheticToggle(fpAct, out string fpTog, out _))
+                        fpSet.Add(fpTog);
+                }
+                foreach (var fpKv in fixupProps)
+                    EnigmaShaderHelper.ApplyMaterialFixups(fpKv.Key,
+                        EnigmaShaderHelper.ComputeManagedToggles(fpKv.Key, fpKv.Value));
+            }
+
             // ── Compile actions ──
             for (int idx = 0; idx < actions.Length; idx++)
             {
@@ -1869,14 +2072,14 @@ namespace Cozen.EnigmaOS.Editor
                     int mi = act.materialIndex;
                     if (mats != null && mi >= 0 && mi < mats.Length && mats[mi] != null)
                     {
-                        // Apply shader-specific one-time fixups (e.g., force-enable
-                        // Mochie's "Always" shader pass so Overlay/Zoom render).
-                        EnigmaShaderHelper.ApplyMaterialFixups(mats[mi]);
-
                         var kwInfo = EnigmaShaderHelper.GetPropertyKeywordInfo(mats[mi], act.propertyName);
                         if (kwInfo.keyword != null && kwInfo.toggleProp == act.propertyName)
                         {
-                            rtActionKeywords[idx]       = kwInfo.keyword;
+                            // Value-aware: enum-mode toggles gate a different
+                            // keyword per value (see GetKeywordForToggleValue).
+                            string vkw = EnigmaShaderHelper.GetKeywordForToggleValue(
+                                mats[mi], act.propertyName, act.propertyFloatValue);
+                            rtActionKeywords[idx]       = vkw != null ? vkw : kwInfo.keyword;
                             rtActionKeywordToggles[idx] = kwInfo.toggleProp;
                             rtActionIsKeywordToggle[idx] = true;
                         }

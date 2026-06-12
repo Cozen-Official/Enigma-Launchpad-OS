@@ -97,6 +97,20 @@ namespace Cozen.EnigmaOS
         [HideInInspector] public Color defaultColor = Color.white;
         [HideInInspector] public bool isBound = false;
 
+        // ── Managed-write metadata (set via SetShaderWriteInfo after Bind) ──
+        // boundPropertyIsInt: the bound property is declared Int in the shader
+        //   (Mochie declares many that way) — SetFloat alone may not update
+        //   the int uniform on standalone, so writes mirror through SetInt.
+        // boundAlwaysGate: Mochie "Always" pass gate id (0=_Zoom, 1=_SST,
+        //   2=_Letterbox, -1=not a gate) — fader writes toggle the pass the
+        //   same way executor gate actions do.
+        // boundGateKeyword: shader_feature keyword enabled when the written
+        //   value goes non-zero ("" = none). Enable-only, matching the
+        //   executor's keyword policy.
+        [HideInInspector] public bool   boundPropertyIsInt = false;
+        [HideInInspector] public int    boundAlwaysGate    = -1;
+        [HideInInspector] public string boundGateKeyword   = "";
+
         // ── UI Slider targets (set by Bind) ──
 #if UNITY_UI
         [HideInInspector] public UnityEngine.UI.Slider[] targetSliders;
@@ -219,6 +233,19 @@ namespace Cozen.EnigmaOS
                  false, Color.white, false);
         }
 
+        /// <summary>
+        /// Sets the managed-write metadata for the currently bound material
+        /// property. Called by the controller right after Bind() — the Bind
+        /// overloads reset these to inert defaults so a slot rebound from a
+        /// gate property to a plain one doesn't keep stale gate behavior.
+        /// </summary>
+        public void SetShaderWriteInfo(bool propIsInt, int gateId, string gateKeyword)
+        {
+            boundPropertyIsInt = propIsInt;
+            boundAlwaysGate    = gateId;
+            boundGateKeyword   = gateKeyword == null ? "" : gateKeyword;
+        }
+
         public void Bind(string label, Material[] materials, string propertyName,
                          int propType, float min, float max, float defaultVal, Color defColor,
                          bool indEnabled, Color indColor, bool indConditional)
@@ -226,6 +253,9 @@ namespace Cozen.EnigmaOS
             // Capture authored rest position / bounds before we reposition the
             // handle below — this Bind can run before the fader's own Start().
             EnsureMovementInitialized();
+            boundPropertyIsInt = false;
+            boundAlwaysGate    = -1;
+            boundGateKeyword   = "";
             targetMaterials    = materials;
             materialPropertyId = propertyName;
             propertyType       = propType;
@@ -285,6 +315,9 @@ namespace Cozen.EnigmaOS
         public void BindSlider(string label, UnityEngine.UI.Slider slider, bool reversed, int propType, float min, float max, float defaultVal, Color defColor, bool indEnabled, Color indColor, bool indConditional)
         {
             EnsureMovementInitialized();
+            boundPropertyIsInt = false;
+            boundAlwaysGate    = -1;
+            boundGateKeyword   = "";
             targetSliders = new UnityEngine.UI.Slider[] { slider };
             sliderDirectionsReversed = new bool[] { reversed };
             propertyType = propType;
@@ -334,6 +367,9 @@ namespace Cozen.EnigmaOS
         public void BindUdon(string label, UdonSharpBehaviour[] behaviours, string varName, int propType, float min, float max, float defaultVal, Color defColor, bool indEnabled, Color indColor, bool indConditional)
         {
             EnsureMovementInitialized();
+            boundPropertyIsInt = false;
+            boundAlwaysGate    = -1;
+            boundGateKeyword   = "";
             targetUdonBehaviours = behaviours;
             udonVariableName = varName;
             propertyType = propType;
@@ -768,9 +804,47 @@ namespace Cozen.EnigmaOS
                     if (mat == null) continue;
 
                     if (propertyType == 1) // Color — hue-shift from defaultColor baseline
+                    {
                         mat.SetColor(materialPropertyId, shiftedColor);
-                    else                   // Float / Range
+                    }
+                    else                   // Float / Range — managed write
+                    {
                         mat.SetFloat(materialPropertyId, mapped);
+                        // Int-declared properties (Mochie declares many) may
+                        // not pick up SetFloat on standalone — mirror via
+                        // SetInt. Baked at build time so Float-declared
+                        // properties are never clobbered by truncation.
+                        if (boundPropertyIsInt)
+                            mat.SetInt(materialPropertyId, (int)mapped);
+
+                        // Enable-only keyword policy, matching the executor.
+                        if (boundGateKeyword != null && boundGateKeyword.Length > 0 && mapped > 0.5f)
+                            mat.EnableKeyword(boundGateKeyword);
+
+                        // Mochie "Always" pass gate (_Zoom/_SST/_Letterbox):
+                        // a fader sweeping a gate property must toggle the
+                        // pass exactly like executor gate actions do, or the
+                        // effect silently never renders.
+                        if (boundAlwaysGate >= 0)
+                        {
+                            if (mapped > 0.5f)
+                            {
+                                mat.SetShaderPassEnabled("Always", true);
+                            }
+                            else if (controller != null)
+                            {
+                                mat.SetShaderPassEnabled("Always",
+                                    controller.ComputeAlwaysPassHeldForMaterial(mat));
+                            }
+                            else
+                            {
+                                bool held =
+                                    (mat.HasProperty("_Zoom") && mat.GetFloat("_Zoom") > 0.5f)
+                                    || (mat.HasProperty("_Letterbox") && mat.GetFloat("_Letterbox") > 0.5f);
+                                mat.SetShaderPassEnabled("Always", held);
+                            }
+                        }
+                    }
                 }
             }
 

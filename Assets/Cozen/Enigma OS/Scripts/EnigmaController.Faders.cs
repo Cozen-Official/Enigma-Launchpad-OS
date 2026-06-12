@@ -338,15 +338,49 @@ namespace Cozen.EnigmaOS
                 string prop = f < rtStaticFaderPropertyNames.Length ? rtStaticFaderPropertyNames[f] : null;
                 Material skyMat = RenderSettings.skybox;
                 if (skyMat != null && !string.IsNullOrEmpty(prop))
+                {
                     faderSlots[slotIdx].Bind(rtStaticFaderNames[f], new Material[] { skyMat }, prop, pType, minV, maxV, defV, defColor, indEnabled, indColor, indConditional);
+                    ApplyStaticFaderShaderWriteInfo(f, slotIdx);
+                }
             }
             else
             {
                 string prop = f < rtStaticFaderPropertyNames.Length ? rtStaticFaderPropertyNames[f] : null;
                 Material[] bindMats = CollectStaticFaderMaterials(f);
                 if (bindMats != null && bindMats.Length > 0 && !string.IsNullOrEmpty(prop))
+                {
                     faderSlots[slotIdx].Bind(rtStaticFaderNames[f], bindMats, prop, pType, minV, maxV, defV, defColor, indEnabled, indColor, indConditional);
+                    ApplyStaticFaderShaderWriteInfo(f, slotIdx);
+                }
             }
+        }
+
+        /// <summary>
+        /// Pushes the build-baked managed-write metadata (Int-declared
+        /// property mirror, Always-pass gate id, gate keyword) onto a fader
+        /// slot just bound to a static fader's material property.
+        /// </summary>
+        private void ApplyStaticFaderShaderWriteInfo(int f, int slotIdx)
+        {
+            bool isInt = rtStaticFaderPropertyIsInt != null && f < rtStaticFaderPropertyIsInt.Length
+                         && rtStaticFaderPropertyIsInt[f];
+            int gate = rtStaticFaderAlwaysGate != null && f < rtStaticFaderAlwaysGate.Length
+                       ? rtStaticFaderAlwaysGate[f] : -1;
+            string kw = rtStaticFaderKeywords != null && f < rtStaticFaderKeywords.Length
+                        ? rtStaticFaderKeywords[f] : "";
+            faderSlots[slotIdx].SetShaderWriteInfo(isInt, gate, kw);
+        }
+
+        /// <summary>Dynamic-link counterpart of <see cref="ApplyStaticFaderShaderWriteInfo"/>.</summary>
+        private void ApplyFaderLinkShaderWriteInfo(int l, int slotIdx)
+        {
+            bool isInt = rtFaderLinkPropertyIsInt != null && l < rtFaderLinkPropertyIsInt.Length
+                         && rtFaderLinkPropertyIsInt[l];
+            int gate = rtFaderLinkAlwaysGate != null && l < rtFaderLinkAlwaysGate.Length
+                       ? rtFaderLinkAlwaysGate[l] : -1;
+            string kw = rtFaderLinkKeywords != null && l < rtFaderLinkKeywords.Length
+                        ? rtFaderLinkKeywords[l] : "";
+            faderSlots[slotIdx].SetShaderWriteInfo(isInt, gate, kw);
         }
 
         private void BindDynamicFaderToSlot(int linkIdx, int entryIdx, int slotIdx)
@@ -416,6 +450,7 @@ namespace Cozen.EnigmaOS
                         prop, pType, minV, maxV, defV,
                         defColor, indEnabled, indColor, indConditional
                     );
+                    ApplyFaderLinkShaderWriteInfo(l, slotIdx);
                 }
             }
             else
@@ -428,6 +463,7 @@ namespace Cozen.EnigmaOS
                     pType, minV, maxV, defV,
                     defColor, indEnabled, indColor, indConditional
                 );
+                ApplyFaderLinkShaderWriteInfo(l, slotIdx);
             }
         }
 

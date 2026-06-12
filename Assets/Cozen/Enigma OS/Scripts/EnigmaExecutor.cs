@@ -190,6 +190,96 @@ namespace Cozen.EnigmaOS
         }
 
         /// <summary>
+        /// Managed float write for a type-2 action's target property, used by
+        /// paths that compute their value at runtime instead of reading the
+        /// baked rtActionFloatValues (step restore on deserialize/preset/reset,
+        /// variant selector commits). Performs the SAME shader management as
+        /// the type-2 float branch in ExecuteAction: SetFloat + whole-value
+        /// SetInt mirror (Int-declared Mochie properties don't update from
+        /// SetFloat alone on standalone), Always-pass gate handling, and
+        /// keyword enabling. A naked mat.SetFloat here used to leave
+        /// late-joiners with stale int uniforms and gate properties that never
+        /// toggled the pass.
+        /// </summary>
+        public void WriteManagedFloat(int a, float value)
+        {
+            string kw = rtActionKeywords != null && a < rtActionKeywords.Length
+                        ? rtActionKeywords[a] : "";
+            WriteManagedFloatKeyword(a, value, kw);
+        }
+
+        /// <summary>
+        /// Variant of <see cref="WriteManagedFloat"/> with an explicit keyword —
+        /// variant-selector items resolve their keyword per item VALUE at build
+        /// time (enum-mode toggles gate different keywords per value), so the
+        /// caller passes rtVariantItemKeywords[item] instead of the action's.
+        /// </summary>
+        public void WriteManagedFloatKeyword(int a, float value, string keyword)
+        {
+            if (rtActionTargetRenderers == null || a >= rtActionTargetRenderers.Length) return;
+            Renderer rend = rtActionTargetRenderers[a];
+            if (rend == null) return;
+            int matIdx = rtActionMaterialIndices != null && a < rtActionMaterialIndices.Length
+                         ? rtActionMaterialIndices[a] : 0;
+            string propName = rtActionPropertyNames != null && a < rtActionPropertyNames.Length
+                              ? rtActionPropertyNames[a] : null;
+            if (string.IsNullOrEmpty(propName)) return;
+
+            Material mat = null;
+            if (matIdx == 0)
+            {
+                mat = rend.sharedMaterial;
+            }
+            else
+            {
+                Material[] mats = rend.sharedMaterials;
+                if (matIdx < mats.Length) mat = mats[matIdx];
+            }
+            if (mat == null) return;
+
+            mat.SetFloat(propName, value);
+            int intVal = (int)value;
+            if (value == (float)intVal)
+                mat.SetInt(propName, intVal);
+
+            // Enable-only keyword policy — matches the type-2 branch.
+            if (keyword != null && keyword.Length > 0 && value > 0.5f)
+                mat.EnableKeyword(keyword);
+
+            // Mochie "Always" pass gate (_Zoom / _SST / _Letterbox).
+            if (rtActionAlwaysGate != null && a < rtActionAlwaysGate.Length
+                && rtActionAlwaysGate[a] >= 0)
+            {
+                if (value > 0.5f)
+                {
+                    mat.SetShaderPassEnabled("Always", true);
+                }
+                else
+                {
+                    bool held = linkedController != null
+                        ? linkedController.ComputeAlwaysPassHeld(rend, matIdx, mat)
+                        : ComputeHeldFallback(mat);
+                    mat.SetShaderPassEnabled("Always", held);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Always-pass recompute fallback for executors with no linked
+        /// controller (standalone buttons). Trusts honestly-valued gates only:
+        /// _Zoom and _Letterbox are read from the material; _SST never is —
+        /// the synthetic section-toggle action leaves it at 1 after the entry
+        /// deactivates, so trusting it would hold the pass on forever.
+        /// </summary>
+        private bool ComputeHeldFallback(Material mat)
+        {
+            if (mat == null) return false;
+            if (mat.HasProperty("_Zoom") && mat.GetFloat("_Zoom") > 0.5f) return true;
+            if (mat.HasProperty("_Letterbox") && mat.GetFloat("_Letterbox") > 0.5f) return true;
+            return false;
+        }
+
+        /// <summary>
         /// Execute a single action by its global index in the flat action arrays.
         /// This is the unified action handler — all action types are dispatched here.
         ///
@@ -292,8 +382,12 @@ namespace Cozen.EnigmaOS
                             }
                             if (nsMat != null)
                             {
+                                // Standalone buttons (no linked controller) fall back to
+                                // honest gate values — _Zoom/_Letterbox only, never _SST
+                                // (the synthetic toggle leaves _SST=1 after deactivation).
                                 bool held = linkedController != null
-                                    && linkedController.ComputeAlwaysPassHeld(nsRend, nsMatIdx, nsMat);
+                                    ? linkedController.ComputeAlwaysPassHeld(nsRend, nsMatIdx, nsMat)
+                                    : ComputeHeldFallback(nsMat);
                                 nsMat.SetShaderPassEnabled("Always", held);
                             }
                         }
@@ -372,7 +466,8 @@ namespace Cozen.EnigmaOS
                                 else
                                 {
                                     bool gateHeld = linkedController != null
-                                        && linkedController.ComputeAlwaysPassHeld(rend, matIdx, mat);
+                                        ? linkedController.ComputeAlwaysPassHeld(rend, matIdx, mat)
+                                        : ComputeHeldFallback(mat);
                                     mat.SetShaderPassEnabled("Always", gateHeld);
                                 }
                             }
@@ -413,11 +508,7 @@ namespace Cozen.EnigmaOS
                                 : (rtActionDefaultFloatValues != null && a < rtActionDefaultFloatValues.Length
                                     ? rtActionDefaultFloatValues[a] : 0f);
                             if (val > 0.5f)
-                            {
                                 mat.EnableKeyword(rtActionKeywords[a]);
-                                bool kwAfter = mat.IsKeywordEnabled(rtActionKeywords[a]);
-                                Debug.Log($"[Enigma] EnableKeyword '{rtActionKeywords[a]}' on '{mat.name}' rend='{rend.gameObject.name}' (a={a} val={val} kwEnabled={kwAfter} matID={mat.GetInstanceID()})");
-                            }
 
                             // The Mochie "Always" pass toggle (Zoom/Image Overlay/
                             // Letterbox) is handled by the rtActionAlwaysGate hook in
@@ -457,6 +548,16 @@ namespace Cozen.EnigmaOS
                         if (pType == 1) // Set mode: baked target state
                             enable = GetBakedTargetState(a);
 
+                        // DisableKeyword is safe HERE (unlike the type-2
+                        // enable-only policy above) because the build pipeline
+                        // guarantees both states ship: PrepareShaderLocking
+                        // force-enables every type-27 keyword on the live
+                        // material AND its variant keeper (so the keyword-on
+                        // variant survives stripping), and the keyword-off
+                        // variant is the keyword-less default Unity always
+                        // compiles. Type 2's blanket no-disable stance guards
+                        // auto-detected keywords whose toggle state must stay
+                        // recoverable without that explicit build-time pinning.
                         if (enable)
                             kwMat.EnableKeyword(keyword);
                         else

@@ -283,6 +283,31 @@ namespace Cozen.EnigmaOS.Editor
         }
 
         /// <summary>
+        /// Strips quoted string literals and trailing line comments from a
+        /// shader-source line so brace counting isn't skewed by braces inside
+        /// property display names (e.g. <c>_Foo("{weird} label", Float)</c>)
+        /// or commented-out code. Quotes are removed first so a <c>//</c>
+        /// inside a string (e.g. a URL in a label) isn't mistaken for a
+        /// comment. An unbalanced quote truncates the rest of the line —
+        /// safe for depth tracking since an open string can't contain a
+        /// structural brace the parser should honor.
+        /// </summary>
+        private static string StripForBraceCount(string line)
+        {
+            int q = line.IndexOf('"');
+            while (q >= 0)
+            {
+                int close = line.IndexOf('"', q + 1);
+                if (close < 0) { line = line.Substring(0, q); break; }
+                line = line.Remove(q, close - q + 1);
+                q = line.IndexOf('"');
+            }
+            int comment = line.IndexOf("//", StringComparison.Ordinal);
+            if (comment >= 0) line = line.Substring(0, comment);
+            return line;
+        }
+
+        /// <summary>
         /// Parses the Properties block of a .shader file to find module groupings.
         /// Walks properties linearly: any [ToggleUI] _Keyword* property marks a new
         /// module; all subsequent properties belong to that module until the next
@@ -321,7 +346,7 @@ namespace Cozen.EnigmaOS.Editor
                     {
                         inProperties = true;
                         braceDepth = 0;
-                        foreach (char c in trimmed)
+                        foreach (char c in StripForBraceCount(trimmed))
                         {
                             if (c == '{') braceDepth++;
                             else if (c == '}') braceDepth--;
@@ -331,7 +356,9 @@ namespace Cozen.EnigmaOS.Editor
                 }
 
                 // Track brace depth to know when Properties block ends.
-                foreach (char c in trimmed)
+                // Quotes/comments are stripped first so braces inside
+                // property display names don't end the block early.
+                foreach (char c in StripForBraceCount(trimmed))
                 {
                     if (c == '{') braceDepth++;
                     else if (c == '}') braceDepth--;
@@ -439,12 +466,29 @@ namespace Cozen.EnigmaOS.Editor
 
             string editorNamespace = editorType.Namespace ?? "";
 
-            // Step 3A: Search for Pattern A — instance class with Material constructor
-            // and a parameterless lock method.
+            // Candidate ordering: prefer types whose names suggest a lock
+            // compiler (Lock / Optimiz / Generator / Compiler / Bake) over
+            // arbitrary namespace siblings. The generic method-name probes
+            // below (execute/lock/bake) are loose enough that an unrelated
+            // type with a Material constructor and an "Execute" method could
+            // otherwise be invoked first on shaders we've never seen.
+            var orderedTypes = new List<Type>();
             foreach (var type in editorAssembly.GetTypes())
             {
-                if (type.IsAbstract || type.IsInterface) continue;
                 if ((type.Namespace ?? "") != editorNamespace) continue;
+                if (LooksLikeLockCompilerType(type)) orderedTypes.Add(type);
+            }
+            foreach (var type in editorAssembly.GetTypes())
+            {
+                if ((type.Namespace ?? "") != editorNamespace) continue;
+                if (!LooksLikeLockCompilerType(type)) orderedTypes.Add(type);
+            }
+
+            // Step 3A: Search for Pattern A — instance class with Material constructor
+            // and a parameterless lock method.
+            foreach (var type in orderedTypes)
+            {
+                if (type.IsAbstract || type.IsInterface) continue;
 
                 var ctor = type.GetConstructor(new[] { typeof(Material) });
                 if (ctor == null) continue;
@@ -479,10 +523,9 @@ namespace Cozen.EnigmaOS.Editor
             // Checks for: (IEnumerable<Material>, int), (Material[], int), or (Material, int)
             // NOTE: Don't skip abstract types here — C# static classes are abstract sealed,
             // and lock compilers like BeanFXLayerGenerator are static classes.
-            foreach (var type in editorAssembly.GetTypes())
+            foreach (var type in orderedTypes)
             {
                 if (type.IsInterface) continue;
-                if ((type.Namespace ?? "") != editorNamespace) continue;
 
                 foreach (string methodName in StaticLockMethodNames)
                 {
@@ -546,6 +589,19 @@ namespace Cozen.EnigmaOS.Editor
         private static object GetDefault(Type t)
         {
             return t.IsValueType ? Activator.CreateInstance(t) : null;
+        }
+
+        /// <summary>
+        /// True when the type's name suggests it's a shader lock compiler.
+        /// Used only for candidate ORDERING in <see cref="InvokeLockCompiler"/>
+        /// — non-matching types are still probed afterwards, so shaders whose
+        /// compiler has an unconventional name (June-style) keep working.
+        /// </summary>
+        private static bool LooksLikeLockCompilerType(Type t)
+        {
+            string n = t.Name.ToLowerInvariant();
+            return n.Contains("lock") || n.Contains("optimiz") || n.Contains("generator")
+                || n.Contains("compiler") || n.Contains("bake");
         }
 
         /// <summary>
@@ -2354,18 +2410,46 @@ namespace Cozen.EnigmaOS.Editor
         /// </summary>
         public static void ApplyMaterialFixups(Material material)
         {
-            if (material == null || material.shader == null) return;
-            string shaderName = material.shader.name;
+            // Legacy entry point — no managed-toggle scope known, treat every
+            // toggle as Enigma-managed (the pre-2.0.6 behaviour). Prefer the
+            // scoped overload: it leaves user-authored effect state alone.
+            ApplyMaterialFixups(material, null);
+        }
 
-            if (shaderName == "Mochie/Screen FX X" || shaderName == "Mochie/Screen FX")
+        /// <summary>
+        /// Scoped overload. <paramref name="managedToggles"/> is the set of
+        /// section-toggle / gate property names Enigma actually manages on
+        /// this material (compute with <see cref="ComputeManagedToggles"/>).
+        /// Only those toggles are reset to the off baseline — master toggles
+        /// the user enabled manually on the material (e.g. a permanent _Fog=1
+        /// as part of the world's look, with no Enigma button for it) are
+        /// left untouched. Passing null manages everything (legacy behaviour).
+        /// </summary>
+        public static void ApplyMaterialFixups(Material material, HashSet<string> managedToggles)
+        {
+            if (material == null || material.shader == null) return;
+
+            if (IsMochieScreenFX(material.shader.name))
             {
                 bool changed = false;
+
+                // Scope gates: overlay handling (keyword/_ScreenTex/_SST) only
+                // applies when Enigma manages the SST section; the Always-pass
+                // baseline only applies when Enigma manages ANY of the three
+                // gate effects that render in that pass.
+                bool overlayManaged = managedToggles == null
+                    || managedToggles.Contains("_SST")
+                    || managedToggles.Contains("_ScreenTex");
+                bool gateManaged = overlayManaged
+                    || managedToggles == null
+                    || managedToggles.Contains("_Zoom")
+                    || managedToggles.Contains("_Letterbox");
 
                 // (1) Ensure the _IMAGE_OVERLAY_ON variant is compiled into the
                 //     player build. Without this, runtime EnableKeyword() on
                 //     non-master clients would fall back to the no-overlay
                 //     variant and the effect would never render.
-                if (!material.IsKeywordEnabled("_IMAGE_OVERLAY_ON"))
+                if (overlayManaged && !material.IsKeywordEnabled("_IMAGE_OVERLAY_ON"))
                 {
                     material.EnableKeyword("_IMAGE_OVERLAY_ON");
                     changed = true;
@@ -2378,28 +2462,35 @@ namespace Cozen.EnigmaOS.Editor
                 //     bound), Mochie's ApplySST runs unconditionally and paints
                 //     the screen in the sampled texture color even when _SST=0,
                 //     because the shader does not value-gate ApplySST on _SST.
-                if (material.GetShaderPassEnabled("Always"))
+                //     Skipped entirely when Enigma manages no gate effect on
+                //     this material — a user-enabled permanent Zoom/Letterbox
+                //     keeps its pass.
+                if (gateManaged && material.GetShaderPassEnabled("Always"))
                 {
                     material.SetShaderPassEnabled("Always", false);
                     changed = true;
                 }
-                if (material.GetTexture("_ScreenTex") != null)
+                if (overlayManaged && material.GetTexture("_ScreenTex") != null)
                 {
                     material.SetTexture("_ScreenTex", null);
                     changed = true;
                 }
 
-                // (2b) Zero every Mochie section master-toggle. PrepareAndLock
-                //      sets these to 1 so the shader's `shader_feature_local`
-                //      variants survive build-time stripping, but Mochie reads
-                //      each value at render time (`if (_X != 0) ApplyEffect()`)
-                //      so leaving them at 1 makes every effect render the
-                //      moment the world loads. The Enigma runtime executor
-                //      re-applies values from rt arrays at Start(); resetting
-                //      here gives a clean off-state baseline for both the
-                //      editor preview AND the player build's pre-Start frame.
-                //      All Mochie SFX master toggles use 0 == "Off" by
-                //      convention ([Enum(Off,0, ...)] / [ToggleUI]).
+                // (2b) Zero the Enigma-managed Mochie section master-toggles.
+                //      PrepareAndLock sets these to 1 so the shader's
+                //      `shader_feature_local` variants survive build-time
+                //      stripping, but Mochie reads each value at render time
+                //      (`if (_X != 0) ApplyEffect()`) so leaving them at 1
+                //      makes the effect render the moment the world loads.
+                //      The Enigma runtime executor re-applies values from rt
+                //      arrays at Start(); resetting here gives a clean
+                //      off-state baseline for both the editor preview AND the
+                //      player build's pre-Start frame. All Mochie SFX master
+                //      toggles use 0 == "Off" by convention.
+                //
+                //      Only toggles in managedToggles are reset — zeroing the
+                //      full list (pre-2.0.6) silently killed effects the user
+                //      had enabled manually on the material asset.
                 string[] mochieZeroToggles = new[]
                 {
                     "_FilterModel",
@@ -2421,6 +2512,7 @@ namespace Cozen.EnigmaOS.Editor
                 };
                 foreach (var p in mochieZeroToggles)
                 {
+                    if (managedToggles != null && !managedToggles.Contains(p)) continue;
                     if (material.HasProperty(p) && material.GetFloat(p) != 0f)
                     {
                         material.SetFloat(p, 0f);
@@ -2432,9 +2524,41 @@ namespace Cozen.EnigmaOS.Editor
                 if (changed)
                 {
                     EditorUtility.SetDirty(material);
-                    Debug.Log($"[EnigmaShaderHelper] Reset Mochie SFX baseline on '{material.name}' (master toggles=0, Always pass off, _SST=0, _ScreenTex=null; section keywords stay enabled for variant inclusion — call SyncMochieKeywordsToValues post-build to clean up).", material);
+                    Debug.Log($"[EnigmaShaderHelper] Reset Mochie SFX baseline on '{material.name}' (managed toggles=0, Always pass off where gate-managed; section keywords stay enabled for variant inclusion — call SyncMochieKeywordsToValues post-build to clean up).", material);
                 }
             }
+        }
+
+        /// <summary>
+        /// Computes the set of section-toggle / gate property names Enigma
+        /// manages on a material, given the property names its actions and
+        /// fader links write. Used to scope <see cref="ApplyMaterialFixups"/>
+        /// so user-authored effect state outside Enigma's control survives
+        /// rebuilds.
+        /// </summary>
+        public static HashSet<string> ComputeManagedToggles(
+            Material material, IEnumerable<string> usedPropertyNames)
+        {
+            var managed = new HashSet<string>(StringComparer.Ordinal);
+            if (material == null || material.shader == null || usedPropertyNames == null)
+                return managed;
+
+            foreach (string prop in usedPropertyNames)
+            {
+                if (string.IsNullOrEmpty(prop)) continue;
+                // Direct writes count as managed (e.g. a button setting _Zoom).
+                managed.Add(prop);
+                // Section toggle auto-set alongside this property
+                // (alsoSetEffectToggle's synthetic action).
+                if (TryGetEffectToggle(material, prop, out string tog) && tog != null)
+                    managed.Add(tog);
+                // Feature-map association (covers _ScreenTex → _SST via the
+                // Mochie override table even when the attribute walk misses it).
+                var info = GetPropertyKeywordInfo(material, prop);
+                if (info.toggleProp != null)
+                    managed.Add(info.toggleProp);
+            }
+            return managed;
         }
 
         /// <summary>
@@ -2450,8 +2574,7 @@ namespace Cozen.EnigmaOS.Editor
         {
             if (material == null || material.shader == null || string.IsNullOrEmpty(propertyName))
                 return -1;
-            string shaderName = material.shader.name;
-            if (shaderName != "Mochie/Screen FX X" && shaderName != "Mochie/Screen FX")
+            if (!IsMochieScreenFX(material.shader.name))
                 return -1;
             switch (propertyName)
             {
@@ -2460,6 +2583,202 @@ namespace Cozen.EnigmaOS.Editor
                 case "_Letterbox": return 2;
                 default:           return -1;
             }
+        }
+
+        /// <summary>Exact-name check shared by all Mochie-specific handling.</summary>
+        internal static bool IsMochieScreenFX(string shaderName)
+        {
+            return shaderName == "Mochie/Screen FX X" || shaderName == "Mochie/Screen FX";
+        }
+
+        // Cache: shader asset path → set of all shader_feature(_local)(_stage)
+        // keywords declared by the shader. Cleared by ClearCache().
+        private static readonly Dictionary<string, HashSet<string>> _shaderKeywordSetCache
+            = new Dictionary<string, HashSet<string>>();
+
+        /// <summary>
+        /// Returns every shader_feature keyword the shader declares (all
+        /// pragma forms), or null when the source file can't be read.
+        /// </summary>
+        internal static HashSet<string> GetShaderKeywordSet(Shader shader)
+        {
+            if (shader == null) return null;
+            string path = AssetDatabase.GetAssetPath(shader);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+            if (_shaderKeywordSetCache.TryGetValue(path, out var cached)) return cached;
+
+            var set = new HashSet<string>();
+            try
+            {
+                var rx = new Regex(@"#pragma\s+shader_feature(?:_local)?(?:_fragment|_vertex)?\s+(.+)");
+                foreach (string line in File.ReadLines(path))
+                {
+                    var m = rx.Match(line.Trim());
+                    if (!m.Success) continue;
+                    foreach (string token in m.Groups[1].Value.Split(
+                        new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        string kw = token.Trim();
+                        if (kw.Length > 0 && kw != "_") set.Add(kw);
+                    }
+                }
+            }
+            catch { }
+            _shaderKeywordSetCache[path] = set;
+            return set;
+        }
+
+        // Cache: shader asset path → property names declared with the legacy
+        // ShaderLab `Int` type. Cleared by ClearCache().
+        private static readonly Dictionary<string, HashSet<string>> _intPropertyCache
+            = new Dictionary<string, HashSet<string>>();
+
+        /// <summary>
+        /// True when the shader declares the property as an integer — either
+        /// the modern <c>Integer</c> type (visible via GetPropertyType) or the
+        /// legacy ShaderLab <c>Int</c> type, which the property API reports as
+        /// Float even though the HLSL uniform may be a real <c>int</c>. Mochie
+        /// declares many properties the legacy way; SetFloat alone may not
+        /// update those uniforms on VRChat standalone, so callers mirror
+        /// writes through SetInt when this returns true.
+        /// </summary>
+        internal static bool IsIntDeclaredProperty(Shader shader, string propertyName)
+        {
+            if (shader == null || string.IsNullOrEmpty(propertyName)) return false;
+
+            int n = shader.GetPropertyCount();
+            for (int i = 0; i < n; i++)
+            {
+                if (shader.GetPropertyName(i) != propertyName) continue;
+#if UNITY_2021_1_OR_NEWER
+                if (shader.GetPropertyType(i) == UnityEngine.Rendering.ShaderPropertyType.Int)
+                    return true;
+#endif
+                break;
+            }
+
+            string path = AssetDatabase.GetAssetPath(shader);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
+            HashSet<string> set;
+            if (!_intPropertyCache.TryGetValue(path, out set))
+            {
+                set = new HashSet<string>(StringComparer.Ordinal);
+                try
+                {
+                    // Legacy `_Prop("label", Int) = 0` declarations.
+                    var rx = new Regex(@"(_\w+)\s*\(\s*""[^""]*""\s*,\s*Int\s*\)");
+                    foreach (string line in File.ReadLines(path))
+                    {
+                        var m = rx.Match(line);
+                        if (m.Success) set.Add(m.Groups[1].Value);
+                    }
+                }
+                catch { }
+                _intPropertyCache[path] = set;
+            }
+            return set.Contains(propertyName);
+        }
+
+        /// <summary>
+        /// Value-aware keyword resolution for enum-mode toggle properties.
+        /// Mochie's mode enums gate DIFFERENT keywords per value (_SST 1/2 →
+        /// _IMAGE_OVERLAY_ON but 3 → _IMAGE_OVERLAY_DISTORTION_ON; _Zoom 2 →
+        /// _ZOOM_RGB_ON; _BlurModel 1/2/3 → pixel/dither/radial; …) — a
+        /// single property→keyword map can't express that, which used to
+        /// leave every non-default mode broken in uploaded worlds (wrong
+        /// keyword enabled at runtime AND the right variant never shipped).
+        ///
+        /// Returns the keyword that should be enabled when the toggle property
+        /// is set to <paramref name="value"/>, or null when the value is off
+        /// (≤ 0.5), the property isn't a recognised toggle, or the keyword
+        /// doesn't exist in this shader (e.g. non-X Mochie lacks zoom/overlay
+        /// keywords). Mirrors Mochie's ScreenFXEditor.ApplyMaterialSettings
+        /// value→keyword rules; generic shaders fall back to the single
+        /// auto-detected keyword.
+        /// </summary>
+        internal static string GetKeywordForToggleValue(
+            Material material, string propertyName, float value)
+        {
+            if (material == null || material.shader == null || string.IsNullOrEmpty(propertyName))
+                return null;
+            if (value <= 0.5f) return null; // off — nothing to enable
+
+            if (IsMochieScreenFX(material.shader.name))
+            {
+                int mode = Mathf.RoundToInt(value);
+                string kw = null;
+                switch (propertyName)
+                {
+                    case "_SST":               kw = mode >= 3 ? "_IMAGE_OVERLAY_DISTORTION_ON" : "_IMAGE_OVERLAY_ON"; break;
+                    case "_Zoom":              kw = mode >= 2 ? "_ZOOM_RGB_ON" : "_ZOOM_ON"; break;
+                    case "_DistortionModel":   kw = mode >= 2 ? "_DISTORTION_WORLD_ON" : "_DISTORTION_ON"; break;
+                    case "_BlurModel":         kw = mode >= 3 ? "_BLUR_RADIAL_ON" : (mode == 2 ? "_BLUR_DITHER_ON" : "_BLUR_PIXEL_ON"); break;
+                    case "_FilterModel":       kw = "_COLOR_ON"; break;
+                    case "_ShakeModel":        kw = "_SHAKE_ON"; break;
+                    case "_NoiseMode":         kw = "_NOISE_ON"; break;
+                    case "_Fog":               kw = "_FOG_ON"; break;
+                    case "_Triplanar":         kw = "_TRIPLANAR_ON"; break;
+                    case "_OutlineType":       kw = "_OUTLINE_ON"; break;
+                    case "_AudioLinkToggle":   kw = "_AUDIOLINK_ON"; break;
+                    case "_SobelFilterToggle": kw = "_SOBEL_FILTER_ON"; break;
+                    case "_BlurY":             kw = "_BLUR_Y_ON"; break;
+                    case "_RGBSplit":          kw = "_CHROMATIC_ABBERATION_ON"; break;
+                    case "_DoF":               kw = "_DOF_ON"; break;
+                }
+                if (kw != null)
+                {
+                    // Non-X Mochie lacks several of these keywords entirely.
+                    var declared = GetShaderKeywordSet(material.shader);
+                    if (declared != null && declared.Contains(kw))
+                        return kw;
+                    return null;
+                }
+            }
+
+            // Generic fallback: single auto-detected keyword for the toggle.
+            var info = GetPropertyKeywordInfo(material, propertyName);
+            return info.toggleProp == propertyName ? info.keyword : null;
+        }
+
+        /// <summary>
+        /// All keywords that the section toggle associated with
+        /// <paramref name="propertyName"/> can gate, across every mode value.
+        /// Used to enable the FULL group on the variant-keeper material so
+        /// every mode's variant ships in the build — the keeper is never
+        /// rendered, so over-enabling costs only a few extra compiled
+        /// variants. Returns an empty list when no keyword association exists.
+        /// </summary>
+        internal static List<string> GetGroupKeywords(Material material, string propertyName)
+        {
+            var result = new List<string>();
+            if (material == null || material.shader == null || string.IsNullOrEmpty(propertyName))
+                return result;
+
+            var info = GetPropertyKeywordInfo(material, propertyName);
+            string toggle = info.toggleProp ?? propertyName;
+
+            if (IsMochieScreenFX(material.shader.name))
+            {
+                string[] group = null;
+                switch (toggle)
+                {
+                    case "_SST":             group = new[] { "_IMAGE_OVERLAY_ON", "_IMAGE_OVERLAY_DISTORTION_ON" }; break;
+                    case "_Zoom":            group = new[] { "_ZOOM_ON", "_ZOOM_RGB_ON" }; break;
+                    case "_DistortionModel": group = new[] { "_DISTORTION_ON", "_DISTORTION_WORLD_ON" }; break;
+                    case "_BlurModel":       group = new[] { "_BLUR_PIXEL_ON", "_BLUR_DITHER_ON", "_BLUR_RADIAL_ON" }; break;
+                }
+                if (group != null)
+                {
+                    var declared = GetShaderKeywordSet(material.shader);
+                    foreach (var k in group)
+                        if (declared != null && declared.Contains(k))
+                            result.Add(k);
+                    if (result.Count > 0) return result;
+                }
+            }
+
+            if (info.keyword != null) result.Add(info.keyword);
+            return result;
         }
 
         /// <summary>
@@ -2618,6 +2937,24 @@ namespace Cozen.EnigmaOS.Editor
                     map[kvp.Key] = kvp.Value;
             }
 
+            // Patch in the curated Mochie property overrides for properties
+            // the heuristic missed. Gated on the Mochie shader name — the
+            // property names in that table (_Color, _Hue, _Value, …) are far
+            // too generic to apply to arbitrary shaders that merely declare a
+            // matching keyword. Keyword existence is still verified so the
+            // non-X Mochie variant only gets the keywords it actually has.
+            if (shader != null && IsMochieScreenFX(shader.name))
+            {
+                var declared = GetShaderKeywordSet(shader);
+                if (map == null) map = new Dictionary<string, (string keyword, string toggle)>();
+                foreach (var kvp in _knownPropertyOverrides)
+                {
+                    if (!map.ContainsKey(kvp.Key)
+                        && declared != null && declared.Contains(kvp.Value.keyword))
+                        map[kvp.Key] = kvp.Value;
+                }
+            }
+
             _shaderFeatureCache[shaderPath] = map;
             return map;
         }
@@ -2643,10 +2980,15 @@ namespace Cozen.EnigmaOS.Editor
             try { lines = File.ReadAllLines(shaderPath); }
             catch { return result; }
 
-            // ── Step 1: Collect all shader_feature_local keywords ──
+            // ── Step 1: Collect all shader_feature keywords ──
+            // Matches shader_feature, shader_feature_local, and the
+            // stage-scoped _fragment/_vertex forms (liltoon, Poiyomi, and
+            // most modern shaders use the stage-scoped variants — the old
+            // `shader_feature_local`-only pattern silently skipped them,
+            // leaving those shaders with zero keyword auto-detection).
             var allKeywords = new HashSet<string>();
             var sfRegex = new Regex(
-                @"#pragma\s+shader_feature_local\s+(.+)",
+                @"#pragma\s+shader_feature(?:_local)?(?:_fragment|_vertex)?\s+(.+)",
                 RegexOptions.Compiled);
 
             foreach (string line in lines)
@@ -2698,7 +3040,7 @@ namespace Cozen.EnigmaOS.Editor
                     {
                         inProperties = true;
                         braceDepth = 0;
-                        foreach (char c in trimmed)
+                        foreach (char c in StripForBraceCount(trimmed))
                         {
                             if (c == '{') braceDepth++;
                             else if (c == '}') braceDepth--;
@@ -2707,7 +3049,7 @@ namespace Cozen.EnigmaOS.Editor
                     continue;
                 }
 
-                foreach (char c in trimmed)
+                foreach (char c in StripForBraceCount(trimmed))
                 {
                     if (c == '{') braceDepth++;
                     else if (c == '}') braceDepth--;
@@ -2912,14 +3254,12 @@ namespace Cozen.EnigmaOS.Editor
                 }
             }
 
-            // Apply known property overrides for properties the heuristic missed.
-            // Only patch properties that have no assignment yet AND whose keyword
-            // actually exists in this shader.
-            foreach (var kvp in _knownPropertyOverrides)
-            {
-                if (!result.ContainsKey(kvp.Key) && allKeywords.Contains(kvp.Value.keyword))
-                    result[kvp.Key] = kvp.Value;
-            }
+            // _knownPropertyOverrides used to be applied here for ANY shader
+            // whose keyword set contained the override's keyword — but names
+            // like _Color/_Hue/_Value are far too generic, so an unrelated
+            // shader declaring a _COLOR_ON keyword inherited Mochie's
+            // mappings. The override patch now lives in GetShaderFeatureMap,
+            // gated on the Mochie shader name.
 
             return result;
         }
@@ -2981,13 +3321,22 @@ namespace Cozen.EnigmaOS.Editor
                     if (keywords.Contains(candidate))
                         return candidate;
 
-                    // Try prefix match for multi-keyword groups (e.g., _BLUR → _BLUR_PIXEL_ON)
+                    // Try prefix match for multi-keyword groups (e.g., _BLUR → _BLUR_PIXEL_ON).
+                    // HashSet iteration order is unspecified — pick the
+                    // lexicographically smallest match so the result is
+                    // deterministic across runs. Value-aware resolution for
+                    // multi-keyword groups lives in GetKeywordForToggleValue;
+                    // this is just the stable single-keyword fallback.
                     string prefix = "_" + v + "_";
+                    string bestKw = null;
                     foreach (string kw in keywords)
                     {
-                        if (kw.StartsWith(prefix))
-                            return kw;
+                        if (kw.StartsWith(prefix)
+                            && (bestKw == null || string.CompareOrdinal(kw, bestKw) < 0))
+                            bestKw = kw;
                     }
+                    if (bestKw != null)
+                        return bestKw;
                 }
             }
 
@@ -3032,6 +3381,8 @@ namespace Cozen.EnigmaOS.Editor
         {
             _moduleMapCache.Clear();
             _shaderFeatureCache.Clear();
+            _shaderKeywordSetCache.Clear();
+            _intPropertyCache.Clear();
             _textureWarningCache.Clear();
             _attributeToggleMapCache.Clear();
             _inspectorDataCache.Clear();

@@ -239,6 +239,15 @@ namespace Cozen.EnigmaOS.Editor
             // controllers and buttons, then prepare and lock each material.
             PrepareShaderLocking(allControllers, allButtons);
 
+            // ── Cross-component Always-pass wiring ──────────────────────────────
+            // Each controller gets references to every OTHER controller plus
+            // every standalone button that owns an Always-gate action, so the
+            // runtime ComputeAlwaysPassHeld can see gate holders outside its
+            // own entries. Without this, deactivating an overlay on one
+            // controller killed the pass while another controller's (or a
+            // standalone button's) effect on the same material was active.
+            WireCrossComponentGateRefs(allControllers, allButtons);
+
             // ── Re-apply entry defaults AFTER shader locking ─────────────────────
             // PrepareAndLock sets every section toggle (e.g. _FilterModel,
             // _Triplanar) to 1 so the lock compiler doesn't strip the
@@ -424,15 +433,76 @@ namespace Cozen.EnigmaOS.Editor
                 }
             }
 
-            // Collect from controllers.
+            // Fader links drive shader properties too — without collecting
+            // them, a property controlled ONLY by a fader never got its
+            // keyword enabled or its variant preserved (locking/stripping
+            // only saw button actions).
+            void CollectFromFaderLinks(EnigmaEntryData entry)
+            {
+                if (entry == null || !entry.assignFader) return;
+                var links = entry.faderLinks != null && entry.faderLinks.Length > 0
+                    ? entry.faderLinks
+                    : (entry.faderLink != null ? new[] { entry.faderLink } : null);
+                if (links == null) return;
+                foreach (var link in links)
+                {
+                    if (link == null || link.targetsSlider || link.targetsUdon || link.targetsSkybox) continue;
+                    if (link.targetRenderer == null || string.IsNullOrEmpty(link.propertyName)) continue;
+                    var lmats = link.targetRenderer.sharedMaterials;
+                    if (lmats == null || link.materialIndex < 0 || link.materialIndex >= lmats.Length
+                        || lmats[link.materialIndex] == null) continue;
+                    Material lmat = lmats[link.materialIndex];
+                    int lid = lmat.GetInstanceID();
+                    if (!materialProps.ContainsKey(lid))
+                        materialProps[lid] = (lmat, new System.Collections.Generic.HashSet<string>());
+                    materialProps[lid].props.Add(link.propertyName);
+                }
+            }
+
+            // Collect from controllers (button actions + dynamic fader links
+            // + static fader targets).
             foreach (var ctrl in controllers)
             {
                 var folders = ctrl.GetFolders();
-                if (folders == null) continue;
-                foreach (var folder in folders)
-                    foreach (var entry in folder.entries)
-                        if (!entry.isEmpty)
-                            CollectFromActions(entry.actions);
+                if (folders != null)
+                {
+                    foreach (var folder in folders)
+                        foreach (var entry in folder.entries)
+                            if (!entry.isEmpty)
+                            {
+                                CollectFromActions(entry.actions);
+                                CollectFromFaderLinks(entry);
+                            }
+                }
+
+                // Static faders (authored directly on the controller).
+                var sfNames = ctrl.rtStaticFaderPropertyNames;
+                if (sfNames != null)
+                {
+                    for (int sf = 0; sf < sfNames.Length; sf++)
+                    {
+                        if (string.IsNullOrEmpty(sfNames[sf])) continue;
+                        bool sfSlider = ctrl.rtStaticFaderTargetsSlider != null
+                            && sf < ctrl.rtStaticFaderTargetsSlider.Length && ctrl.rtStaticFaderTargetsSlider[sf];
+                        bool sfUdon = ctrl.rtStaticFaderTargetsUdon != null
+                            && sf < ctrl.rtStaticFaderTargetsUdon.Length && ctrl.rtStaticFaderTargetsUdon[sf];
+                        bool sfSkybox = ctrl.rtStaticFaderTargetsSkybox != null
+                            && sf < ctrl.rtStaticFaderTargetsSkybox.Length && ctrl.rtStaticFaderTargetsSkybox[sf];
+                        if (sfSlider || sfUdon || sfSkybox) continue;
+                        Renderer sfRend = ctrl.rtStaticFaderRenderers != null
+                            && sf < ctrl.rtStaticFaderRenderers.Length ? ctrl.rtStaticFaderRenderers[sf] : null;
+                        if (sfRend == null) continue;
+                        int sfMi = ctrl.rtStaticFaderMaterialIndices != null
+                            && sf < ctrl.rtStaticFaderMaterialIndices.Length ? ctrl.rtStaticFaderMaterialIndices[sf] : 0;
+                        var sfMats = sfRend.sharedMaterials;
+                        if (sfMats == null || sfMi < 0 || sfMi >= sfMats.Length || sfMats[sfMi] == null) continue;
+                        Material sfMat = sfMats[sfMi];
+                        int sfId = sfMat.GetInstanceID();
+                        if (!materialProps.ContainsKey(sfId))
+                            materialProps[sfId] = (sfMat, new System.Collections.Generic.HashSet<string>());
+                        materialProps[sfId].props.Add(sfNames[sf]);
+                    }
+                }
             }
 
             // Collect from standalone buttons.
@@ -486,7 +556,24 @@ namespace Cozen.EnigmaOS.Editor
                 // too, a Mochie-style value→keyword sync on the keeper keeps
                 // its keywords enabled — it is stable by construction.
                 var keeper = CreateOrUpdateVariantKeeper(kvp.Value.mat);
-                if (keeper != null) keeperByMatId[kvp.Key] = keeper;
+                if (keeper != null)
+                {
+                    keeperByMatId[kvp.Key] = keeper;
+
+                    // Enum-mode toggles (Mochie _SST/_Zoom/_BlurModel/…) gate a
+                    // DIFFERENT keyword per value, and the live material only
+                    // carries the keyword for each action's baked value. Enable
+                    // every sibling keyword of every used group on the keeper so
+                    // ALL mode variants ship — the keeper is never rendered, so
+                    // over-enabling costs only a few extra compiled variants.
+                    foreach (string usedProp in kvp.Value.props)
+                    {
+                        var groupKws = EnigmaShaderHelper.GetGroupKeywords(kvp.Value.mat, usedProp);
+                        for (int gk = 0; gk < groupKws.Count; gk++)
+                            keeper.EnableKeyword(groupKws[gk]);
+                    }
+                    EditorUtility.SetDirty(keeper);
+                }
 
                 // Re-apply shader-specific baseline AFTER the lock pass. PrepareAndLock
                 // leaves section toggles (e.g. Mochie _SST, _Triplanar) at 1 so the lock
@@ -499,8 +586,11 @@ namespace Cozen.EnigmaOS.Editor
                 // ApplyDefaults skips at init, so PrepareAndLock's _SST=1 leaks through
                 // and the overlay renders at world load. ApplyMaterialFixups resets the
                 // Mochie SST baseline (and AL modulation strengths) so the overlay is
-                // genuinely off until an Overlay button is pressed.
-                EnigmaShaderHelper.ApplyMaterialFixups(kvp.Value.mat);
+                // genuinely off until an Overlay button is pressed. Scoped to
+                // the toggles Enigma manages on this material so user-authored
+                // effect state outside Enigma's control survives the rebuild.
+                EnigmaShaderHelper.ApplyMaterialFixups(kvp.Value.mat,
+                    EnigmaShaderHelper.ComputeManagedToggles(kvp.Value.mat, kvp.Value.props));
             }
 
             // Enable keywords for shader_feature_local variant preservation.
@@ -508,12 +598,22 @@ namespace Cozen.EnigmaOS.Editor
             // Auto-detected keywords are handled by PrepareAndLock's EnableRequiredKeywords.
             // This loop handles legacy type-27 (manual keyword) actions.
             // Mirror onto the material's keeper so the variant ships even if
-            // the live material's keyword state changes mid-build.
+            // the live material's keyword state changes mid-build. Materials
+            // referenced ONLY by keyword actions get a keeper created here —
+            // they used to be skipped entirely, leaving their force-enabled
+            // keyword exposed to the same mid-build stripping the keepers
+            // exist to prevent.
             foreach (var (mat, keyword) in keywordsToEnable)
             {
+                if (mat == null) continue;
                 mat.EnableKeyword(keyword);
-                if (mat != null && keeperByMatId.TryGetValue(mat.GetInstanceID(), out var km) && km != null)
-                    km.EnableKeyword(keyword);
+                Material km;
+                if (!keeperByMatId.TryGetValue(mat.GetInstanceID(), out km) || km == null)
+                {
+                    km = CreateOrUpdateVariantKeeper(mat);
+                    if (km != null) keeperByMatId[mat.GetInstanceID()] = km;
+                }
+                if (km != null) km.EnableKeyword(keyword);
             }
 
             // Anchor the keepers in every controller's serialized data so they
@@ -576,6 +676,68 @@ namespace Cozen.EnigmaOS.Editor
                 AssetDatabase.SaveAssets();
         }
 
+        /// <summary>
+        /// Wires every controller's <c>rtOtherControllers</c> (all peer
+        /// controllers in the loaded scenes) and <c>rtGateHolderButtons</c>
+        /// (standalone buttons owning at least one Always-gate action) so the
+        /// runtime's cross-component ComputeAlwaysPassHeld can consult them.
+        /// Runs after the per-component builds, so the buttons' executor
+        /// rtActionAlwaysGate arrays are current.
+        /// </summary>
+        private static void WireCrossComponentGateRefs(
+            System.Collections.Generic.List<EnigmaController> allControllers,
+            System.Collections.Generic.List<EnigmaButton> allButtons)
+        {
+            var gateButtons = new System.Collections.Generic.List<EnigmaButton>();
+            if (allButtons != null)
+            {
+                foreach (var btn in allButtons)
+                {
+                    if (btn == null) continue;
+                    var bexe = btn.GetComponent<EnigmaExecutor>();
+                    if (bexe == null || bexe.rtActionAlwaysGate == null) continue;
+                    foreach (int g in bexe.rtActionAlwaysGate)
+                    {
+                        if (g >= 0) { gateButtons.Add(btn); break; }
+                    }
+                }
+            }
+
+            if (allControllers == null) return;
+            foreach (var ctrl in allControllers)
+            {
+                if (ctrl == null) continue;
+                try
+                {
+                    var ctrlSo = new SerializedObject(ctrl);
+                    var op = ctrlSo.FindProperty("rtOtherControllers");
+                    var bp = ctrlSo.FindProperty("rtGateHolderButtons");
+                    if (op == null || bp == null) continue;
+
+                    var others = new System.Collections.Generic.List<EnigmaController>();
+                    foreach (var oc in allControllers)
+                        if (oc != null && oc != ctrl) others.Add(oc);
+
+                    op.arraySize = others.Count;
+                    for (int i = 0; i < others.Count; i++)
+                        op.GetArrayElementAtIndex(i).objectReferenceValue = others[i];
+                    bp.arraySize = gateButtons.Count;
+                    for (int i = 0; i < gateButtons.Count; i++)
+                        bp.GetArrayElementAtIndex(i).objectReferenceValue = gateButtons[i];
+
+                    ctrlSo.ApplyModifiedPropertiesWithoutUndo();
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(ctrl);
+                    UdonSharpEditor.UdonSharpEditorUtility.CopyProxyToUdon(
+                        ctrl, UdonSharpEditor.ProxySerializationPolicy.All);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning(
+                        $"[EnigmaOS] Cross-component gate-ref wiring failed on '{ctrl.gameObject.name}': {ex.Message}", ctrl);
+                }
+            }
+        }
+
         // Generated variant-keeper materials live here. They are build-time
         // asset anchors only — never assigned to a renderer, never rendered.
         private const string KeeperFolder = "Assets/Cozen/Enigma OS/VariantKeepers";
@@ -595,7 +757,24 @@ namespace Cozen.EnigmaOS.Editor
                 if (!AssetDatabase.IsValidFolder(KeeperFolder))
                     AssetDatabase.CreateFolder("Assets/Cozen/Enigma OS", "VariantKeepers");
 
-                string path = $"{KeeperFolder}/{src.name} Keeper.mat";
+                // Key the keeper path by the source material's GUID, not just
+                // its name — two same-named materials in different folders
+                // used to clobber each other's keeper, silently dropping the
+                // variant protection for one of them. Scene-embedded materials
+                // (no GUID) fall back to the instance ID.
+                string guid; long localId;
+                AssetDatabase.TryGetGUIDAndLocalFileIdentifier(src, out guid, out localId);
+                string keeperKey = !string.IsNullOrEmpty(guid)
+                    ? guid.Substring(0, System.Math.Min(12, guid.Length))
+                    : src.GetInstanceID().ToString("X8");
+                string path = $"{KeeperFolder}/{src.name}.{keeperKey} Keeper.mat";
+
+                // Clean up a legacy name-keyed keeper (regenerated under the
+                // new scheme on this and every future build).
+                string legacyPath = $"{KeeperFolder}/{src.name} Keeper.mat";
+                if (AssetDatabase.LoadAssetAtPath<Material>(legacyPath) != null)
+                    AssetDatabase.DeleteAsset(legacyPath);
+
                 var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (existing == null)
                 {

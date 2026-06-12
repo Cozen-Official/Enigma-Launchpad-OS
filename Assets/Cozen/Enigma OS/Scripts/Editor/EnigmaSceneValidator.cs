@@ -48,10 +48,69 @@ namespace Cozen.EnigmaOS.Editor
             ValidateShaderPropertyDefaults(scene, warnings);
             ValidateFaderSlotCapacity(scene, warnings);
             ValidateSkyboxFaderConflict(scene, warnings);
+            ValidateMochieLookalikes(scene, warnings);
             ValidateAudioLinkControllerCount(scene);
 
             if (warnings.Length > 0)
                 Debug.LogWarning($"[EnigmaOS] Scene validation warnings:\n{warnings}");
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        //  MOCHIE LOOKALIKE DETECTION
+        //  All Mochie-specific handling (Always-pass gating, keyword sync,
+        //  baseline fixups, value-aware keyword resolution) is keyed on the
+        //  EXACT shader name "Mochie/Screen FX (X)". A duplicated or renamed
+        //  copy of the shader silently loses all of it — overlay/zoom/letterbox
+        //  buttons appear to work in the editor preview (where variants compile
+        //  on demand) but the Always pass never toggles in uploaded worlds.
+        //  Warn so the user understands why a renamed copy behaves differently.
+        // ════════════════════════════════════════════════════════════════════════
+
+        private static void ValidateMochieLookalikes(Scene scene, StringBuilder warnings)
+        {
+            var seen = new HashSet<Material>();
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var ctrl in root.GetComponentsInChildren<EnigmaController>(true))
+                {
+                    if (IsEditorOnly(ctrl.gameObject)) continue;
+                    var folders = ctrl.GetFolders();
+                    if (folders == null) continue;
+                    foreach (var folder in folders)
+                    {
+                        if (folder.entries == null) continue;
+                        foreach (var entry in folder.entries)
+                        {
+                            if (entry.isEmpty || entry.actions == null) continue;
+                            foreach (var act in entry.actions)
+                            {
+                                if (act == null || act.actionType != 2 || act.targetRenderer == null) continue;
+                                var mats = act.targetRenderer.sharedMaterials;
+                                int mi = act.materialIndex;
+                                if (mats == null || mi < 0 || mi >= mats.Length || mats[mi] == null) continue;
+                                var mat = mats[mi];
+                                if (!seen.Add(mat) || mat.shader == null) continue;
+
+                                // Fingerprint: the three Always-pass gate properties
+                                // together are unique to Mochie Screen FX.
+                                if (!EnigmaShaderHelper.IsMochieScreenFX(mat.shader.name)
+                                    && mat.HasProperty("_SST")
+                                    && mat.HasProperty("_ScreenTex")
+                                    && mat.HasProperty("_Letterbox"))
+                                {
+                                    warnings.AppendLine(
+                                        $"- Material '{mat.name}' uses shader '{mat.shader.name}', which looks like " +
+                                        "a renamed/duplicated copy of Mochie Screen FX. Enigma's Mochie handling " +
+                                        "(Always-pass gating for Zoom/Overlay/Letterbox, keyword sync, off-state " +
+                                        "baselines) matches the exact shader name 'Mochie/Screen FX (X)' and will " +
+                                        "NOT apply to this copy — those effects may render wrong or not at all in " +
+                                        "uploaded worlds. Use the original Mochie shader, or rename the copy back.");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════════

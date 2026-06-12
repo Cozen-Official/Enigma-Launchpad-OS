@@ -326,6 +326,32 @@ namespace Cozen.EnigmaOS
         [HideInInspector] public bool[] rtFaderLinkTargetsUdon = new bool[0];
         [HideInInspector] public UdonSharpBehaviour[] rtFaderLinkUdonBehaviours = new UdonSharpBehaviour[0];
         [HideInInspector] public string[] rtFaderLinkUdonVariableNames = new string[0];
+        // Per-link managed-write metadata baked by the build step:
+        //   PropertyIsInt — property is declared Int in the shader (Mochie
+        //     declares many props that way); SetFloat alone may not update the
+        //     int uniform on standalone, so the fader mirrors via SetInt.
+        //   AlwaysGate — Mochie "Always" pass gate id (0=_Zoom, 1=_SST,
+        //     2=_Letterbox, -1=not a gate) so fader writes toggle the pass.
+        //   Keywords — shader_feature keyword to enable when the written
+        //     value goes non-zero ("" = none).
+        [HideInInspector] public bool[]   rtFaderLinkPropertyIsInt = new bool[0];
+        [HideInInspector] public int[]    rtFaderLinkAlwaysGate    = new int[0];
+        [HideInInspector] public string[] rtFaderLinkKeywords      = new string[0];
+
+        // Static fader managed-write metadata (same semantics as the
+        // rtFaderLink* triple above, sized to staticFaderCount).
+        [HideInInspector] public bool[]   rtStaticFaderPropertyIsInt = new bool[0];
+        [HideInInspector] public int[]    rtStaticFaderAlwaysGate    = new int[0];
+        [HideInInspector] public string[] rtStaticFaderKeywords      = new string[0];
+
+        // -- Cross-component Always-pass coordination --
+        // Other EnigmaControllers in the loaded scenes (wired by the editor
+        // rebuild pass) and standalone EnigmaButtons owning at least one
+        // Always-gate action. ComputeAlwaysPassHeld consults these so one
+        // component's gate deactivating doesn't kill the pass while another
+        // component's effect on the same material is still active.
+        [HideInInspector] public EnigmaController[] rtOtherControllers = new EnigmaController[0];
+        [HideInInspector] public EnigmaButton[] rtGateHolderButtons = new EnigmaButton[0];
 
         // -- Step button data --
         [HideInInspector] public float[] rtStepAmounts = new float[0];
@@ -357,6 +383,11 @@ namespace Cozen.EnigmaOS
         [HideInInspector] public Color[]   rtVariantItemColorValues  = new Color[0];
         [HideInInspector] public Vector4[] rtVariantItemVectorValues = new Vector4[0];
         [HideInInspector] public Texture[] rtVariantItemTextures     = new Texture[0];
+        // Per-item shader_feature keyword for float-mode variant items ("" =
+        // none). Enum-mode toggle properties (Mochie _SST/_Zoom/_BlurModel/…)
+        // gate a DIFFERENT keyword per value, so the keyword must be resolved
+        // per item value at build time, not per action.
+        [HideInInspector] public string[]  rtVariantItemKeywords     = new string[0];
         // Per-entry: for role-0 (Variant Display) and role-2 (Change Variant) entries, the
         // entry index of the linked Set Variant (role 1) owner (-1 if none).
         [HideInInspector] public int[] rtVariantLinkedEntry = new int[0];

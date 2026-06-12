@@ -307,43 +307,41 @@ namespace Cozen.EnigmaOS
         /// </summary>
         public bool ComputeAlwaysPassHeld(Renderer rend, int matIdx, Material mat)
         {
-            if (executor == null || rend == null) return false;
-            var exe = executor;
-            if (exe.rtActionAlwaysGate == null) return false;
+            // Local entries first.
+            int state = GetAlwaysGateStateLocal(rend, matIdx);
+            if ((state & 1) != 0) return true;
 
-            bool zoomTrusted = true;
-            bool letterboxTrusted = true;
-
-            if (entryStates != null && rtEntryActionStart != null && rtEntryActionCount != null)
+            // Other controllers sharing this material (wired at rebuild). A
+            // controller used to consult only its OWN entries — deactivating a
+            // gate on controller A killed the pass while controller B's
+            // overlay entry on the same material was still active.
+            if (rtOtherControllers != null)
             {
-                for (int e = 0; e < entryStates.Length; e++)
+                for (int c = 0; c < rtOtherControllers.Length; c++)
                 {
-                    if (e >= rtEntryActionStart.Length || e >= rtEntryActionCount.Length) continue;
-                    int aStart = rtEntryActionStart[e];
-                    int aCount = rtEntryActionCount[e];
-                    for (int a = aStart; a < aStart + aCount; a++)
-                    {
-                        if (a >= exe.rtActionAlwaysGate.Length) break;
-                        int gate = exe.rtActionAlwaysGate[a];
-                        if (gate < 0) continue;
-                        if (exe.rtActionTargetRenderers == null || a >= exe.rtActionTargetRenderers.Length
-                            || exe.rtActionTargetRenderers[a] != rend) continue;
-                        int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
-                                 ? exe.rtActionMaterialIndices[a] : 0;
-                        if (mi != matIdx) continue;
-
-                        if (entryStates[e]) return true; // an active entry holds the pass
-
-                        bool ns = exe.rtActionNonStateful != null && a < exe.rtActionNonStateful.Length
-                                  && exe.rtActionNonStateful[a];
-                        if (ns)
-                        {
-                            if (gate == 0) zoomTrusted = false;
-                            else if (gate == 2) letterboxTrusted = false;
-                        }
-                    }
+                    var oc = rtOtherControllers[c];
+                    if (oc == null) continue;
+                    int os = oc.GetAlwaysGateStateLocal(rend, matIdx);
+                    if ((os & 1) != 0) return true;
+                    state = state | os;
                 }
             }
+
+            // Standalone buttons owning gate actions (wired at rebuild).
+            if (rtGateHolderButtons != null)
+            {
+                for (int b = 0; b < rtGateHolderButtons.Length; b++)
+                {
+                    var gb = rtGateHolderButtons[b];
+                    if (gb == null) continue;
+                    int bs = gb.GetAlwaysGateState(rend, matIdx);
+                    if ((bs & 1) != 0) return true;
+                    state = state | bs;
+                }
+            }
+
+            bool zoomTrusted      = (state & 2) == 0;
+            bool letterboxTrusted = (state & 4) == 0;
 
             if (mat != null)
             {
@@ -352,6 +350,90 @@ namespace Cozen.EnigmaOS
                 if (letterboxTrusted && mat.HasProperty("_Letterbox") && mat.GetFloat("_Letterbox") > 0.5f)
                     return true;
             }
+            return false;
+        }
+
+        /// <summary>
+        /// Local-entries-only gate scan, callable from peer controllers.
+        /// Returns a bitmask: bit 0 (1) = an active entry on THIS controller
+        /// holds the pass; bit 1 (2) = a non-stateful action here writes the
+        /// _Zoom gate (its material value can't be trusted); bit 2 (4) = same
+        /// for _Letterbox. _SST is never value-trusted regardless.
+        /// </summary>
+        public int GetAlwaysGateStateLocal(Renderer rend, int matIdx)
+        {
+            int state = 0;
+            if (executor == null || rend == null) return 0;
+            var exe = executor;
+            if (exe.rtActionAlwaysGate == null) return 0;
+            if (entryStates == null || rtEntryActionStart == null || rtEntryActionCount == null) return 0;
+
+            for (int e = 0; e < entryStates.Length; e++)
+            {
+                if (e >= rtEntryActionStart.Length || e >= rtEntryActionCount.Length) continue;
+                int aStart = rtEntryActionStart[e];
+                int aCount = rtEntryActionCount[e];
+                for (int a = aStart; a < aStart + aCount; a++)
+                {
+                    if (a >= exe.rtActionAlwaysGate.Length) break;
+                    int gate = exe.rtActionAlwaysGate[a];
+                    if (gate < 0) continue;
+                    if (exe.rtActionTargetRenderers == null || a >= exe.rtActionTargetRenderers.Length
+                        || exe.rtActionTargetRenderers[a] != rend) continue;
+                    int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
+                             ? exe.rtActionMaterialIndices[a] : 0;
+                    if (mi != matIdx) continue;
+
+                    if (entryStates[e]) return state | 1; // an active entry holds the pass
+
+                    bool ns = exe.rtActionNonStateful != null && a < exe.rtActionNonStateful.Length
+                              && exe.rtActionNonStateful[a];
+                    if (ns)
+                    {
+                        if (gate == 0) state = state | 2;
+                        else if (gate == 2) state = state | 4;
+                    }
+                }
+            }
+            return state;
+        }
+
+        /// <summary>
+        /// Material-keyed Always-pass recompute for callers that hold a
+        /// Material but not the (renderer, material index) pair — faders.
+        /// Resolves the first gate action whose material matches and defers to
+        /// the full cross-component recompute; when no gate action references
+        /// the material, falls back to honest _Zoom/_Letterbox values.
+        /// </summary>
+        public bool ComputeAlwaysPassHeldForMaterial(Material mat)
+        {
+            if (mat == null || executor == null) return false;
+            var exe = executor;
+            if (exe.rtActionAlwaysGate != null)
+            {
+                for (int a = 0; a < exe.rtActionAlwaysGate.Length; a++)
+                {
+                    if (exe.rtActionAlwaysGate[a] < 0) continue;
+                    Renderer r = exe.rtActionTargetRenderers != null && a < exe.rtActionTargetRenderers.Length
+                                 ? exe.rtActionTargetRenderers[a] : null;
+                    if (r == null) continue;
+                    int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
+                             ? exe.rtActionMaterialIndices[a] : 0;
+                    Material m = null;
+                    if (mi == 0)
+                    {
+                        m = r.sharedMaterial;
+                    }
+                    else
+                    {
+                        Material[] ms = r.sharedMaterials;
+                        if (mi < ms.Length) m = ms[mi];
+                    }
+                    if (m == mat) return ComputeAlwaysPassHeld(r, mi, mat);
+                }
+            }
+            if (mat.HasProperty("_Zoom") && mat.GetFloat("_Zoom") > 0.5f) return true;
+            if (mat.HasProperty("_Letterbox") && mat.GetFloat("_Letterbox") > 0.5f) return true;
             return false;
         }
 
@@ -659,9 +741,17 @@ namespace Cozen.EnigmaOS
                         if (matIdx >= 0 && matIdx < mats.Length)
                         {
                             if (propType == 0)
-                                mats[matIdx].SetFloat(prop,
-                                    rtVariantItemFloatValues != null && flat < rtVariantItemFloatValues.Length
-                                    ? rtVariantItemFloatValues[flat] : 0f);
+                            {
+                                // Managed write with the PER-ITEM keyword —
+                                // enum-mode toggles (Mochie _SST/_Zoom/…) gate
+                                // a different keyword per value, resolved at
+                                // build time into rtVariantItemKeywords.
+                                float vv = rtVariantItemFloatValues != null && flat < rtVariantItemFloatValues.Length
+                                           ? rtVariantItemFloatValues[flat] : 0f;
+                                string vkw = rtVariantItemKeywords != null && flat < rtVariantItemKeywords.Length
+                                             ? rtVariantItemKeywords[flat] : "";
+                                exe.WriteManagedFloatKeyword(actionIdx, vv, vkw);
+                            }
                             else if (propType == 1)
                                 mats[matIdx].SetColor(prop,
                                     rtVariantItemColorValues != null && flat < rtVariantItemColorValues.Length
@@ -947,11 +1037,11 @@ namespace Cozen.EnigmaOS
                     && exe.rtActionPropertyTypes != null && a < exe.rtActionPropertyTypes.Length
                     && exe.rtActionPropertyTypes[a] == 0)
                 {
-                    Material[] mats = exe.rtActionTargetRenderers[a].sharedMaterials;
-                    int matIdx = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length ? exe.rtActionMaterialIndices[a] : 0;
-                    if (matIdx >= 0 && matIdx < mats.Length && mats[matIdx] != null
-                        && exe.rtActionPropertyNames != null && a < exe.rtActionPropertyNames.Length)
-                        mats[matIdx].SetFloat(exe.rtActionPropertyNames[a], value);
+                    // Managed write (SetInt mirror + keyword + Always-pass
+                    // gate) — a naked SetFloat here left late-joiners with
+                    // stale int uniforms on Int-declared Mochie properties
+                    // and never toggled the pass for gate properties.
+                    exe.WriteManagedFloat(a, value);
                     return;
                 }
 

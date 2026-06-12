@@ -228,6 +228,45 @@ namespace Cozen.EnigmaOS
             RequestSerialization();
         }
 
+        /// <summary>
+        /// Always-pass gate scan, called by EnigmaController's cross-component
+        /// ComputeAlwaysPassHeld (the controller is wired with every gate-
+        /// holding standalone button at rebuild). Bitmask contract matches
+        /// EnigmaController.GetAlwaysGateStateLocal: bit 0 (1) = this button
+        /// is active and owns a gate action on the given renderer/material
+        /// slot; bit 1 (2) = a non-stateful action here writes the _Zoom gate
+        /// (material value untrustworthy); bit 2 (4) = same for _Letterbox.
+        /// </summary>
+        public int GetAlwaysGateState(Renderer rend, int matIdx)
+        {
+            int state = 0;
+            if (executor == null || rend == null) return 0;
+            var exe = executor;
+            if (exe.rtActionAlwaysGate == null || exe.rtActionTargetRenderers == null) return 0;
+
+            for (int a = 0; a < exe.rtActionAlwaysGate.Length; a++)
+            {
+                int gate = exe.rtActionAlwaysGate[a];
+                if (gate < 0) continue;
+                if (a >= exe.rtActionTargetRenderers.Length
+                    || exe.rtActionTargetRenderers[a] != rend) continue;
+                int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
+                         ? exe.rtActionMaterialIndices[a] : 0;
+                if (mi != matIdx) continue;
+
+                if (isActive) return state | 1;
+
+                bool ns = exe.rtActionNonStateful != null && a < exe.rtActionNonStateful.Length
+                          && exe.rtActionNonStateful[a];
+                if (ns)
+                {
+                    if (gate == 0) state = state | 2;
+                    else if (gate == 2) state = state | 4;
+                }
+            }
+            return state;
+        }
+
         private void ExecuteActions(bool active)
         {
             if (executor == null) return;
