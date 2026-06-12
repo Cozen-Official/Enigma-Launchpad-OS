@@ -142,7 +142,7 @@ sure you have separate toggle autochange buttons to control them. Unlike
 exclusive groups, a button can only be assigned to a single auto-change
 group.
 
-### Expire / Delay / Lerp / Conditions
+### Expire / Delay / Fade / Conditions
 
 You can configure a button to expire after a certain amount of time.
 Enable “Expire” in the button’s Options menu. After activating the
@@ -161,15 +161,15 @@ time in seconds.
 
 Set Shader Property actions (Float, Color, or Vector properties) and
 Set Udon Variable actions (float and int variables) can fade smoothly
-to their value instead of snapping. Enable the “Lerp” option in the
+to their value instead of snapping. Enable the “Fade” option in the
 action’s Options menu and set the fade time in seconds.
 On activation the property fades from its current value to the target
 value over that time — for example, a toggle setting an outline
-strength from 0 to 1 with a 3 second lerp will fade the outline in over
+strength from 0 to 1 with a 3 second fade will fade the outline in over
 3 seconds. By default, turning the button off snaps back to the default
-value immediately; enable “Also Lerp on Deactivation” to fade back out
+value immediately; enable “Also Fade on Deactivation” to fade back out
 over the same time instead (this checkbox only appears on Toggle
-actions — one-shot Set actions have no deactivation). Lerp can be
+actions — one-shot Set actions have no deactivation). Fade can be
 combined with Delay — the fade starts when the delayed action fires.
 
 You can also set an action to only execute if a condition is true. This

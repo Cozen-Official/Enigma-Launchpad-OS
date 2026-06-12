@@ -766,7 +766,7 @@ namespace Cozen.EnigmaOS.Editor
                     });
 
                 if (action.useLerp)
-                    DrawActionTagPill($"Lerp: {action.lerpSeconds:0.##}s", () =>
+                    DrawActionTagPill($"Fade: {action.lerpSeconds:0.##}s", () =>
                     {
                         action.useLerp = false;
                         EditorUtility.SetDirty(dirtyObj);
@@ -819,10 +819,10 @@ namespace Cozen.EnigmaOS.Editor
                         _repaint();
                     });
 
-                    // Lerp — Set Shader Property actions with an interpolable
-                    // value type (Float / Color / Vector — not Texture), and
-                    // Set Udon Variable actions with float/int variables
-                    // (bool/string can't interpolate).
+                    // Fade (internally "lerp") — Set Shader Property actions
+                    // with an interpolable value type (Float / Color / Vector —
+                    // not Texture), and Set Udon Variable actions with
+                    // float/int variables (bool/string can't interpolate).
                     bool canLerp = (capturedAction.actionType == 2
                                     && capturedAction.propertyType != 3)
                                    || (capturedAction.actionType == 6
@@ -830,7 +830,7 @@ namespace Cozen.EnigmaOS.Editor
                                            || capturedAction.udonVariableType == 2));
                     if (canLerp)
                     {
-                        menu.AddItem(new GUIContent("Lerp"), capturedAction.useLerp, () =>
+                        menu.AddItem(new GUIContent("Fade"), capturedAction.useLerp, () =>
                         {
                             capturedAction.useLerp = !capturedAction.useLerp;
                             EditorUtility.SetDirty(capturedDirty);
@@ -940,7 +940,7 @@ namespace Cozen.EnigmaOS.Editor
                     // need delay on activation.
                     //
                     // Only shown for actions with a meaningful deactivate
-                    // path (matching the Lerp checkbox's gating): Toggle-
+                    // path (matching the Fade checkbox's gating): Toggle-
                     // category actions, plus Trigger Udon Event — which fires
                     // on BOTH edges when its entry is a toggle, so delaying
                     // the deactivate-edge event is genuinely useful there.
@@ -959,7 +959,7 @@ namespace Cozen.EnigmaOS.Editor
                 {
                     EditorGUI.indentLevel++;
                     action.lerpSeconds = Mathf.Max(0f,
-                        EditorGUILayout.FloatField("Lerp (s)", action.lerpSeconds));
+                        EditorGUILayout.FloatField("Fade (s)", action.lerpSeconds));
                     // Mirrors Delay's activation/deactivation split: by
                     // default the fade only plays on activation — turning the
                     // button off snaps back to the default value immediately.
@@ -972,7 +972,7 @@ namespace Cozen.EnigmaOS.Editor
                     if (action.category == 0)
                     {
                         action.lerpOnDeactivate = EditorGUILayout.Toggle(
-                            new GUIContent("Also Lerp on Deactivation",
+                            new GUIContent("Also Fade on Deactivation",
                                 "When off (default), the fade only plays on activation; deactivation snaps to the default value. " +
                                 "When on, deactivation fades from the current value back to the default over the same duration."),
                             action.lerpOnDeactivate);
