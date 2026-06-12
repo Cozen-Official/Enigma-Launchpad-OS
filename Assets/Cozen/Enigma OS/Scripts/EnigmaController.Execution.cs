@@ -1056,6 +1056,9 @@ namespace Cozen.EnigmaOS
                     && exe.rtActionUdonVariableNames != null && a < exe.rtActionUdonVariableNames.Length
                     && !string.IsNullOrEmpty(exe.rtActionUdonVariableNames[a]))
                 {
+                    // Restore paths snap — supersede any in-flight Lerp fade
+                    // or it would overwrite this value on the next frame.
+                    exe.CancelLerp(a);
                     exe.rtActionUdonTargets[a].SetProgramVariable(exe.rtActionUdonVariableNames[a], value);
                     return;
                 }

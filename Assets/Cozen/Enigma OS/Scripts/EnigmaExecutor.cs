@@ -144,9 +144,11 @@ namespace Cozen.EnigmaOS
         private const int kLerpSlots = 16;
         private bool[]     _lerpOccupied;
         private int[]      _lerpActionIdx;
-        private int[]      _lerpPropType;        // 0=Float 1=Color 2=Vector
-        private Material[] _lerpMaterials;
+        private int[]      _lerpPropType;        // 0=Float 1=Color 2=Vector 3=UdonFloat 4=UdonInt
+        private Material[] _lerpMaterials;       // material slots (propType 0-2)
         private string[]   _lerpProps;
+        private UdonSharpBehaviour[] _lerpUdonTargets; // udon slots (propType 3-4)
+        private string[]   _lerpUdonVars;
         private float[]    _lerpFromF;
         private float[]    _lerpToF;
         private Color[]    _lerpFromC;
@@ -238,6 +240,8 @@ namespace Cozen.EnigmaOS
             _lerpPropType  = new int[kLerpSlots];
             _lerpMaterials = new Material[kLerpSlots];
             _lerpProps     = new string[kLerpSlots];
+            _lerpUdonTargets = new UdonSharpBehaviour[kLerpSlots];
+            _lerpUdonVars    = new string[kLerpSlots];
             _lerpFromF     = new float[kLerpSlots];
             _lerpToF       = new float[kLerpSlots];
             _lerpFromC     = new Color[kLerpSlots];
@@ -285,6 +289,10 @@ namespace Cozen.EnigmaOS
             _lerpPropType[slot]  = propType;
             _lerpMaterials[slot] = mat;
             _lerpProps[slot]     = propName;
+            // Clear stale Udon refs from a recycled slot; the Udon claim path
+            // fills these in right after claiming.
+            _lerpUdonTargets[slot] = null;
+            _lerpUdonVars[slot]    = null;
             _lerpElapsed[slot]   = 0f;
             _lerpDuration[slot]  = rtActionLerpSeconds[a];
             return slot;
@@ -304,10 +312,24 @@ namespace Cozen.EnigmaOS
             if (_lerpCount <= 0 || _lerpOccupied == null) return fallback;
             for (int s = 0; s < kLerpSlots; s++)
             {
-                if (_lerpOccupied[s] && _lerpActionIdx[s] == a && _lerpPropType[s] == 0)
+                // Float-valued slot kinds: material float (0), udon float (3),
+                // udon int (4) — all store their target in _lerpToF.
+                if (_lerpOccupied[s] && _lerpActionIdx[s] == a
+                    && (_lerpPropType[s] == 0 || _lerpPropType[s] >= 3))
                     return _lerpToF[s];
             }
             return fallback;
+        }
+
+        /// <summary>
+        /// Public cancel for callers outside ExecuteAction that snap a value
+        /// directly (e.g. the controller's step-restore path writing a Udon
+        /// variable) — a stale in-flight fade would otherwise overwrite the
+        /// snap on the next frame.
+        /// </summary>
+        public void CancelLerp(int a)
+        {
+            CancelLerpForAction(a);
         }
 
         /// <summary>
@@ -340,8 +362,12 @@ namespace Cozen.EnigmaOS
             for (int s = 0; s < kLerpSlots; s++)
             {
                 if (!_lerpOccupied[s]) continue;
-                Material mat = _lerpMaterials[s];
-                if (mat == null)
+
+                int pt = _lerpPropType[s];
+                bool isUdon = pt >= 3;
+                Material mat = isUdon ? null : _lerpMaterials[s];
+                UdonSharpBehaviour utgt = isUdon ? _lerpUdonTargets[s] : null;
+                if ((isUdon && utgt == null) || (!isUdon && mat == null))
                 {
                     _lerpOccupied[s] = false;
                     _lerpCount--;
@@ -356,7 +382,6 @@ namespace Cozen.EnigmaOS
                     // WriteManagedFloat's own CancelLerpForAction doesn't
                     // double-decrement the count.
                     int a = _lerpActionIdx[s];
-                    int pt = _lerpPropType[s];
                     _lerpOccupied[s] = false;
                     _lerpCount--;
                     if (pt == 0)
@@ -369,14 +394,17 @@ namespace Cozen.EnigmaOS
                         WriteManagedFloat(a, _lerpToF[s]);
                     }
                     else if (pt == 1) mat.SetColor(_lerpProps[s], _lerpToC[s]);
-                    else              mat.SetVector(_lerpProps[s], _lerpToV[s]);
+                    else if (pt == 2) mat.SetVector(_lerpProps[s], _lerpToV[s]);
+                    else if (pt == 3) utgt.SetProgramVariable(_lerpUdonVars[s], _lerpToF[s]);
+                    else              utgt.SetProgramVariable(_lerpUdonVars[s], (int)_lerpToF[s]);
                     continue;
                 }
 
-                int lpt = _lerpPropType[s];
-                if (lpt == 0)      mat.SetFloat(_lerpProps[s], Mathf.Lerp(_lerpFromF[s], _lerpToF[s], t));
-                else if (lpt == 1) mat.SetColor(_lerpProps[s], Color.Lerp(_lerpFromC[s], _lerpToC[s], t));
-                else               mat.SetVector(_lerpProps[s], Vector4.Lerp(_lerpFromV[s], _lerpToV[s], t));
+                if (pt == 0)      mat.SetFloat(_lerpProps[s], Mathf.Lerp(_lerpFromF[s], _lerpToF[s], t));
+                else if (pt == 1) mat.SetColor(_lerpProps[s], Color.Lerp(_lerpFromC[s], _lerpToC[s], t));
+                else if (pt == 2) mat.SetVector(_lerpProps[s], Vector4.Lerp(_lerpFromV[s], _lerpToV[s], t));
+                else if (pt == 3) utgt.SetProgramVariable(_lerpUdonVars[s], Mathf.Lerp(_lerpFromF[s], _lerpToF[s], t));
+                else              utgt.SetProgramVariable(_lerpUdonVars[s], (int)Mathf.Round(Mathf.Lerp(_lerpFromF[s], _lerpToF[s], t)));
             }
         }
 
@@ -863,6 +891,17 @@ namespace Cozen.EnigmaOS
             }
             else if (type == 6) // Set Udon Variable
             {
+                // Category-1 (Set) actions are one-shot — they fire on
+                // activate only. Type 2 has always honored this via the
+                // rtActionNonStateful flag; type 6 historically wrote its
+                // off-value on deactivate too, contradicting the documented
+                // Set semantics (and the Options UI, which only offers
+                // deactivation behaviour — Delay/Lerp checkboxes — on
+                // Toggle-category actions). Aligned in 2.0.6.
+                if (!active && rtActionNonStateful != null && a < rtActionNonStateful.Length
+                    && rtActionNonStateful[a])
+                    return;
+
                 if (rtActionUdonTargets != null && a < rtActionUdonTargets.Length
                     && rtActionUdonTargets[a] != null
                     && rtActionUdonVariableNames != null && a < rtActionUdonVariableNames.Length
@@ -878,25 +917,48 @@ namespace Cozen.EnigmaOS
                     // build-time ApplyActionsDefault pass wrote the correct off-value on
                     // scene init. String remains on-only for now — introducing a default
                     // string field is a data-model change tracked separately.
+                    //
+                    // Lerp option: float and int variables fade from their
+                    // CURRENT value to the target, exactly like shader
+                    // property fades (ints round per frame). Bool/string
+                    // can't interpolate and always snap.
                     if (varType == 0)       // bool
                         rtActionUdonTargets[a].SetProgramVariable(rtActionUdonVariableNames[a], active);
-                    else if (varType == 1)  // float
+                    else if (varType == 1 || varType == 2)  // float / int
                     {
                         float onF = rtActionFloatValues != null && a < rtActionFloatValues.Length
                                     ? rtActionFloatValues[a] : 0f;
                         float offF = rtActionDefaultFloatValues != null && a < rtActionDefaultFloatValues.Length
                                      ? rtActionDefaultFloatValues[a] : 0f;
-                        rtActionUdonTargets[a].SetProgramVariable(rtActionUdonVariableNames[a],
-                            active ? onF : offF);
-                    }
-                    else if (varType == 2)  // int
-                    {
-                        float onF = rtActionFloatValues != null && a < rtActionFloatValues.Length
-                                    ? rtActionFloatValues[a] : 0f;
-                        float offF = rtActionDefaultFloatValues != null && a < rtActionDefaultFloatValues.Length
-                                     ? rtActionDefaultFloatValues[a] : 0f;
-                        rtActionUdonTargets[a].SetProgramVariable(rtActionUdonVariableNames[a],
-                            (int)(active ? onF : offF));
+                        float uTarget = active ? onF : offF;
+                        bool uLerped = false;
+                        if (ShouldLerp(a, active))
+                        {
+                            int uSlot = ClaimLerpSlot(a, null, null, varType == 1 ? 3 : 4);
+                            if (uSlot >= 0)
+                            {
+                                _lerpUdonTargets[uSlot] = rtActionUdonTargets[a];
+                                _lerpUdonVars[uSlot]    = rtActionUdonVariableNames[a];
+                                // Fade start = the variable's current value;
+                                // fall back to the opposite endpoint when the
+                                // variable isn't a readable number.
+                                float uCur = active ? offF : onF;
+                                object uv = rtActionUdonTargets[a].GetProgramVariable(rtActionUdonVariableNames[a]);
+                                if (uv != null && uv.GetType() == typeof(float)) uCur = (float)uv;
+                                else if (uv != null && uv.GetType() == typeof(int)) uCur = (float)(int)uv;
+                                _lerpFromF[uSlot] = uCur;
+                                _lerpToF[uSlot]   = uTarget;
+                                uLerped = true;
+                            }
+                        }
+                        if (!uLerped)
+                        {
+                            CancelLerpForAction(a);
+                            if (varType == 1)
+                                rtActionUdonTargets[a].SetProgramVariable(rtActionUdonVariableNames[a], uTarget);
+                            else
+                                rtActionUdonTargets[a].SetProgramVariable(rtActionUdonVariableNames[a], (int)uTarget);
+                        }
                     }
                     else if (varType == 3)  // string
                         rtActionUdonTargets[a].SetProgramVariable(rtActionUdonVariableNames[a],

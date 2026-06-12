@@ -820,9 +820,14 @@ namespace Cozen.EnigmaOS.Editor
                     });
 
                     // Lerp — Set Shader Property actions with an interpolable
-                    // value type (Float / Color / Vector — not Texture).
-                    bool canLerp = capturedAction.actionType == 2
-                                   && capturedAction.propertyType != 3;
+                    // value type (Float / Color / Vector — not Texture), and
+                    // Set Udon Variable actions with float/int variables
+                    // (bool/string can't interpolate).
+                    bool canLerp = (capturedAction.actionType == 2
+                                    && capturedAction.propertyType != 3)
+                                   || (capturedAction.actionType == 6
+                                       && (capturedAction.udonVariableType == 1
+                                           || capturedAction.udonVariableType == 2));
                     if (canLerp)
                     {
                         menu.AddItem(new GUIContent("Lerp"), capturedAction.useLerp, () =>
@@ -933,11 +938,20 @@ namespace Cozen.EnigmaOS.Editor
                     // running the action's deactivate path. Useful for cases
                     // like "fade out after N seconds" — most actions only
                     // need delay on activation.
-                    action.delayOnDeactivate = EditorGUILayout.Toggle(
-                        new GUIContent("Also Delay on Deactivation",
-                            "When off (default), the delay only applies on activation; deactivation runs immediately. " +
-                            "When on, the delay applies to both."),
-                        action.delayOnDeactivate);
+                    //
+                    // Only shown for actions with a meaningful deactivate
+                    // path (matching the Lerp checkbox's gating): Toggle-
+                    // category actions, plus Trigger Udon Event — which fires
+                    // on BOTH edges when its entry is a toggle, so delaying
+                    // the deactivate-edge event is genuinely useful there.
+                    if (action.category == 0 || action.actionType == 5)
+                    {
+                        action.delayOnDeactivate = EditorGUILayout.Toggle(
+                            new GUIContent("Also Delay on Deactivation",
+                                "When off (default), the delay only applies on activation; deactivation runs immediately. " +
+                                "When on, the delay applies to both."),
+                            action.delayOnDeactivate);
+                    }
                     EditorGUI.indentLevel--;
                 }
 

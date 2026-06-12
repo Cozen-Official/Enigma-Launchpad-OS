@@ -159,9 +159,10 @@ time in seconds.
 
 ![](assets/docs-images/image39.png)
 
-Set Shader Property actions (Float, Color, or Vector properties) can
-fade smoothly to their value instead of snapping. Enable the “Lerp”
-option in the action’s Options menu and set the fade time in seconds.
+Set Shader Property actions (Float, Color, or Vector properties) and
+Set Udon Variable actions (float and int variables) can fade smoothly
+to their value instead of snapping. Enable the “Lerp” option in the
+action’s Options menu and set the fade time in seconds.
 On activation the property fades from its current value to the target
 value over that time — for example, a toggle setting an outline
 strength from 0 to 1 with a 3 second lerp will fade the outline in over

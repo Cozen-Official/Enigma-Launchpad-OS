@@ -721,7 +721,8 @@ namespace Cozen.EnigmaOS.Editor
                         // delayOnDeactivate flips the runtime to also defer the
                         // deactivate path through the same scheduler.
                         rtActionDelaySeconds[actionIdx]      = act.useDelay ? Mathf.Max(0f, act.delaySeconds) : 0f;
-                        rtActionDelayOnDeactivate[actionIdx] = act.useDelay && act.delayOnDeactivate;
+                        rtActionDelayOnDeactivate[actionIdx] = act.useDelay && act.delayOnDeactivate
+                            && (act.category == 0 || act.actionType == 5);
                         // Bake per-action lerp (fade) settings. Synthetic
                         // section-toggle actions stay at 0 (instant) so the
                         // section enables immediately while the primary value
@@ -2110,7 +2111,8 @@ namespace Cozen.EnigmaOS.Editor
                 if (act.actionType == 10) rtActionColorSelectorRoles[idx]  = act.colorSelectorRole;
                 if (act.actionType == 19) rtActionVariantSelectorRoles[idx] = act.variantSelectorRole;
                 rtActionDelaySeconds[idx]      = act.useDelay ? Mathf.Max(0f, act.delaySeconds) : 0f;
-                rtActionDelayOnDeactivate[idx] = act.useDelay && act.delayOnDeactivate;
+                rtActionDelayOnDeactivate[idx] = act.useDelay && act.delayOnDeactivate
+                    && (act.category == 0 || act.actionType == 5);
                 rtActionLerpSeconds[idx]      = act.useLerp ? Mathf.Max(0f, act.lerpSeconds) : 0f;
                 rtActionLerpOnDeactivate[idx] = act.useLerp && act.lerpOnDeactivate && act.category == 0;
                 if (act.actionType == 5 || act.actionType == 6)
