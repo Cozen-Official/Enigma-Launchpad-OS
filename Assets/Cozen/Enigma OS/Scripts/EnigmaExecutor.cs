@@ -65,6 +65,14 @@ namespace Cozen.EnigmaOS
         // Per-action: when false (default), delay only applies on activation;
         // deactivation runs immediately. When true, delay applies on both.
         [HideInInspector] public bool[]   rtActionDelayOnDeactivate  = new bool[0];
+        // Per-action lerp (type 2 float/color/vector): 0 = snap (default).
+        // Activation fades the property from its CURRENT value to the target
+        // over this many seconds. Composes with delay — the fade starts when
+        // the (possibly delayed) action fires.
+        [HideInInspector] public float[]  rtActionLerpSeconds        = new float[0];
+        // When false (default), deactivation snaps to the default value
+        // immediately; when true it fades back over the same duration.
+        [HideInInspector] public bool[]   rtActionLerpOnDeactivate   = new bool[0];
         // rtActionExpireSeconds removed — expire is now per-entry, see
         // EnigmaController.rtEntryExpireSeconds and EnigmaButton.expireSeconds.
         [HideInInspector] public int[]   rtActionUdonEventScopes     = new int[0];
@@ -128,6 +136,31 @@ namespace Cozen.EnigmaOS
         /// <summary>Saved transform values for Toggle Transform (type 23) revert.</summary>
         private Vector4[] _savedTransformValues;
 
+        // ── Lerp slots ──
+        // Fixed pool of concurrently running property fades (same pattern as
+        // the controller's expire queue — Udon has no dynamic collections).
+        // 16 simultaneous fades per executor is far beyond realistic use; when
+        // the pool is full a new lerp degrades gracefully to an instant write.
+        private const int kLerpSlots = 16;
+        private bool[]     _lerpOccupied;
+        private int[]      _lerpActionIdx;
+        private int[]      _lerpPropType;        // 0=Float 1=Color 2=Vector
+        private Material[] _lerpMaterials;
+        private string[]   _lerpProps;
+        private float[]    _lerpFromF;
+        private float[]    _lerpToF;
+        private Color[]    _lerpFromC;
+        private Color[]    _lerpToC;
+        private Vector4[]  _lerpFromV;
+        private Vector4[]  _lerpToV;
+        private float[]    _lerpElapsed;
+        private float[]    _lerpDuration;
+        private int        _lerpCount;
+
+        // Set while ApplyDefaults runs so the scene-init state reset snaps
+        // instead of fading (a world shouldn't fade its defaults in at load).
+        private bool _suppressLerp;
+
         // --------------------------------------------------------------------
         //  PUBLIC API
         // --------------------------------------------------------------------
@@ -178,6 +211,9 @@ namespace Cozen.EnigmaOS
             bool hasDefaults = rtActionDefaultFloatValues != null
                                && rtActionDefaultFloatValues.Length > 0;
 
+            // Scene-init state resets snap — fading defaults in at world load
+            // would look like every lerped effect "playing itself" once.
+            _suppressLerp = true;
             int end = actStart + actCount;
             for (int a = actStart; a < end; a++)
             {
@@ -186,6 +222,141 @@ namespace Cozen.EnigmaOS
                 if (!active && t == 2 && !hasDefaults) continue;
                 if (t == 0 || t == 2 || t == 27 || (t == 22 && active))
                     ExecuteAction(-1, a, active, true);
+            }
+            _suppressLerp = false;
+        }
+
+        // --------------------------------------------------------------------
+        //  LERP ENGINE
+        // --------------------------------------------------------------------
+
+        private void EnsureLerpArrays()
+        {
+            if (_lerpOccupied != null) return;
+            _lerpOccupied  = new bool[kLerpSlots];
+            _lerpActionIdx = new int[kLerpSlots];
+            _lerpPropType  = new int[kLerpSlots];
+            _lerpMaterials = new Material[kLerpSlots];
+            _lerpProps     = new string[kLerpSlots];
+            _lerpFromF     = new float[kLerpSlots];
+            _lerpToF       = new float[kLerpSlots];
+            _lerpFromC     = new Color[kLerpSlots];
+            _lerpToC       = new Color[kLerpSlots];
+            _lerpFromV     = new Vector4[kLerpSlots];
+            _lerpToV       = new Vector4[kLerpSlots];
+            _lerpElapsed   = new float[kLerpSlots];
+            _lerpDuration  = new float[kLerpSlots];
+        }
+
+        /// <summary>
+        /// Returns true when action <paramref name="a"/> should fade instead
+        /// of snapping for this activation direction.
+        /// </summary>
+        private bool ShouldLerp(int a, bool active)
+        {
+            if (_suppressLerp) return false;
+            float secs = rtActionLerpSeconds != null && a < rtActionLerpSeconds.Length
+                         ? rtActionLerpSeconds[a] : 0f;
+            if (secs <= 0f) return false;
+            if (active) return true;
+            return rtActionLerpOnDeactivate != null && a < rtActionLerpOnDeactivate.Length
+                   && rtActionLerpOnDeactivate[a];
+        }
+
+        /// <summary>
+        /// Claims a lerp slot for the action (reusing the action's running
+        /// slot so a mid-fade re-press continues smoothly from the current
+        /// value). Returns -1 when the pool is exhausted — callers fall back
+        /// to an instant write.
+        /// </summary>
+        private int ClaimLerpSlot(int a, Material mat, string propName, int propType)
+        {
+            EnsureLerpArrays();
+            int slot = -1;
+            for (int s = 0; s < kLerpSlots; s++)
+            {
+                if (_lerpOccupied[s] && _lerpActionIdx[s] == a) { slot = s; break; }
+                if (slot < 0 && !_lerpOccupied[s]) slot = s;
+            }
+            if (slot < 0) return -1;
+            if (!_lerpOccupied[slot]) _lerpCount++;
+            _lerpOccupied[slot]  = true;
+            _lerpActionIdx[slot] = a;
+            _lerpPropType[slot]  = propType;
+            _lerpMaterials[slot] = mat;
+            _lerpProps[slot]     = propName;
+            _lerpElapsed[slot]   = 0f;
+            _lerpDuration[slot]  = rtActionLerpSeconds[a];
+            return slot;
+        }
+
+        /// <summary>
+        /// Cancels any running fade on the given action — called before every
+        /// instant write so a snap isn't overwritten by a stale in-flight fade
+        /// on the next frame.
+        /// </summary>
+        private void CancelLerpForAction(int a)
+        {
+            if (_lerpCount <= 0 || _lerpOccupied == null) return;
+            for (int s = 0; s < kLerpSlots; s++)
+            {
+                if (_lerpOccupied[s] && _lerpActionIdx[s] == a)
+                {
+                    _lerpOccupied[s] = false;
+                    _lerpCount--;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Advances all running fades. Early-outs when idle so the per-frame
+        /// cost of the feature is a single int compare for worlds that never
+        /// use Lerp.
+        /// </summary>
+        public void Update()
+        {
+            if (_lerpCount <= 0 || _lerpOccupied == null) return;
+            float dt = Time.deltaTime;
+            for (int s = 0; s < kLerpSlots; s++)
+            {
+                if (!_lerpOccupied[s]) continue;
+                Material mat = _lerpMaterials[s];
+                if (mat == null)
+                {
+                    _lerpOccupied[s] = false;
+                    _lerpCount--;
+                    continue;
+                }
+
+                _lerpElapsed[s] += dt;
+                float t = _lerpDuration[s] > 0f ? _lerpElapsed[s] / _lerpDuration[s] : 1f;
+                if (t >= 1f)
+                {
+                    // Release the slot BEFORE the final managed write so
+                    // WriteManagedFloat's own CancelLerpForAction doesn't
+                    // double-decrement the count.
+                    int a = _lerpActionIdx[s];
+                    int pt = _lerpPropType[s];
+                    _lerpOccupied[s] = false;
+                    _lerpCount--;
+                    if (pt == 0)
+                    {
+                        // Managed final write: exact target, SetInt mirror for
+                        // Int-declared properties, keyword enable, and the
+                        // Always-pass recompute — which is what turns the pass
+                        // off at the END of a deactivation fade instead of
+                        // killing the effect at its start.
+                        WriteManagedFloat(a, _lerpToF[s]);
+                    }
+                    else if (pt == 1) mat.SetColor(_lerpProps[s], _lerpToC[s]);
+                    else              mat.SetVector(_lerpProps[s], _lerpToV[s]);
+                    continue;
+                }
+
+                int lpt = _lerpPropType[s];
+                if (lpt == 0)      mat.SetFloat(_lerpProps[s], Mathf.Lerp(_lerpFromF[s], _lerpToF[s], t));
+                else if (lpt == 1) mat.SetColor(_lerpProps[s], Color.Lerp(_lerpFromC[s], _lerpToC[s], t));
+                else               mat.SetVector(_lerpProps[s], Vector4.Lerp(_lerpFromV[s], _lerpToV[s], t));
             }
         }
 
@@ -236,6 +407,11 @@ namespace Cozen.EnigmaOS
                 if (matIdx < mats.Length) mat = mats[matIdx];
             }
             if (mat == null) return;
+
+            // A direct write supersedes any in-flight fade on this action —
+            // without this, a running lerp keeps overwriting the snapped
+            // value every frame until it finishes.
+            CancelLerpForAction(a);
 
             mat.SetFloat(propName, value);
             int intVal = (int)value;
@@ -419,6 +595,14 @@ namespace Cozen.EnigmaOS
 
                     if (mat != null)
                     {
+                        // Lerp option: fade from the CURRENT value to the
+                        // target instead of snapping. Activation always fades
+                        // when enabled; deactivation only when "Also Lerp on
+                        // Deactivation" is set (otherwise it snaps, mirroring
+                        // the Delay option's split). Composes with Delay since
+                        // delayed actions re-enter here when they fire.
+                        bool doLerp = ShouldLerp(a, active);
+
                         if (propType == 0)      // Float / Int
                         {
                             float def = rtActionDefaultFloatValues != null && a < rtActionDefaultFloatValues.Length
@@ -441,10 +625,24 @@ namespace Cozen.EnigmaOS
                             // properties with fractional values (e.g. _Invert=0.01,
                             // _AuraStr=0.15, _SobelFilterOpacity=0.5) skip SetInt and
                             // retain their SetFloat value.
-                            mat.SetFloat(propName, setVal);
-                            int intVal = (int)setVal;
-                            if (setVal == (float)intVal)
-                                mat.SetInt(propName, intVal);
+                            int lerpSlot = -1;
+                            if (doLerp)
+                            {
+                                lerpSlot = ClaimLerpSlot(a, mat, propName, 0);
+                                if (lerpSlot >= 0)
+                                {
+                                    _lerpFromF[lerpSlot] = mat.GetFloat(propName);
+                                    _lerpToF[lerpSlot]   = setVal;
+                                }
+                            }
+                            if (lerpSlot < 0)
+                            {
+                                CancelLerpForAction(a);
+                                mat.SetFloat(propName, setVal);
+                                int intVal = (int)setVal;
+                                if (setVal == (float)intVal)
+                                    mat.SetInt(propName, intVal);
+                            }
 
                             // Mochie "Always" pass gate (_Zoom / _SST / _Letterbox).
                             // The pass renders Zoom/Image Overlay/Letterbox and must
@@ -456,6 +654,12 @@ namespace Cozen.EnigmaOS
                             // entry's gate action or an honestly-valued gate property
                             // (covers an active Zoom surviving an Overlay turning off,
                             // and vice versa).
+                            //
+                            // Lerp interaction: a fade-IN enables the pass at fade
+                            // START (so the effect is visible while ramping); a
+                            // fade-OUT keeps the pass alive until the fade COMPLETES
+                            // — the recompute runs from the lerp's final managed
+                            // write in Update(), not here.
                             if (rtActionAlwaysGate != null && a < rtActionAlwaysGate.Length
                                 && rtActionAlwaysGate[a] >= 0)
                             {
@@ -463,7 +667,7 @@ namespace Cozen.EnigmaOS
                                 {
                                     mat.SetShaderPassEnabled("Always", true);
                                 }
-                                else
+                                else if (lerpSlot < 0)
                                 {
                                     bool gateHeld = linkedController != null
                                         ? linkedController.ComputeAlwaysPassHeld(rend, matIdx, mat)
@@ -476,13 +680,43 @@ namespace Cozen.EnigmaOS
                         {
                             Color def = rtActionDefaultColorValues != null && a < rtActionDefaultColorValues.Length
                                         ? rtActionDefaultColorValues[a] : Color.white;
-                            mat.SetColor(propName, active ? rtActionColorValues[a] : def);
+                            Color cTarget = active ? rtActionColorValues[a] : def;
+                            int cSlot = -1;
+                            if (doLerp)
+                            {
+                                cSlot = ClaimLerpSlot(a, mat, propName, 1);
+                                if (cSlot >= 0)
+                                {
+                                    _lerpFromC[cSlot] = mat.GetColor(propName);
+                                    _lerpToC[cSlot]   = cTarget;
+                                }
+                            }
+                            if (cSlot < 0)
+                            {
+                                CancelLerpForAction(a);
+                                mat.SetColor(propName, cTarget);
+                            }
                         }
                         else if (propType == 2)  // Vector
                         {
                             Vector4 def = rtActionDefaultVectorValues != null && a < rtActionDefaultVectorValues.Length
                                           ? rtActionDefaultVectorValues[a] : Vector4.zero;
-                            mat.SetVector(propName, active ? rtActionVectorValues[a] : def);
+                            Vector4 vTarget = active ? rtActionVectorValues[a] : def;
+                            int vSlot = -1;
+                            if (doLerp)
+                            {
+                                vSlot = ClaimLerpSlot(a, mat, propName, 2);
+                                if (vSlot >= 0)
+                                {
+                                    _lerpFromV[vSlot] = mat.GetVector(propName);
+                                    _lerpToV[vSlot]   = vTarget;
+                                }
+                            }
+                            if (vSlot < 0)
+                            {
+                                CancelLerpForAction(a);
+                                mat.SetVector(propName, vTarget);
+                            }
                         }
                         else if (propType == 3)  // Texture
                         {

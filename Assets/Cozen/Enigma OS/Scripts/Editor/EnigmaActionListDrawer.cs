@@ -765,6 +765,12 @@ namespace Cozen.EnigmaOS.Editor
                         EditorUtility.SetDirty(dirtyObj);
                     });
 
+                if (action.useLerp)
+                    DrawActionTagPill($"Lerp: {action.lerpSeconds:0.##}s", () =>
+                    {
+                        action.useLerp = false;
+                        EditorUtility.SetDirty(dirtyObj);
+                    });
 
                 if (action.useCondition)
                     DrawActionTagPill("Condition", () =>
@@ -812,6 +818,20 @@ namespace Cozen.EnigmaOS.Editor
                         EditorUtility.SetDirty(capturedDirty);
                         _repaint();
                     });
+
+                    // Lerp — Set Shader Property actions with an interpolable
+                    // value type (Float / Color / Vector — not Texture).
+                    bool canLerp = capturedAction.actionType == 2
+                                   && capturedAction.propertyType != 3;
+                    if (canLerp)
+                    {
+                        menu.AddItem(new GUIContent("Lerp"), capturedAction.useLerp, () =>
+                        {
+                            capturedAction.useLerp = !capturedAction.useLerp;
+                            EditorUtility.SetDirty(capturedDirty);
+                            _repaint();
+                        });
+                    }
 
                     menu.AddItem(new GUIContent("Condition"), capturedAction.useCondition, () =>
                     {
@@ -918,6 +938,24 @@ namespace Cozen.EnigmaOS.Editor
                             "When off (default), the delay only applies on activation; deactivation runs immediately. " +
                             "When on, the delay applies to both."),
                         action.delayOnDeactivate);
+                    EditorGUI.indentLevel--;
+                }
+
+                if (!actCollapsed && action.useLerp)
+                {
+                    EditorGUI.indentLevel++;
+                    action.lerpSeconds = Mathf.Max(0f,
+                        EditorGUILayout.FloatField("Lerp (s)", action.lerpSeconds));
+                    // Mirrors Delay's activation/deactivation split: by
+                    // default the fade only plays on activation — turning the
+                    // button off snaps back to the default value immediately.
+                    // The checkbox fades the deactivation too (current value
+                    // back to the default over the same duration).
+                    action.lerpOnDeactivate = EditorGUILayout.Toggle(
+                        new GUIContent("Also Lerp on Deactivation",
+                            "When off (default), the fade only plays on activation; deactivation snaps to the default value. " +
+                            "When on, deactivation fades from the current value back to the default over the same duration."),
+                        action.lerpOnDeactivate);
                     EditorGUI.indentLevel--;
                 }
 

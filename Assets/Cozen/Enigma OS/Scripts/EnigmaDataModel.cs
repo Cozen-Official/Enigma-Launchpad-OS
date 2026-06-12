@@ -314,6 +314,17 @@ namespace Cozen.EnigmaOS
         // is also true.
         public bool  delayOnDeactivate = false;
 
+        // ── Lerp option (type 2 — Set Shader Property, float/color/vector) ──
+        // When enabled, activation fades the property from its CURRENT value to
+        // the target value over lerpSeconds instead of snapping. Composes with
+        // Delay (the fade starts when the delayed action fires). Mirrors the
+        // Delay option's activation/deactivation split: by default deactivation
+        // snaps to the default value immediately; lerpOnDeactivate fades the
+        // default back in over the same duration.
+        public bool  useLerp     = false;
+        public float lerpSeconds = 1f;
+        public bool  lerpOnDeactivate = false;
+
         // Expire moved to EnigmaEntryData (controller) and EnigmaButton (standalone).
         // The action no longer carries an expire field — expire deactivates the whole
         // entry/button, not a single action, so it lives at that level.

@@ -271,6 +271,8 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionUdonVariableStringValues = new string[totalActions];
             var rtActionDelaySeconds             = new float[totalActions];
             var rtActionDelayOnDeactivate        = new bool[totalActions];
+            var rtActionLerpSeconds              = new float[totalActions];
+            var rtActionLerpOnDeactivate         = new bool[totalActions];
             var rtActionUdonEventScopes          = new int[totalActions];
             var rtActionTransformSpaces          = new int[totalActions];
             var rtActionTeleportRotations        = new Vector3[totalActions];
@@ -720,6 +722,12 @@ namespace Cozen.EnigmaOS.Editor
                         // deactivate path through the same scheduler.
                         rtActionDelaySeconds[actionIdx]      = act.useDelay ? Mathf.Max(0f, act.delaySeconds) : 0f;
                         rtActionDelayOnDeactivate[actionIdx] = act.useDelay && act.delayOnDeactivate;
+                        // Bake per-action lerp (fade) settings. Synthetic
+                        // section-toggle actions stay at 0 (instant) so the
+                        // section enables immediately while the primary value
+                        // fades in.
+                        rtActionLerpSeconds[actionIdx]      = act.useLerp ? Mathf.Max(0f, act.lerpSeconds) : 0f;
+                        rtActionLerpOnDeactivate[actionIdx] = act.useLerp && act.lerpOnDeactivate;
                         // Bake udon event scope for type-5 (TriggerEvent) and type-6 (SetVariable) actions
                         if (act.actionType == 5 || act.actionType == 6)
                             rtActionUdonEventScopes[actionIdx] = act.udonEventScope;
@@ -1184,6 +1192,8 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionUdonVariableStringValues",     rtActionUdonVariableStringValues);
                 WriteArray(exeSo, "rtActionDelaySeconds",                 rtActionDelaySeconds);
                 WriteArray(exeSo, "rtActionDelayOnDeactivate",            rtActionDelayOnDeactivate);
+                WriteArray(exeSo, "rtActionLerpSeconds",                  rtActionLerpSeconds);
+                WriteArray(exeSo, "rtActionLerpOnDeactivate",             rtActionLerpOnDeactivate);
                 WriteArray(exeSo, "rtActionUdonEventScopes",              rtActionUdonEventScopes);
                 WriteArray(exeSo, "rtActionTransformSpaces",              rtActionTransformSpaces);
                 WriteVector3Array(exeSo, "rtActionTeleportRotations",     rtActionTeleportRotations);
@@ -1853,6 +1863,7 @@ namespace Cozen.EnigmaOS.Editor
                 "rtActionDefaultVectorValues", "rtActionPropertyTypes", "rtActionUdonTargets",
                 "rtActionUdonEventNames", "rtActionUdonVariableNames", "rtActionUdonVariableTypes",
                 "rtActionUdonVariableStringValues", "rtActionDelaySeconds", "rtActionDelayOnDeactivate",
+                "rtActionLerpSeconds", "rtActionLerpOnDeactivate",
                 "rtActionUdonEventScopes", "rtActionTransformSpaces",
                 "rtActionTeleportRotations", "rtActionTeleportDestinations",
                 "rtActionStatMetrics", "rtActionHasCondition", "rtActionConditionEntryIndex",
@@ -1995,6 +2006,8 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionUdonVariableStringValues = new string[totalActions];
             var rtActionDelaySeconds             = new float[totalActions];
             var rtActionDelayOnDeactivate        = new bool[totalActions];
+            var rtActionLerpSeconds              = new float[totalActions];
+            var rtActionLerpOnDeactivate         = new bool[totalActions];
             var rtActionUdonEventScopes          = new int[totalActions];
             var rtActionTransformSpaces          = new int[totalActions];
             var rtActionTeleportRotations        = new Vector3[totalActions];
@@ -2098,6 +2111,8 @@ namespace Cozen.EnigmaOS.Editor
                 if (act.actionType == 19) rtActionVariantSelectorRoles[idx] = act.variantSelectorRole;
                 rtActionDelaySeconds[idx]      = act.useDelay ? Mathf.Max(0f, act.delaySeconds) : 0f;
                 rtActionDelayOnDeactivate[idx] = act.useDelay && act.delayOnDeactivate;
+                rtActionLerpSeconds[idx]      = act.useLerp ? Mathf.Max(0f, act.lerpSeconds) : 0f;
+                rtActionLerpOnDeactivate[idx] = act.useLerp && act.lerpOnDeactivate;
                 if (act.actionType == 5 || act.actionType == 6)
                     rtActionUdonEventScopes[idx] = act.udonEventScope;
                 if (act.actionType == 12 || act.actionType == 23)
@@ -2273,6 +2288,8 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionUdonVariableStringValues",     rtActionUdonVariableStringValues);
                 WriteArray(exeSo, "rtActionDelaySeconds",                 rtActionDelaySeconds);
                 WriteArray(exeSo, "rtActionDelayOnDeactivate",            rtActionDelayOnDeactivate);
+                WriteArray(exeSo, "rtActionLerpSeconds",                  rtActionLerpSeconds);
+                WriteArray(exeSo, "rtActionLerpOnDeactivate",             rtActionLerpOnDeactivate);
                 WriteArray(exeSo, "rtActionUdonEventScopes",              rtActionUdonEventScopes);
                 WriteArray(exeSo, "rtActionTransformSpaces",              rtActionTransformSpaces);
                 WriteVector3Array(exeSo, "rtActionTeleportRotations",     rtActionTeleportRotations);
