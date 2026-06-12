@@ -167,8 +167,9 @@ value over that time — for example, a toggle setting an outline
 strength from 0 to 1 with a 3 second lerp will fade the outline in over
 3 seconds. By default, turning the button off snaps back to the default
 value immediately; enable “Also Lerp on Deactivation” to fade back out
-over the same time instead. Lerp can be combined with Delay — the fade
-starts when the delayed action fires.
+over the same time instead (this checkbox only appears on Toggle
+actions — one-shot Set actions have no deactivation). Lerp can be
+combined with Delay — the fade starts when the delayed action fires.
 
 You can also set an action to only execute if a condition is true. This
 is really just a proof of concept right now. Currently, the only

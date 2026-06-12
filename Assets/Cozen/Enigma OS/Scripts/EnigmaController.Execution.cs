@@ -940,8 +940,13 @@ namespace Cozen.EnigmaOS
                     int matIdx = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length ? exe.rtActionMaterialIndices[a] : 0;
                     if (matIdx >= 0 && matIdx < mats.Length && mats[matIdx] != null)
                     {
+                        // An in-flight Lerp fade makes the material value an
+                        // intermediate — step from the fade's TARGET instead,
+                        // so pressing mid-fade advances to the next step
+                        // rather than re-resolving to the same one.
                         if (mats[matIdx].HasProperty(exe.rtActionPropertyNames[a]))
-                            return mats[matIdx].GetFloat(exe.rtActionPropertyNames[a]);
+                            return exe.GetLerpTargetFloat(a,
+                                mats[matIdx].GetFloat(exe.rtActionPropertyNames[a]));
                     }
                 }
 

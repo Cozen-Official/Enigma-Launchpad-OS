@@ -727,7 +727,7 @@ namespace Cozen.EnigmaOS.Editor
                         // section enables immediately while the primary value
                         // fades in.
                         rtActionLerpSeconds[actionIdx]      = act.useLerp ? Mathf.Max(0f, act.lerpSeconds) : 0f;
-                        rtActionLerpOnDeactivate[actionIdx] = act.useLerp && act.lerpOnDeactivate;
+                        rtActionLerpOnDeactivate[actionIdx] = act.useLerp && act.lerpOnDeactivate && act.category == 0;
                         // Bake udon event scope for type-5 (TriggerEvent) and type-6 (SetVariable) actions
                         if (act.actionType == 5 || act.actionType == 6)
                             rtActionUdonEventScopes[actionIdx] = act.udonEventScope;
@@ -2112,7 +2112,7 @@ namespace Cozen.EnigmaOS.Editor
                 rtActionDelaySeconds[idx]      = act.useDelay ? Mathf.Max(0f, act.delaySeconds) : 0f;
                 rtActionDelayOnDeactivate[idx] = act.useDelay && act.delayOnDeactivate;
                 rtActionLerpSeconds[idx]      = act.useLerp ? Mathf.Max(0f, act.lerpSeconds) : 0f;
-                rtActionLerpOnDeactivate[idx] = act.useLerp && act.lerpOnDeactivate;
+                rtActionLerpOnDeactivate[idx] = act.useLerp && act.lerpOnDeactivate && act.category == 0;
                 if (act.actionType == 5 || act.actionType == 6)
                     rtActionUdonEventScopes[idx] = act.udonEventScope;
                 if (act.actionType == 12 || act.actionType == 23)

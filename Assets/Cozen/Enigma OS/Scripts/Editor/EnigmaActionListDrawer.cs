@@ -951,11 +951,18 @@ namespace Cozen.EnigmaOS.Editor
                     // button off snaps back to the default value immediately.
                     // The checkbox fades the deactivation too (current value
                     // back to the default over the same duration).
-                    action.lerpOnDeactivate = EditorGUILayout.Toggle(
-                        new GUIContent("Also Lerp on Deactivation",
-                            "When off (default), the fade only plays on activation; deactivation snaps to the default value. " +
-                            "When on, deactivation fades from the current value back to the default over the same duration."),
-                        action.lerpOnDeactivate);
+                    //
+                    // Only shown for Toggle-category actions: Set (category 1)
+                    // actions are non-stateful and never take the deactivate
+                    // path at runtime, so the checkbox would be dead weight.
+                    if (action.category == 0)
+                    {
+                        action.lerpOnDeactivate = EditorGUILayout.Toggle(
+                            new GUIContent("Also Lerp on Deactivation",
+                                "When off (default), the fade only plays on activation; deactivation snaps to the default value. " +
+                                "When on, deactivation fades from the current value back to the default over the same duration."),
+                            action.lerpOnDeactivate);
+                    }
                     EditorGUI.indentLevel--;
                 }
 

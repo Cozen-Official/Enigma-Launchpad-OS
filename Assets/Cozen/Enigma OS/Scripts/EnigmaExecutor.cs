@@ -291,6 +291,26 @@ namespace Cozen.EnigmaOS
         }
 
         /// <summary>
+        /// Returns the float target of an in-flight fade on the given action,
+        /// or <paramref name="fallback"/> when none is running. Step buttons
+        /// use this as the authoritative "current" value: mid-fade the
+        /// material holds an intermediate value, and stepping from THAT (after
+        /// step-precision rounding) can resolve to the same step the fade was
+        /// already heading to — making rapid presses appear to not advance.
+        /// Stepping from the fade's target keeps the sequence exact.
+        /// </summary>
+        public float GetLerpTargetFloat(int a, float fallback)
+        {
+            if (_lerpCount <= 0 || _lerpOccupied == null) return fallback;
+            for (int s = 0; s < kLerpSlots; s++)
+            {
+                if (_lerpOccupied[s] && _lerpActionIdx[s] == a && _lerpPropType[s] == 0)
+                    return _lerpToF[s];
+            }
+            return fallback;
+        }
+
+        /// <summary>
         /// Cancels any running fade on the given action — called before every
         /// instant write so a snap isn't overwritten by a stale in-flight fade
         /// on the next frame.
