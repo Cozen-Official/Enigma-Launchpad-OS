@@ -89,8 +89,7 @@ namespace Cozen.EnigmaOS
                 else
                 {
                     _ohGeezNextCheckTime = t + OhGeezCheckInterval;
-                    object vObj = ohGeezCmonAccessControl.GetProgramVariable("syncedVersion");
-                    _lastKnownOhGeezSyncVersion = vObj != null ? (int)vObj : 0;
+                    _lastKnownOhGeezSyncVersion = ReadOhGeezSyncVersion();
                 }
             }
             else if (proTVManagedWhitelist != null)
@@ -125,6 +124,46 @@ namespace Cozen.EnigmaOS
             }
 
             RebuildNormalizedWhitelist();
+        }
+
+        // Cached name of OhGeez's sync-version program variable. The published
+        // OhGeezCmon Access Control (v1.0–v1.3) declares it as "syncVersion";
+        // a renamed/forked copy may expose "syncedVersion" instead. Resolved
+        // once — lazily, only after fullAccessUsers is confirmed present so the
+        // probe runs against a synced behaviour — by trying the upstream name
+        // first, then the fork name. We then poll only the symbol that exists,
+        // so stock users get zero "Could not find symbol" log spam and the
+        // version-change detection (live whitelist updates) actually fires.
+        //   null = not resolved yet; "" = resolved, neither symbol present.
+        private string _ohGeezVersionSymbol;
+
+        /// <summary>
+        /// Reads OhGeez's current sync version, resolving (and caching) which
+        /// program-variable name this behaviour actually exposes on first use.
+        /// Returns 0 when no version symbol exists (version polling disabled).
+        /// </summary>
+        private int ReadOhGeezSyncVersion()
+        {
+            if (ohGeezCmonAccessControl == null) return 0;
+
+            if (_ohGeezVersionSymbol == null)
+            {
+                // Upstream name first → the common case probes clean.
+                object probe = ohGeezCmonAccessControl.GetProgramVariable("syncVersion");
+                if (probe != null)
+                {
+                    _ohGeezVersionSymbol = "syncVersion";
+                }
+                else
+                {
+                    probe = ohGeezCmonAccessControl.GetProgramVariable("syncedVersion");
+                    _ohGeezVersionSymbol = probe != null ? "syncedVersion" : "";
+                }
+            }
+
+            if (_ohGeezVersionSymbol.Length == 0) return 0;
+            object v = ohGeezCmonAccessControl.GetProgramVariable(_ohGeezVersionSymbol);
+            return v != null ? (int)v : 0;
         }
 
         /// <summary>
@@ -266,8 +305,7 @@ namespace Cozen.EnigmaOS
                 else if (t >= _ohGeezNextCheckTime)
                 {
                     _ohGeezNextCheckTime = t + OhGeezCheckInterval;
-                    object versionObj = ohGeezCmonAccessControl.GetProgramVariable("syncedVersion");
-                    int version = versionObj != null ? (int)versionObj : 0;
+                    int version = ReadOhGeezSyncVersion();
                     if (version != _lastKnownOhGeezSyncVersion)
                     {
                         _lastKnownOhGeezSyncVersion = version;
