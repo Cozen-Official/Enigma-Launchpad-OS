@@ -220,6 +220,10 @@ namespace Cozen.EnigmaOS
             string[] source = GetWhitelistSourceEntries();
             if (source != null && source.Length > 0) _sourceEverPopulated = true;
             BuildNormalizedCache(source);
+            string src = ohGeezCmonAccessControl != null ? "OhGeez"
+                       : proTVManagedWhitelist != null ? "ProTV"
+                       : flatlineSync != null ? "Flatline" : "manual";
+            Log($"RebuildNormalizedWhitelist() source={src} entries={(source != null ? source.Length : 0)}");
             PushWhitelistDownstream(source);
         }
 
@@ -228,7 +232,7 @@ namespace Cozen.EnigmaOS
         {
             if (_normalizedAuthorizedUsernames == null) return false;
             VRCPlayerApi lp = Networking.LocalPlayer;
-            if (lp == null) return false;
+            if (lp == null || !Utilities.IsValid(lp)) return false;
             string n = NormalizeUsername(lp.displayName);
             if (string.IsNullOrEmpty(n)) return false;
             for (int i = 0; i < _normalizedAuthorizedUsernames.Length; i++)
@@ -278,13 +282,14 @@ namespace Cozen.EnigmaOS
             // World-load clobber guard: don't mirror a source that has never been
             // confirmed populated (an assigned-but-not-yet-synced source resolves
             // to an empty array and would otherwise wipe the downstream lists).
-            if (!_sourceEverPopulated) return;
+            if (!_sourceEverPopulated) { Log("PushWhitelistDownstream() skipped (source not yet populated)"); return; }
 
             // Filter out empty-string tombstones before pushing downstream.
             string[] cleaned = FilterEmptyStrings(usernames);
 
             bool ohGeezSource = ohGeezCmonAccessControl != null;
             bool proTVSource  = !ohGeezSource && proTVManagedWhitelist != null;
+            Log($"PushWhitelistDownstream() {cleaned.Length} entries (ohGeezSource={ohGeezSource} proTVSource={proTVSource})");
 
             // ── Flatline (downstream mirror whenever a higher source is active) ──
             // bakedWhitelist is NOT [UdonSynced] and Flatline's admin-menu gate is
@@ -296,7 +301,9 @@ namespace Cozen.EnigmaOS
             {
                 flatlineSync.SetProgramVariable("bakedWhitelist", cleaned);
                 GameObject adMenu = (GameObject)flatlineSync.GetProgramVariable("adMenu");
-                if (adMenu != null) adMenu.SetActive(IsLocalPlayerInNormalizedCache());
+                bool flatlineLocalIn = IsLocalPlayerInNormalizedCache();
+                if (adMenu != null) adMenu.SetActive(flatlineLocalIn);
+                Log($"  Flatline mirror: {cleaned.Length} entries, local adMenu={flatlineLocalIn}");
             }
 
             // ── ProTV (downstream mirror only when OhGeez is the source) ──
@@ -316,14 +323,22 @@ namespace Cozen.EnigmaOS
             // → updateUI → tv._IsSuperAuthorized) dereference its TVManager. If the
             // ManagedWhitelist isn't wired to a TV, requesting serialization would
             // throw inside ProTV's own UI and halt it. Only push once it's wired.
-            if (ohGeezSource && proTVManagedWhitelist != null
-                && proTVManagedWhitelist.GetProgramVariable("tv") != null
-                && IsLocalPlayerProTVSuperUser())
+            if (ohGeezSource && proTVManagedWhitelist != null)
             {
-                if (!Networking.IsOwner(proTVManagedWhitelist.gameObject))
-                    Networking.SetOwner(Networking.LocalPlayer, proTVManagedWhitelist.gameObject);
-                proTVManagedWhitelist.SetProgramVariable("authorizedList", cleaned);
-                proTVManagedWhitelist.RequestSerialization();
+                bool tvWired = proTVManagedWhitelist.GetProgramVariable("tv") != null;
+                bool localSuper = tvWired && IsLocalPlayerProTVSuperUser();
+                if (localSuper)
+                {
+                    if (!Networking.IsOwner(proTVManagedWhitelist.gameObject))
+                        Networking.SetOwner(Networking.LocalPlayer, proTVManagedWhitelist.gameObject);
+                    proTVManagedWhitelist.SetProgramVariable("authorizedList", cleaned);
+                    proTVManagedWhitelist.RequestSerialization();
+                    Log($"  ProTV push: {cleaned.Length} entries (local is super-user)");
+                }
+                else
+                {
+                    Log($"  ProTV push skipped (tvWired={tvWired} localSuper={localSuper})");
+                }
             }
         }
 
@@ -383,7 +398,11 @@ namespace Cozen.EnigmaOS
                         changed = !StringArraysEqual(cur, _lastKnownOhGeezList);
                         if (changed) _lastKnownOhGeezList = CopyStringArray(cur);
                     }
-                    if (changed) RebuildNormalizedWhitelist();
+                    if (changed)
+                    {
+                        Log($"MonitorWhitelistSources() OhGeez change detected (version={version})");
+                        RebuildNormalizedWhitelist();
+                    }
                 }
                 return; // OhGeez is authoritative; skip lower-priority monitoring
             }
@@ -419,6 +438,7 @@ namespace Cozen.EnigmaOS
                     if (!StringArraysEqual(current, _lastKnownProTVAuthorizedList))
                     {
                         _lastKnownProTVAuthorizedList = CopyStringArray(current);
+                        Log("MonitorWhitelistSources() ProTV authorizedList change detected");
                         RebuildNormalizedWhitelist();
                     }
                 }
@@ -456,6 +476,7 @@ namespace Cozen.EnigmaOS
                     if (!StringArraysEqual(current, _lastKnownFlatlineWhitelistList))
                     {
                         _lastKnownFlatlineWhitelistList = CopyStringArray(current);
+                        Log("MonitorWhitelistSources() Flatline bakedWhitelist change detected");
                         RebuildNormalizedWhitelist();
                     }
                 }
@@ -495,7 +516,7 @@ namespace Cozen.EnigmaOS
         public bool IsPlayerWhitelisted(VRCPlayerApi player)
         {
             if (!whitelistEnabled) return true;
-            if (player == null) return false;
+            if (player == null || !Utilities.IsValid(player)) return false;
             if (instanceOwnerAlwaysHasAccess && player.isInstanceOwner) return true;
 
             // Developer troubleshooting authorization, comment out the line below to remove if desired.
@@ -535,7 +556,7 @@ namespace Cozen.EnigmaOS
         /// </summary>
         private bool IsPlayerProTVImplicitlyAuthorized(VRCPlayerApi player)
         {
-            if (player == null || proTVManagedWhitelist == null) return false;
+            if (player == null || !Utilities.IsValid(player) || proTVManagedWhitelist == null) return false;
 
             UdonSharpBehaviour tvManager = GetProTVManager();
             if (tvManager == null) return false;
@@ -603,7 +624,7 @@ namespace Cozen.EnigmaOS
             if (tvManager == null) return false;
 
             VRCPlayerApi lp = Networking.LocalPlayer;
-            if (lp == null) return false;
+            if (lp == null || !Utilities.IsValid(lp)) return false;
 
             // Not ready → ProTV's _IsSuperAuthorized implicitly returns false.
             object isReadyObj = tvManager.GetProgramVariable("isReady");
