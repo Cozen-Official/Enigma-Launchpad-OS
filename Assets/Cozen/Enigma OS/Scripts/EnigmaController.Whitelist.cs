@@ -90,6 +90,10 @@ namespace Cozen.EnigmaOS
                 {
                     _ohGeezNextCheckTime = t + OhGeezCheckInterval;
                     _lastKnownOhGeezSyncVersion = ReadOhGeezSyncVersion();
+                    // Seed the content baseline too, for the array-compare fallback
+                    // used when no sync-version symbol resolves.
+                    object fa = ohGeezCmonAccessControl.GetProgramVariable("fullAccessUsers");
+                    _lastKnownOhGeezList = CopyStringArray(fa != null ? (string[])fa : new string[0]);
                 }
             }
             else if (proTVManagedWhitelist != null)
@@ -166,28 +170,36 @@ namespace Cozen.EnigmaOS
             return v != null ? (int)v : 0;
         }
 
+        // Downstream-push gating: only mirror a source list to lower assets once
+        // the source has been confirmed populated at least once. Prevents the
+        // world-load race where an assigned-but-not-yet-synced source resolves to
+        // an empty array and Enigma clobbers the downstream assets' real lists.
+        // After the source has been non-empty once, later empties (a genuine
+        // "clear everyone") are allowed through.
+        private bool _sourceEverPopulated;
+
+        // Array-compare fallback baseline for OhGeez when no sync-version symbol
+        // resolves (forked/renamed asset, or a seed list that never serialized so
+        // the version stayed 0). See ReadOhGeezSyncVersion / MonitorWhitelistSources.
+        private string[] _lastKnownOhGeezList;
+
         /// <summary>
-        /// Reads the highest-priority whitelist source, normalizes every username,
-        /// caches the result in <see cref="_normalizedAuthorizedUsernames"/>, and
-        /// pushes the list to lower-priority downstream systems.
+        /// Builds the normalized (trim+lowercase) local authorization cache from
+        /// the given source list. READ-ONLY: never pushes downstream, so it is
+        /// safe to call from the authorization hot path without triggering
+        /// ownership steals / serialization.
         /// </summary>
-        private void RebuildNormalizedWhitelist()
+        private void BuildNormalizedCache(string[] source)
         {
             _whitelistInitialized = true;
-            string[] source = GetWhitelistSourceEntries();
-
             if (source == null || source.Length == 0)
             {
                 _normalizedAuthorizedUsernames = new string[0];
-                PushWhitelistDownstream(new string[0]);
                 return;
             }
-
-            // Build a normalized copy (trim + lowercase) for fast comparison later
             int validCount = 0;
             for (int i = 0; i < source.Length; i++)
                 if (!string.IsNullOrEmpty(source[i])) validCount++;
-
             _normalizedAuthorizedUsernames = new string[validCount];
             int idx = 0;
             for (int i = 0; i < source.Length; i++)
@@ -195,8 +207,33 @@ namespace Cozen.EnigmaOS
                 if (string.IsNullOrEmpty(source[i])) continue;
                 _normalizedAuthorizedUsernames[idx++] = NormalizeUsername(source[i]);
             }
+        }
 
+        /// <summary>
+        /// Rebuilds the local cache AND mirrors the resolved list to lower-priority
+        /// downstream assets. Strict-priority model: the highest assigned source is
+        /// authoritative; lower assets are read-only mirrors. Call when a source
+        /// change is detected (NOT from the read/authorization path).
+        /// </summary>
+        private void RebuildNormalizedWhitelist()
+        {
+            string[] source = GetWhitelistSourceEntries();
+            if (source != null && source.Length > 0) _sourceEverPopulated = true;
+            BuildNormalizedCache(source);
             PushWhitelistDownstream(source);
+        }
+
+        /// <summary>True when the local player is in the normalized cache.</summary>
+        private bool IsLocalPlayerInNormalizedCache()
+        {
+            if (_normalizedAuthorizedUsernames == null) return false;
+            VRCPlayerApi lp = Networking.LocalPlayer;
+            if (lp == null) return false;
+            string n = NormalizeUsername(lp.displayName);
+            if (string.IsNullOrEmpty(n)) return false;
+            for (int i = 0; i < _normalizedAuthorizedUsernames.Length; i++)
+                if (_normalizedAuthorizedUsernames[i] == n) return true;
+            return false;
         }
 
         /// <summary>
@@ -232,39 +269,61 @@ namespace Cozen.EnigmaOS
         }
 
         /// <summary>
-        /// Pushes the resolved whitelist to lower-priority systems so they stay in
-        /// sync. OhGeez → ProTV + Flatline, ProTV → Flatline.
+        /// Mirrors the resolved whitelist to lower-priority downstream assets.
+        /// Strict-priority model: OhGeez → ProTV + Flatline; ProTV → Flatline.
+        /// A downstream asset is a read-only mirror; this is the only writer.
         /// </summary>
         private void PushWhitelistDownstream(string[] usernames)
         {
-            // Filter out empty-string tombstones before pushing to downstream systems
+            // World-load clobber guard: don't mirror a source that has never been
+            // confirmed populated (an assigned-but-not-yet-synced source resolves
+            // to an empty array and would otherwise wipe the downstream lists).
+            if (!_sourceEverPopulated) return;
+
+            // Filter out empty-string tombstones before pushing downstream.
             string[] cleaned = FilterEmptyStrings(usernames);
 
-            if (ohGeezCmonAccessControl != null)
+            bool ohGeezSource = ohGeezCmonAccessControl != null;
+            bool proTVSource  = !ohGeezSource && proTVManagedWhitelist != null;
+
+            // ── Flatline (downstream mirror whenever a higher source is active) ──
+            // bakedWhitelist is NOT [UdonSynced] and Flatline's admin-menu gate is
+            // purely local per-client, so EVERY client mirrors its own copy — no
+            // ownership/serialization. Flatline's own _CheckWhitelist only ever
+            // GRANTS (SetActive true) and never re-runs after load, so we drive
+            // adMenu directly from the authoritative local decision (grant + revoke).
+            if (flatlineSync != null && (ohGeezSource || proTVSource))
             {
-                // OhGeez is source — push to both ProTV and Flatline
-                if (proTVManagedWhitelist != null)
-                {
-                    Networking.SetOwner(Networking.LocalPlayer, proTVManagedWhitelist.gameObject);
-                    proTVManagedWhitelist.SetProgramVariable("authorizedList", cleaned);
-                    proTVManagedWhitelist.SendCustomEvent("RequestSerialization");
-                }
-                if (flatlineSync != null)
-                {
-                    Networking.SetOwner(Networking.LocalPlayer, flatlineSync.gameObject);
-                    flatlineSync.SetProgramVariable("bakedWhitelist", cleaned);
-                    flatlineSync.SendCustomEvent("RequestSerialization");
-                }
+                flatlineSync.SetProgramVariable("bakedWhitelist", cleaned);
+                GameObject adMenu = (GameObject)flatlineSync.GetProgramVariable("adMenu");
+                if (adMenu != null) adMenu.SetActive(IsLocalPlayerInNormalizedCache());
             }
-            else if (proTVManagedWhitelist != null)
+
+            // ── ProTV (downstream mirror only when OhGeez is the source) ──
+            // authorizedList IS [UdonSynced], and ProTV's TVManagedWhitelist only
+            // grants Unity ownership of that object to ProTV "super" users (its
+            // OnOwnershipRequest → tv._IsSuperAuthorized(requestingPlayer)). So the
+            // push must run on a client ProTV will actually accept the write from —
+            // NOT on whoever owns the Enigma controller, who may not be a ProTV
+            // super-user (in which case the SetOwner is silently denied and the list
+            // never propagates). We therefore gate on a local mirror of
+            // tv._IsSuperAuthorized(localPlayer). Every present super-user runs this;
+            // because the payload is identical (a mirror of the OhGeez source) the
+            // last-writer-wins race is benign, and non-super clients skip it entirely
+            // (no wasted ownership requests / serialization thrash).
+            //
+            // Readiness guard: ProTV's serialization callbacks (OnPostSerialization
+            // → updateUI → tv._IsSuperAuthorized) dereference its TVManager. If the
+            // ManagedWhitelist isn't wired to a TV, requesting serialization would
+            // throw inside ProTV's own UI and halt it. Only push once it's wired.
+            if (ohGeezSource && proTVManagedWhitelist != null
+                && proTVManagedWhitelist.GetProgramVariable("tv") != null
+                && IsLocalPlayerProTVSuperUser())
             {
-                // ProTV is source — push to Flatline only
-                if (flatlineSync != null)
-                {
-                    Networking.SetOwner(Networking.LocalPlayer, flatlineSync.gameObject);
-                    flatlineSync.SetProgramVariable("bakedWhitelist", cleaned);
-                    flatlineSync.SendCustomEvent("RequestSerialization");
-                }
+                if (!Networking.IsOwner(proTVManagedWhitelist.gameObject))
+                    Networking.SetOwner(Networking.LocalPlayer, proTVManagedWhitelist.gameObject);
+                proTVManagedWhitelist.SetProgramVariable("authorizedList", cleaned);
+                proTVManagedWhitelist.RequestSerialization();
             }
         }
 
@@ -305,12 +364,26 @@ namespace Cozen.EnigmaOS
                 else if (t >= _ohGeezNextCheckTime)
                 {
                     _ohGeezNextCheckTime = t + OhGeezCheckInterval;
+                    // ReadOhGeezSyncVersion() resolves the version symbol lazily on
+                    // first call, so _ohGeezVersionSymbol is set after this.
                     int version = ReadOhGeezSyncVersion();
-                    if (version != _lastKnownOhGeezSyncVersion)
+                    bool changed;
+                    if (_ohGeezVersionSymbol != null && _ohGeezVersionSymbol.Length > 0)
                     {
-                        _lastKnownOhGeezSyncVersion = version;
-                        RebuildNormalizedWhitelist();
+                        changed = version != _lastKnownOhGeezSyncVersion;
+                        if (changed) _lastKnownOhGeezSyncVersion = version;
                     }
+                    else
+                    {
+                        // No sync-version symbol on this (forked/renamed) OhGeez, or
+                        // a seed that never serialized — fall back to comparing the
+                        // fullAccessUsers content so live edits are still detected.
+                        object obj = ohGeezCmonAccessControl.GetProgramVariable("fullAccessUsers");
+                        string[] cur = obj != null ? (string[])obj : new string[0];
+                        changed = !StringArraysEqual(cur, _lastKnownOhGeezList);
+                        if (changed) _lastKnownOhGeezList = CopyStringArray(cur);
+                    }
+                    if (changed) RebuildNormalizedWhitelist();
                 }
                 return; // OhGeez is authoritative; skip lower-priority monitoring
             }
@@ -389,6 +462,20 @@ namespace Cozen.EnigmaOS
             }
         }
 
+        /// <summary>
+        /// Forces an immediate re-read of the active whitelist source and re-mirror
+        /// to the downstream assets, bypassing the poll interval. Public so it can
+        /// be invoked as a manual "resync now" (e.g. wired to a button) and as a
+        /// deterministic hook for the whitelist sync test harness. Honors the same
+        /// gating as the poll path (does nothing when the whitelist is disabled or
+        /// the source has never been populated).
+        /// </summary>
+        public void _RefreshWhitelist()
+        {
+            if (!whitelistEnabled) return;
+            RebuildNormalizedWhitelist();
+        }
+
         // ────────────────────────────────────────────────────────────────────────
         //  WHITELIST — AUTHORIZATION CHECKS
         // ────────────────────────────────────────────────────────────────────────
@@ -423,7 +510,11 @@ namespace Cozen.EnigmaOS
             }
 
             // -- Normalized cached list (covers OhGeez, ProTV explicit, Flatline, manual) --
-            if (!_whitelistInitialized) RebuildNormalizedWhitelist();
+            // READ-ONLY rebuild: never push downstream from the authorization path
+            // (that previously caused ownership steals + serialization on a mere
+            // access check, e.g. during hand-collider init before the whitelist
+            // was initialized).
+            if (!_whitelistInitialized) BuildNormalizedCache(GetWhitelistSourceEntries());
             if (_normalizedAuthorizedUsernames == null || _normalizedAuthorizedUsernames.Length == 0)
                 return false;
 
@@ -466,8 +557,10 @@ namespace Cozen.EnigmaOS
             {
                 object firstMasterObj = tvManager.GetProgramVariable("firstMaster");
                 string firstMaster = firstMasterObj != null ? (string)firstMasterObj : null;
+                // Exact (ordinal) match — ProTV stores/compares firstMaster
+                // case-sensitively, so normalizing here would over-grant.
                 if (!string.IsNullOrEmpty(firstMaster)
-                    && NormalizeUsername(player.displayName) == NormalizeUsername(firstMaster))
+                    && player.displayName == firstMaster)
                     return true;
             }
 
@@ -492,6 +585,64 @@ namespace Cozen.EnigmaOS
             object tvObj = proTVManagedWhitelist.GetProgramVariable("tv");
             _proTVManager = tvObj != null ? (UdonSharpBehaviour)tvObj : null;
             return _proTVManager;
+        }
+
+        /// <summary>
+        /// Local mirror of ProTV's TVManager._IsSuperAuthorized(localPlayer). Gates
+        /// the OhGeez→ProTV whitelist push: ProTV's TVManagedWhitelist.OnOwnershipRequest
+        /// only grants Unity ownership of the synced authorizedList to a "super" user,
+        /// so the push must run on such a client (rather than on whoever owns the Enigma
+        /// controller). Reads ProTV's live config via program variables to avoid a hard
+        /// reference to the ProTV assembly. Kept faithful to TVManager_Security.
+        /// _IsSuperAuthorized — if ProTV changes that logic, update here too.
+        /// </summary>
+        private bool IsLocalPlayerProTVSuperUser()
+        {
+            if (proTVManagedWhitelist == null) return false;
+            UdonSharpBehaviour tvManager = GetProTVManager();
+            if (tvManager == null) return false;
+
+            VRCPlayerApi lp = Networking.LocalPlayer;
+            if (lp == null) return false;
+
+            // Not ready → ProTV's _IsSuperAuthorized implicitly returns false.
+            object isReadyObj = tvManager.GetProgramVariable("isReady");
+            if (isReadyObj != null && !(bool)isReadyObj) return false;
+
+            // syncToOwner == false → ProTV treats everyone as super.
+            object syncToOwnerObj = tvManager.GetProgramVariable("syncToOwner");
+            bool syncToOwner = syncToOwnerObj == null || (bool)syncToOwnerObj;
+            if (!syncToOwner) return true;
+
+            // Implicit super: instance owner (when instanceOwnerIsSuper).
+            object instanceOwnerIsSuperObj = tvManager.GetProgramVariable("instanceOwnerIsSuper");
+            if (instanceOwnerIsSuperObj != null && (bool)instanceOwnerIsSuperObj && lp.isInstanceOwner)
+                return true;
+
+            // Implicit super: first master (when allowFirstMasterControl && firstMasterIsSuper).
+            object allowFirstMasterObj = tvManager.GetProgramVariable("allowFirstMasterControl");
+            object firstMasterIsSuperObj = tvManager.GetProgramVariable("firstMasterIsSuper");
+            if (allowFirstMasterObj != null && (bool)allowFirstMasterObj
+                && firstMasterIsSuperObj != null && (bool)firstMasterIsSuperObj)
+            {
+                object firstMasterObj = tvManager.GetProgramVariable("firstMaster");
+                string firstMaster = firstMasterObj != null ? (string)firstMasterObj : null;
+                if (!string.IsNullOrEmpty(firstMaster) && lp.displayName == firstMaster)
+                    return true;
+            }
+
+            // Explicit super: membership in the auth plugin's superhash
+            // (TVManagedWhitelist._IsSuperUser = IndexOf(superhash, name.GetHashCode())).
+            object superhashObj = proTVManagedWhitelist.GetProgramVariable("superhash");
+            if (superhashObj != null)
+            {
+                int[] superhash = (int[])superhashObj;
+                int h = lp.displayName.GetHashCode();
+                for (int i = 0; i < superhash.Length; i++)
+                    if (superhash[i] == h) return true;
+            }
+
+            return false;
         }
 
         private void EnsureLocalOwnership()
