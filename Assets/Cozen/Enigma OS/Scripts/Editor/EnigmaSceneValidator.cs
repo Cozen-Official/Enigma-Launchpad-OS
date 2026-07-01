@@ -49,7 +49,6 @@ namespace Cozen.EnigmaOS.Editor
             ValidateFaderSlotCapacity(scene, warnings);
             ValidateSkyboxFaderConflict(scene, warnings);
             ValidateMochieLookalikes(scene, warnings);
-            ValidateAudioLinkControllerCount(scene);
 
             if (warnings.Length > 0)
                 Debug.LogWarning($"[EnigmaOS] Scene validation warnings:\n{warnings}");
@@ -796,12 +795,7 @@ namespace Cozen.EnigmaOS.Editor
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        //  AUDIOLINK CONTROLLER COUNT
-        // ════════════════════════════════════════════════════════════════════════
-
         /// <summary>
-        /// Errors when multiple AudioLinkController instances exist in the scene.
         /// Warns when all fader slots are consumed by always-visible static faders
         /// but dynamic fader links exist on entries, leaving no slots for dynamic faders.
         /// </summary>
@@ -896,101 +890,6 @@ namespace Cozen.EnigmaOS.Editor
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Errors when multiple AudioLinkController instances exist in the scene.
-        /// Only one is supported at a time (see <see cref="CollectAudioLinkControllers"/>
-        /// for the authoritative list of hosts the check inspects).
-        /// </summary>
-        private static void ValidateAudioLinkControllerCount(Scene scene)
-        {
-            var controllers = CollectAudioLinkControllers(scene);
-            if (controllers.Count > 1)
-                Debug.LogError(BuildMultipleAudioLinkControllerMessage(controllers));
-        }
-
-        /// <summary>
-        /// Collects every non-EditorOnly <c>AudioLink.AudioLinkController</c> in the
-        /// scene. Used both by the generic validation pass (logs a warning) and by
-        /// the hard build/play-mode gates in <see cref="EnigmaBuildValidator"/> and
-        /// <see cref="EnigmaPlayModeHook"/> (which abort rather than just warn).
-        /// </summary>
-        internal static List<GameObject> CollectAudioLinkControllers(Scene scene)
-        {
-            var results = new List<GameObject>();
-            if (!scene.isLoaded) return results;
-            foreach (var root in scene.GetRootGameObjects())
-            {
-                foreach (var alc in root.GetComponentsInChildren<AudioLink.AudioLinkController>(true))
-                {
-                    if (alc == null) continue;
-                    if (IsEditorOnly(alc.gameObject)) continue;
-                    results.Add(alc.gameObject);
-                }
-            }
-            return results;
-        }
-
-        /// <summary>
-        /// Sums AudioLinkController hosts across every loaded scene. Multi-scene
-        /// editing can put two controllers in different scenes yet the same
-        /// instance at runtime — they'll still fight over the shared AudioLink
-        /// state, so the build/play gates treat the sum as the relevant count.
-        /// </summary>
-        internal static List<GameObject> CollectAudioLinkControllersAcrossLoadedScenes()
-        {
-            var results = new List<GameObject>();
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                Scene s = SceneManager.GetSceneAt(i);
-                if (!s.isLoaded) continue;
-                results.AddRange(CollectAudioLinkControllers(s));
-            }
-            return results;
-        }
-
-        /// <summary>
-        /// Builds the user-facing error message listing each offending GameObject's
-        /// full hierarchy path. Called by the validator log path and by the hard-
-        /// gate dialogs so the wording stays consistent across entry points.
-        /// </summary>
-        internal static string BuildMultipleAudioLinkControllerMessage(List<GameObject> offenders)
-        {
-            var sb = new StringBuilder();
-            sb.Append("[EnigmaOS] Only one AudioLink Controller is supported in the scene at a time. ");
-            sb.Append("Having multiple controllers causes them to fight over the shared AudioLink ");
-            sb.Append("state (gain, power, band thresholds, theme colors) and produce network-sync ");
-            sb.Append("storms.\n\nFound ");
-            sb.Append(offenders.Count);
-            sb.Append(" AudioLinkController host(s):\n");
-            for (int i = 0; i < offenders.Count; i++)
-            {
-                var go = offenders[i];
-                if (go == null) { sb.Append("  - (missing GameObject)\n"); continue; }
-                sb.Append("  - ");
-                sb.Append(GetHierarchyPath(go));
-                sb.Append("  (scene: ");
-                sb.Append(go.scene.name);
-                sb.Append(")\n");
-            }
-            sb.Append("\nDelete all but one and try again.");
-            return sb.ToString();
-        }
-
-        private static string GetHierarchyPath(GameObject go)
-        {
-            if (go == null) return "(null)";
-            var t = go.transform;
-            var path = new StringBuilder(t.name);
-            t = t.parent;
-            while (t != null)
-            {
-                path.Insert(0, "/");
-                path.Insert(0, t.name);
-                t = t.parent;
-            }
-            return path.ToString();
         }
     }
 }

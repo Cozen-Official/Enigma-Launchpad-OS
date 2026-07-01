@@ -75,12 +75,6 @@ namespace Cozen.EnigmaOS.Editor
 
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
-            // Hard gate: multiple AudioLinkControllers cause runtime state-stomping
-            // and sync storms (see EnigmaSceneValidator.BuildMultipleAudioLinkControllerMessage).
-            // Abort the build before any rebuild/lock work runs.
-            if (TryFailOnDuplicateAudioLinkControllers(true))
-                return false;
-
             UnityEngine.Debug.Log("[EnigmaOS] VRC build requested — rebuilding controllers and enabling keywords.");
             // Mark BEFORE the rebuild so RunBuild's material-mutation guards
             // (ApplyDefaultMaterialState / Mochie keyword sync) hold from the
@@ -96,13 +90,6 @@ namespace Cozen.EnigmaOS.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            // Hard gate identical to OnBuildRequested. Throws BuildFailedException
-            // rather than returning a bool — that's how IPreprocessBuildWithReport
-            // aborts a standalone Unity build (no VRC SDK in the mix).
-            if (TryFailOnDuplicateAudioLinkControllers(false))
-                throw new UnityEditor.Build.BuildFailedException(
-                    "[EnigmaOS] Build aborted — multiple AudioLinkControllers in scene. See console for details.");
-
             if (IsVrcBuildInProgress())
             {
                 // Already rebuilt + locked in the IVRCSDKBuildRequestedCallback
@@ -116,29 +103,6 @@ namespace Cozen.EnigmaOS.Editor
             // guards hold here too, then rebuild.
             MarkVrcBuildInProgress();
             EnigmaPlayModeHook.RebuildAllControllers("pre-build");
-        }
-
-        /// <summary>
-        /// Shared check run at the top of every build hook. Logs a detailed error
-        /// (with GameObject paths) to the Console and, when <paramref name="showDialog"/>
-        /// is true, surfaces a modal dialog so users who aren't watching the console
-        /// still see why the build aborted. Returns true when duplicates were found
-        /// and the caller should abort.
-        /// </summary>
-        private static bool TryFailOnDuplicateAudioLinkControllers(bool showDialog)
-        {
-            var offenders = EnigmaSceneValidator.CollectAudioLinkControllersAcrossLoadedScenes();
-            if (offenders.Count <= 1) return false;
-            string msg = EnigmaSceneValidator.BuildMultipleAudioLinkControllerMessage(offenders);
-            UnityEngine.Debug.LogError(msg);
-            if (showDialog)
-            {
-                UnityEditor.EditorUtility.DisplayDialog(
-                    "Enigma OS — Build Aborted",
-                    msg,
-                    "OK");
-            }
-            return true;
         }
 
         // ── IPostprocessBuildWithReport ──

@@ -40,17 +40,6 @@ namespace Cozen.EnigmaOS.Editor
             // heap from the (stale) serialised field values.
             if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
             {
-                // Gate duplicated from OnPlayModeStateChanged.ExitingEditMode:
-                // when UdonSharp reloads the domain DURING ExitingEditMode, the
-                // subscription dies before that case can run, so the gate has to
-                // also happen here. Aborting via isPlaying = false after a reload
-                // has already started still works — Unity unwinds the in-flight
-                // play-mode transition and returns the editor to edit mode.
-                if (TryAbortPlayModeOnDuplicateAudioLinkControllers())
-                {
-                    EditorApplication.isPlaying = false;
-                    return;
-                }
                 RebuildAllControllers("pre-play-domain-reload");
                 ApplyDefaultMaterialState();
             }
@@ -85,18 +74,6 @@ namespace Cozen.EnigmaOS.Editor
             {
                 case PlayModeStateChange.ExitingEditMode:
                     Debug.Log("[EnigmaOS] ExitingEditMode.");
-                    // Hard gate: if the scene(s) contain multiple AudioLinkControllers,
-                    // abort play-mode entry here. Setting isPlaying = false during the
-                    // ExitingEditMode transition cancels the transition cleanly —
-                    // Unity never enters play mode, no domain reload happens, the
-                    // user returns to edit mode with the Console + dialog explaining
-                    // why. Mirrors the build-time gate in EnigmaBuildValidator so
-                    // users can't sidestep the check via "Build & Test".
-                    if (TryAbortPlayModeOnDuplicateAudioLinkControllers())
-                    {
-                        EditorApplication.isPlaying = false;
-                        return;
-                    }
                     break;
                 case PlayModeStateChange.EnteredPlayMode:
                     // This fires after any domain reload is complete and before Start() runs
@@ -123,27 +100,6 @@ namespace Cozen.EnigmaOS.Editor
                     UnlockAllShaderMaterials("entered-edit-mode");
                     break;
             }
-        }
-
-        /// <summary>
-        /// Checks all loaded scenes for multiple AudioLinkControllers. If found,
-        /// logs a detailed error (with GameObject paths) and shows a modal dialog
-        /// explaining why play mode is being aborted. Returns true when the caller
-        /// should cancel the play-mode transition. Mirrors the build-time gate in
-        /// EnigmaBuildValidator.TryFailOnDuplicateAudioLinkControllers — same
-        /// wording, same offender collection, different abort mechanism.
-        /// </summary>
-        private static bool TryAbortPlayModeOnDuplicateAudioLinkControllers()
-        {
-            var offenders = EnigmaSceneValidator.CollectAudioLinkControllersAcrossLoadedScenes();
-            if (offenders.Count <= 1) return false;
-            string msg = EnigmaSceneValidator.BuildMultipleAudioLinkControllerMessage(offenders);
-            Debug.LogError(msg);
-            EditorUtility.DisplayDialog(
-                "Enigma OS — Play Mode Aborted",
-                msg,
-                "OK");
-            return true;
         }
 
         /// <summary>Rebuilds all EnigmaControllers in every loaded scene.</summary>
