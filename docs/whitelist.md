@@ -35,6 +35,7 @@ Enigma OS checks for changes every couple of seconds, so an update can take a mo
 
 - **ProTV Managed Whitelist** — the Managed Whitelist must have its **TV reference wired** to your ProTV TV. Enigma OS will not push into a Managed Whitelist that is not connected to a TV.
 - **Flatline Sync** — turn on Flatline's **Use External Whitelist** option. Enigma OS drives Flatline's admin menu directly, and this prevents Flatline's own startup whitelist logic from conflicting with it.
+- **ProTV panels and inactive/whitelist-gated containers** — do not nest ProTV UI panels (such as **MediaControls**) under any GameObject that is inactive on world start or whose visibility is gated by an OhGeezCmon whitelist. A ProTV panel that is inactive while the TV starts up can come back with a blank track title and time display. Keep media-control panels somewhere that is active at world load, and use the whitelist to gate *interaction* rather than visibility. Enigma OS also protects against this: it never hides the admin menu before it has granted it once in a session, and when it re-shows the menu it asks ProTV to refresh its panels.
 
 ## ProTV super users and what happens when the host leaves
 
