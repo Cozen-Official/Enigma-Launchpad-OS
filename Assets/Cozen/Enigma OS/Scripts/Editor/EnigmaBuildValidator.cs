@@ -75,8 +75,11 @@ namespace Cozen.EnigmaOS.Editor
 
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
-            // Hard gate: multiple AudioLinkControllers cause runtime state-stomping
-            // and sync storms (see EnigmaSceneValidator.BuildMultipleAudioLinkControllerMessage).
+            // Hard gate: multiple AudioLinkControllers are independent synced
+            // authorities over the one shared AudioLink state — stale panels,
+            // last-writer-wins overwrites, late-joiner divergence, and a per-frame
+            // fight with the Mixer's AutoLink auto-gain (see
+            // EnigmaSceneValidator.BuildMultipleAudioLinkControllerMessage).
             // Abort the build before any rebuild/lock work runs.
             if (TryFailOnDuplicateAudioLinkControllers(true))
                 return false;

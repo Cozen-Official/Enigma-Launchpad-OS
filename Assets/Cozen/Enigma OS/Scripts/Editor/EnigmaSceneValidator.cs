@@ -959,9 +959,13 @@ namespace Cozen.EnigmaOS.Editor
         {
             var sb = new StringBuilder();
             sb.Append("[EnigmaOS] Only one AudioLink Controller is supported in the scene at a time. ");
-            sb.Append("Having multiple controllers causes them to fight over the shared AudioLink ");
-            sb.Append("state (gain, power, band thresholds, theme colors) and produce network-sync ");
-            sb.Append("storms.\n\nFound ");
+            sb.Append("Each controller is an independently synced authority over the one shared ");
+            sb.Append("AudioLink state (gain, power, band thresholds, theme colors), so extra ");
+            sb.Append("controllers display stale values, overwrite each other's settings, and can ");
+            sb.Append("leave late joiners with different effective settings than everyone else. ");
+            sb.Append("The Mixer's AutoLink auto-gain also reconciles only its own controller each ");
+            sb.Append("frame, so any other controller reads wrong and its auto-gain toggle does ");
+            sb.Append("nothing.\n\nFound ");
             sb.Append(offenders.Count);
             sb.Append(" AudioLinkController host(s):\n");
             for (int i = 0; i < offenders.Count; i++)
