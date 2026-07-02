@@ -234,6 +234,17 @@ namespace Cozen.EnigmaOS.Editor
             // controllers from additively-loaded scenes too.
             RebuildBoundaryReferences(allControllers);
 
+            // ── AudioLink reference auto-population ──────────────────────────────
+            // The Mixer bundles an AudioLink.AudioLinkController (+ the AutoLink
+            // auto-gain/threshold adjuster) whose `audioLink` reference must point
+            // at the scene's AudioLink instance — a user-supplied object OUTSIDE
+            // the prefab, so it ships unassigned and nothing populates it. Auto-wire
+            // it here (runs at build + play-enter) so the mixer's AudioLink panel
+            // works without the user hand-assigning it. Only fills a NULL field
+            // (never clobbers a manual assignment). This restores 1.x behaviour
+            // (EnigmaLaunchpadEditor did it) that was dropped in the 2.0 rewrite.
+            RebuildAudioLinkReferences(allControllers);
+
             // ── Shader locking pass ──────────────────────────────────────────────
             // Collect all materials targeted by Set Shader Property actions across
             // controllers and buttons, then prepare and lock each material.
@@ -386,6 +397,114 @@ namespace Cozen.EnigmaOS.Editor
             for (int i = 0; i < a.Length; i++)
                 if (a[i] != b[i]) return false;
             return true;
+        }
+
+        /// <summary>
+        /// Populates the `audioLink` reference on the Mixer's bundled
+        /// AudioLink.AudioLinkController (and the AutoLink auto-gain adjuster
+        /// beside it) with the scene's AudioLink instance, when it is unassigned.
+        /// AudioLink is a required Enigma dependency so its type is hard-referenced;
+        /// AutoLink (lackofbindings) is treated as optional (see
+        /// EnigmaAutoLinkInstaller) so it is reached by type name via a
+        /// SerializedProperty write, keeping this code compilable if AutoLink is
+        /// absent. Only ever fills a null field — a manual assignment is left alone.
+        /// </summary>
+        private static void RebuildAudioLinkReferences(
+            System.Collections.Generic.List<EnigmaController> allControllers)
+        {
+            // Is there even a controller with an AudioLink panel to wire?
+            bool anyTarget = false;
+            foreach (var ctrl in allControllers)
+                if (ctrl != null && ctrl.GetComponentInChildren<AudioLink.AudioLinkController>(true) != null)
+                { anyTarget = true; break; }
+            if (!anyTarget) return;
+
+            // Resolve the scene's AudioLink instance(s), skipping EditorOnly ones
+            // (they are stripped at build, so a reference to them would break).
+            var audioLinks = new System.Collections.Generic.List<AudioLink.AudioLink>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded) continue;
+                foreach (var root in scene.GetRootGameObjects())
+                    foreach (var al in root.GetComponentsInChildren<AudioLink.AudioLink>(true))
+                    {
+                        if (al == null || IsUnderEditorOnlyTag(al.gameObject)) continue;
+                        audioLinks.Add(al);
+                    }
+            }
+
+            if (audioLinks.Count == 0)
+            {
+                Debug.LogWarning(
+                    "[EnigmaOS] AudioLink auto-wire: a Mixer AudioLink controller is present " +
+                    "but no AudioLink instance was found in the loaded scene(s). Add an AudioLink " +
+                    "prefab, or the mixer's AudioLink panel won't function.");
+                return;
+            }
+
+            Object target = audioLinks[0];
+            if (audioLinks.Count > 1)
+                Debug.LogWarning(
+                    $"[EnigmaOS] AudioLink auto-wire: {audioLinks.Count} AudioLink instances found; " +
+                    $"wiring the mixer to '{audioLinks[0].name}'. AudioLink is a single global system " +
+                    "— consider removing the extras.");
+
+            int wired = 0;
+            foreach (var ctrl in allControllers)
+            {
+                if (ctrl == null) continue;
+
+                // AudioLinkController(s) — hard type (AudioLink is a required dep).
+                foreach (var alc in ctrl.GetComponentsInChildren<AudioLink.AudioLinkController>(true))
+                    if (alc != null && TryFillAudioLinkField(alc, target)) wired++;
+
+                // AutoLink auto-gain adjuster(s) — matched by type name so we keep
+                // no hard reference to lackofbindings/AutoLink (it may be absent).
+                foreach (var comp in ctrl.GetComponentsInChildren<Component>(true))
+                    if (comp != null && comp.GetType().Name == "AutoLink"
+                        && TryFillAudioLinkField(comp, target)) wired++;
+            }
+
+            if (wired > 0)
+                Debug.Log($"[EnigmaOS] AudioLink auto-wire: populated {wired} unassigned AudioLink reference(s) with '{target.name}'.");
+        }
+
+        /// <summary>
+        /// Sets a UdonSharp behaviour's serialized <c>audioLink</c> object
+        /// reference to <paramref name="audioLink"/> IFF it is currently null,
+        /// then force-copies the proxy into the Udon heap so the value is live
+        /// this same play/build cycle (Start() reads it before UdonSharp's own
+        /// sync would otherwise run — see the class header note). Never overwrites
+        /// a manual assignment. Returns true when it wrote.
+        /// </summary>
+        private static bool TryFillAudioLinkField(Component comp, Object audioLink)
+        {
+            var so = new SerializedObject(comp);
+            var prop = so.FindProperty("audioLink");
+            if (prop == null || prop.propertyType != SerializedPropertyType.ObjectReference)
+                return false;
+            if (prop.objectReferenceValue != null) return false; // respect manual wiring
+            prop.objectReferenceValue = audioLink;
+            so.ApplyModifiedProperties(); // registers undo + marks the proxy dirty
+
+            // Force the proxy → Udon heap copy now; the AudioLink controller reads
+            // `audioLink` in Start(), which can run before UdonSharp's own sync.
+            var usb = comp as UdonSharpBehaviour;
+            if (usb != null) UdonSharpEditor.UdonSharpEditorUtility.CopyProxyToUdon(usb);
+            return true;
+        }
+
+        /// <summary>True if the GameObject or any ancestor is tagged EditorOnly.</summary>
+        private static bool IsUnderEditorOnlyTag(GameObject go)
+        {
+            var t = go != null ? go.transform : null;
+            while (t != null)
+            {
+                if (t.CompareTag("EditorOnly")) return true;
+                t = t.parent;
+            }
+            return false;
         }
 
         /// <summary>
