@@ -150,6 +150,14 @@ namespace Cozen.EnigmaOS.Editor
         internal static void RebuildAllControllers(string trigger)
         {
             EnigmaShaderHelper.ClearCache();
+
+            // ── UdonSharp pairing self-heal ──────────────────────────────────
+            // Must run FIRST: UdonSharp's proxy→heap copy (and every later pass
+            // here that calls CopyProxyToUdon) is silently skipped for a proxy
+            // whose hidden backing-UdonBehaviour reference is broken, leaving
+            // that behaviour to run with default (null/empty) values in play
+            // mode and in uploaded worlds.
+            HealUdonSharpPairings(trigger);
             int rebuilt = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -337,6 +345,165 @@ namespace Cozen.EnigmaOS.Editor
                 if (scene.isLoaded)
                     EnigmaSceneValidator.ValidateScene(scene);
             }
+        }
+
+        // Cached reflection handle for UdonSharpBehaviour's hidden pairing field.
+        // Private serialized field in every U# 1.x release; if a future UdonSharp
+        // removes/renames it, the self-heal quietly disables itself.
+        private static System.Reflection.FieldInfo _usbBackingField;
+        private static bool _usbBackingFieldSearched;
+
+        private static System.Reflection.FieldInfo GetUsbBackingField()
+        {
+            if (!_usbBackingFieldSearched)
+            {
+                _usbBackingFieldSearched = true;
+                _usbBackingField = typeof(UdonSharpBehaviour).GetField(
+                    "_udonSharpBackingUdonBehaviour",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            }
+            return _usbBackingField;
+        }
+
+        /// <summary>
+        /// Detects and repairs UdonSharpBehaviour proxies whose hidden
+        /// backing-UdonBehaviour pairing reference is broken (null, dangling to
+        /// a destroyed object, or pointing at another GameObject) while a
+        /// matching orphaned UdonBehaviour still sits on the same GameObject.
+        ///
+        /// Why this exists: UdonSharp's play/build pass copies each proxy's
+        /// serialized fields into its backing UdonBehaviour's heap ONLY when the
+        /// pairing reference resolves — a broken pairing is silently skipped, so
+        /// the behaviour ships/plays with default values (a ProTV MediaControls
+        /// loses all its UI references and freezes on its placeholder text; a
+        /// TVManager loses its auth plugin and degrades to master-only control).
+        /// UdonSharp's own repair pass refuses to touch prefab instances
+        /// ("Cannot setup behaviour on prefab instance"), so this damage is
+        /// permanent until the object is recreated — users have historically
+        /// worked around it by duplicating the broken object or reinstalling
+        /// the asset. Import/recompile races are the suspected cause; healing
+        /// covers the damage class regardless of the trigger.
+        ///
+        /// The repair is a single field write (re-pointing the proxy at the
+        /// orphaned UdonBehaviour whose program matches the proxy's class)
+        /// followed by an explicit CopyProxyToUdon so the heap is correct even
+        /// when UdonSharp's own copy pass for this cycle already ran. Scene-wide
+        /// and asset-agnostic: protects ProTV, AudioLink, Enigma, and any other
+        /// UdonSharp asset in the scene. Behaviours with a broken pairing and NO
+        /// surviving UdonBehaviour on the GameObject are reported but left
+        /// untouched (synthesizing components is riskier than warning).
+        /// </summary>
+        internal static void HealUdonSharpPairings(string trigger)
+        {
+            var backingField = GetUsbBackingField();
+            if (backingField == null) return;
+
+            int healed = 0, unhealable = 0;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded) continue;
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    foreach (var proxy in root.GetComponentsInChildren<UdonSharpBehaviour>(true))
+                    {
+                        if (proxy == null) continue;
+
+                        VRC.Udon.UdonBehaviour backing;
+                        try { backing = backingField.GetValue(proxy) as VRC.Udon.UdonBehaviour; }
+                        catch { continue; }
+
+                        // Healthy: resolves to a live UdonBehaviour on the same
+                        // GameObject. (A dangling ref to a destroyed object is
+                        // Unity-fake-null and fails the first check.)
+                        if (backing != null && backing.gameObject == proxy.gameObject) continue;
+
+                        try
+                        {
+                            var candidate = FindOrphanBackingBehaviour(proxy, backingField);
+                            if (candidate == null)
+                            {
+                                unhealable++;
+                                Debug.LogWarning(
+                                    $"[EnigmaOS] {trigger}: '{GetScenePath(proxy.gameObject)}' " +
+                                    $"({proxy.GetType().Name}) has a broken UdonSharp pairing and no " +
+                                    "surviving UdonBehaviour to re-pair with — this behaviour will run " +
+                                    "with default values. Recreate the object (or re-import its asset) to fix it.",
+                                    proxy);
+                                continue;
+                            }
+
+                            Undo.RecordObject(proxy, "Repair UdonSharp pairing");
+                            backingField.SetValue(proxy, candidate);
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(proxy);
+                            EditorUtility.SetDirty(proxy);
+                            // Push the proxy's real data into the heap now — U#'s
+                            // own copy pass for this play/build may already have
+                            // run (and skipped this proxy while it was broken).
+                            UdonSharpEditor.UdonSharpEditorUtility.CopyProxyToUdon(proxy);
+                            healed++;
+                            Debug.LogWarning(
+                                $"[EnigmaOS] {trigger}: repaired a broken UdonSharp pairing on " +
+                                $"'{GetScenePath(proxy.gameObject)}' ({proxy.GetType().Name}). Without the " +
+                                "repair this behaviour would have run with default (empty) values.",
+                                proxy);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError(
+                                $"[EnigmaOS] {trigger}: pairing self-heal failed on " +
+                                $"'{GetScenePath(proxy.gameObject)}' ({proxy.GetType().Name}): {ex.Message}",
+                                proxy);
+                        }
+                    }
+                }
+            }
+
+            if (healed > 0 || unhealable > 0)
+                Debug.Log($"[EnigmaOS] {trigger}: UdonSharp pairing self-heal — {healed} repaired, {unhealable} unrepairable.");
+        }
+
+        /// <summary>
+        /// Finds an UdonBehaviour on the proxy's own GameObject that (a) runs a
+        /// UdonSharp program whose source class matches the proxy's type and
+        /// (b) is not already claimed as the backing behaviour of a sibling
+        /// proxy. Returns null when no such orphan exists.
+        /// </summary>
+        private static VRC.Udon.UdonBehaviour FindOrphanBackingBehaviour(
+            UdonSharpBehaviour proxy, System.Reflection.FieldInfo backingField)
+        {
+            var go = proxy.gameObject;
+
+            // UdonBehaviours already claimed by sibling proxies must not be stolen.
+            var claimed = new System.Collections.Generic.HashSet<VRC.Udon.UdonBehaviour>();
+            foreach (var sibling in go.GetComponents<UdonSharpBehaviour>())
+            {
+                if (sibling == null || sibling == proxy) continue;
+                var sb = backingField.GetValue(sibling) as VRC.Udon.UdonBehaviour;
+                if (sb != null) claimed.Add(sb);
+            }
+
+            foreach (var ub in go.GetComponents<VRC.Udon.UdonBehaviour>())
+            {
+                if (ub == null || claimed.Contains(ub)) continue;
+                var programAsset = ub.programSource as UdonSharp.UdonSharpProgramAsset;
+                if (programAsset == null || programAsset.sourceCsScript == null) continue;
+                if (programAsset.sourceCsScript.GetClass() == proxy.GetType()) return ub;
+            }
+            return null;
+        }
+
+        private static string GetScenePath(GameObject go)
+        {
+            if (go == null) return "(null)";
+            var t = go.transform;
+            var sb = new System.Text.StringBuilder(t.name);
+            while (t.parent != null)
+            {
+                t = t.parent;
+                sb.Insert(0, "/").Insert(0, t.name);
+            }
+            return sb.ToString();
         }
 
         /// <summary>
