@@ -19,6 +19,16 @@ How to Install:
     import it. This is required for the Mixer. If you only plan to use
     the Launchpad, you can choose to ignore this message.
 
+## Updating from a previous version
+
+If you already have Enigma OS (or the older Enigma Launchpad) in your project, update from the editor instead of importing the package by hand. Select your Launchpad or Mixer in the scene, and in the Inspector use the **Download** button shown under “Update Available.” The in-editor updater removes your old Enigma folder before installing the new version, so nothing is left behind from the previous release.
+
+If you do import a new version manually, delete your existing Enigma folder first — importing on top of an old install can leave stale files mixed between versions.
+
+## Troubleshooting
+
+**ProTV media controls stop showing the track title or time.** Importing any package can occasionally disturb ProTV’s scene wiring — this is a Unity/UdonSharp import quirk, not specific to Enigma OS. If ProTV’s media controls stop displaying the current title or time (playback still works), run **Tools → ProTV → Update Scene** to rebuild ProTV’s connections. Enigma OS 2.0.10 and later repairs this automatically when you open the scene or enter play mode, but **Update Scene** is ProTV’s own built-in fix and works on any version.
+
 Supported Third Party Packages:
 
 Shader Systems
