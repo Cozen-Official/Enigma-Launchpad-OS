@@ -597,7 +597,8 @@ namespace Cozen.EnigmaOS
 
         /// <summary>
         /// Checks ProTV's implicit authorization rules (syncToOwner bypass, master,
-        /// firstMaster, instanceOwnerIsSuper) that go beyond the explicit username list.
+        /// firstMaster, instanceOwnerIsSuper, and super-user membership) that go
+        /// beyond the explicit username list.
         /// </summary>
         private bool IsPlayerProTVImplicitlyAuthorized(VRCPlayerApi player)
         {
@@ -635,6 +636,36 @@ namespace Cozen.EnigmaOS
             bool instanceOwnerIsSuper = instanceOwnerIsSuperObj != null && (bool)instanceOwnerIsSuperObj;
             if (instanceOwnerIsSuper && player.isInstanceOwner) return true;
 
+            // Explicit super user: ProTV's own _IsAuthorized ends with
+            // `authPlugin._IsSuperUser(user)`, so super users ARE authorized to
+            // control the TV. A world configured with only Super Users and an
+            // empty "Default Authorized Users" therefore has an empty synced
+            // authorizedList; without this check Enigma would authorize nobody but
+            // the instance master ("only locks to master").
+            if (IsPlayerInProTVSuperhash(player)) return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// True when <paramref name="player"/> is in ProTV's super-user set —
+        /// a faithful mirror of TVManagedWhitelist._IsSuperUser
+        /// (IndexOf(superhash, displayName.GetHashCode()) &gt; -1). superhash is
+        /// baked once in the whitelist's Start() from the configured Super Users
+        /// and is separate from the synced authorizedList. Runs in the same Udon
+        /// runtime as ProTV, so GetHashCode() matches what ProTV computed.
+        /// </summary>
+        private bool IsPlayerInProTVSuperhash(VRCPlayerApi player)
+        {
+            if (proTVManagedWhitelist == null || player == null || !Utilities.IsValid(player))
+                return false;
+            object superhashObj = proTVManagedWhitelist.GetProgramVariable("superhash");
+            if (superhashObj == null) return false;
+            // U# binder crashes on `obj as int[]`; cast after the null guard.
+            int[] superhash = (int[])superhashObj;
+            int h = player.displayName.GetHashCode();
+            for (int i = 0; i < superhash.Length; i++)
+                if (superhash[i] == h) return true;
             return false;
         }
 
@@ -699,16 +730,7 @@ namespace Cozen.EnigmaOS
 
             // Explicit super: membership in the auth plugin's superhash
             // (TVManagedWhitelist._IsSuperUser = IndexOf(superhash, name.GetHashCode())).
-            object superhashObj = proTVManagedWhitelist.GetProgramVariable("superhash");
-            if (superhashObj != null)
-            {
-                int[] superhash = (int[])superhashObj;
-                int h = lp.displayName.GetHashCode();
-                for (int i = 0; i < superhash.Length; i++)
-                    if (superhash[i] == h) return true;
-            }
-
-            return false;
+            return IsPlayerInProTVSuperhash(lp);
         }
 
         /// <summary>
