@@ -55,6 +55,19 @@ namespace Cozen.EnigmaOS.Editor
                 ApplyDefaultMaterialState();
             }
 
+            // Heal broken UdonSharp pairings promptly after EVERY domain reload
+            // (package imports / recompiles are exactly when pairing damage
+            // appears) and on scene open — in edit mode, so the repair PERSISTS
+            // and happens before any third-party validation can trip over the
+            // broken state. Ordering note: ProTV's play-entry checks run via
+            // [RuntimeInitializeOnLoadMethod(AfterSceneLoad)], which executes
+            // BEFORE our EnteredPlayMode rebuild — healing only at play entry
+            // still let ProTV's checks crash on the damage with a modal error.
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                QueueEditModePairingHeal();
+            UnityEditor.SceneManagement.EditorSceneManager.sceneOpened -= OnSceneOpenedHealPairings;
+            UnityEditor.SceneManagement.EditorSceneManager.sceneOpened += OnSceneOpenedHealPairings;
+
             // UdonSharp also triggers a domain reload when EXITING play mode,
             // which kills the subscription before EnteredEditMode can fire.
             // SessionState survives domain reloads within the same editor session.
@@ -345,6 +358,41 @@ namespace Cozen.EnigmaOS.Editor
                 if (scene.isLoaded)
                     EnigmaSceneValidator.ValidateScene(scene);
             }
+        }
+
+        // One-shot queue for the edit-mode pairing heal. Rides
+        // EditorApplication.update (not delayCall, which can starve while the
+        // editor is unfocused) and re-queues itself while the editor is still
+        // compiling/importing so the heal runs once things settle.
+        private static bool _pairingHealQueued;
+
+        private static void QueueEditModePairingHeal()
+        {
+            if (_pairingHealQueued) return;
+            _pairingHealQueued = true;
+            EditorApplication.update += RunQueuedPairingHeal;
+        }
+
+        private static void RunQueuedPairingHeal()
+        {
+            EditorApplication.update -= RunQueuedPairingHeal;
+            _pairingHealQueued = false;
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (UnityEditor.BuildPipeline.isBuildingPlayer) return;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                // AssetDatabase still settling — try again next tick.
+                QueueEditModePairingHeal();
+                return;
+            }
+            HealUdonSharpPairings("post-reload");
+        }
+
+        private static void OnSceneOpenedHealPairings(
+            Scene scene, UnityEditor.SceneManagement.OpenSceneMode mode)
+        {
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                QueueEditModePairingHeal();
         }
 
         // Cached reflection handle for UdonSharpBehaviour's hidden pairing field.
