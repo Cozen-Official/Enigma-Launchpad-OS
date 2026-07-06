@@ -55,6 +55,19 @@ namespace Cozen.EnigmaOS.Editor
                 ApplyDefaultMaterialState();
             }
 
+            // Heal broken UdonSharp pairings promptly after EVERY domain reload
+            // (package imports / recompiles are exactly when pairing damage
+            // appears) and on scene open — in edit mode, so the repair PERSISTS
+            // and happens before any third-party validation can trip over the
+            // broken state. Ordering note: ProTV's play-entry checks run via
+            // [RuntimeInitializeOnLoadMethod(AfterSceneLoad)], which executes
+            // BEFORE our EnteredPlayMode rebuild — healing only at play entry
+            // still let ProTV's checks crash on the damage with a modal error.
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                QueueEditModePairingHeal();
+            UnityEditor.SceneManagement.EditorSceneManager.sceneOpened -= OnSceneOpenedHealPairings;
+            UnityEditor.SceneManagement.EditorSceneManager.sceneOpened += OnSceneOpenedHealPairings;
+
             // UdonSharp also triggers a domain reload when EXITING play mode,
             // which kills the subscription before EnteredEditMode can fire.
             // SessionState survives domain reloads within the same editor session.
@@ -150,6 +163,14 @@ namespace Cozen.EnigmaOS.Editor
         internal static void RebuildAllControllers(string trigger)
         {
             EnigmaShaderHelper.ClearCache();
+
+            // ── UdonSharp pairing self-heal ──────────────────────────────────
+            // Must run FIRST: UdonSharp's proxy→heap copy (and every later pass
+            // here that calls CopyProxyToUdon) is silently skipped for a proxy
+            // whose hidden backing-UdonBehaviour reference is broken, leaving
+            // that behaviour to run with default (null/empty) values in play
+            // mode and in uploaded worlds.
+            HealUdonSharpPairings(trigger);
             int rebuilt = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -233,6 +254,17 @@ namespace Cozen.EnigmaOS.Editor
             // direct object reference, so cross-scene boundaries pick up
             // controllers from additively-loaded scenes too.
             RebuildBoundaryReferences(allControllers);
+
+            // ── AudioLink reference auto-population ──────────────────────────────
+            // The Mixer bundles an AudioLink.AudioLinkController (+ the AutoLink
+            // auto-gain/threshold adjuster) whose `audioLink` reference must point
+            // at the scene's AudioLink instance — a user-supplied object OUTSIDE
+            // the prefab, so it ships unassigned and nothing populates it. Auto-wire
+            // it here (runs at build + play-enter) so the mixer's AudioLink panel
+            // works without the user hand-assigning it. Only fills a NULL field
+            // (never clobbers a manual assignment). This restores 1.x behaviour
+            // (EnigmaLaunchpadEditor did it) that was dropped in the 2.0 rewrite.
+            RebuildAudioLinkReferences(allControllers);
 
             // ── Shader locking pass ──────────────────────────────────────────────
             // Collect all materials targeted by Set Shader Property actions across
@@ -328,6 +360,200 @@ namespace Cozen.EnigmaOS.Editor
             }
         }
 
+        // One-shot queue for the edit-mode pairing heal. Rides
+        // EditorApplication.update (not delayCall, which can starve while the
+        // editor is unfocused) and re-queues itself while the editor is still
+        // compiling/importing so the heal runs once things settle.
+        private static bool _pairingHealQueued;
+
+        private static void QueueEditModePairingHeal()
+        {
+            if (_pairingHealQueued) return;
+            _pairingHealQueued = true;
+            EditorApplication.update += RunQueuedPairingHeal;
+        }
+
+        private static void RunQueuedPairingHeal()
+        {
+            EditorApplication.update -= RunQueuedPairingHeal;
+            _pairingHealQueued = false;
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (UnityEditor.BuildPipeline.isBuildingPlayer) return;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                // AssetDatabase still settling — try again next tick.
+                QueueEditModePairingHeal();
+                return;
+            }
+            HealUdonSharpPairings("post-reload");
+        }
+
+        private static void OnSceneOpenedHealPairings(
+            Scene scene, UnityEditor.SceneManagement.OpenSceneMode mode)
+        {
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                QueueEditModePairingHeal();
+        }
+
+        // Cached reflection handle for UdonSharpBehaviour's hidden pairing field.
+        // Private serialized field in every U# 1.x release; if a future UdonSharp
+        // removes/renames it, the self-heal quietly disables itself.
+        private static System.Reflection.FieldInfo _usbBackingField;
+        private static bool _usbBackingFieldSearched;
+
+        private static System.Reflection.FieldInfo GetUsbBackingField()
+        {
+            if (!_usbBackingFieldSearched)
+            {
+                _usbBackingFieldSearched = true;
+                _usbBackingField = typeof(UdonSharpBehaviour).GetField(
+                    "_udonSharpBackingUdonBehaviour",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            }
+            return _usbBackingField;
+        }
+
+        /// <summary>
+        /// Detects and repairs UdonSharpBehaviour proxies whose hidden
+        /// backing-UdonBehaviour pairing reference is broken (null, dangling to
+        /// a destroyed object, or pointing at another GameObject) while a
+        /// matching orphaned UdonBehaviour still sits on the same GameObject.
+        ///
+        /// Why this exists: UdonSharp's play/build pass copies each proxy's
+        /// serialized fields into its backing UdonBehaviour's heap ONLY when the
+        /// pairing reference resolves — a broken pairing is silently skipped, so
+        /// the behaviour ships/plays with default values (a ProTV MediaControls
+        /// loses all its UI references and freezes on its placeholder text; a
+        /// TVManager loses its auth plugin and degrades to master-only control).
+        /// UdonSharp's own repair pass refuses to touch prefab instances
+        /// ("Cannot setup behaviour on prefab instance"), so this damage is
+        /// permanent until the object is recreated — users have historically
+        /// worked around it by duplicating the broken object or reinstalling
+        /// the asset. Import/recompile races are the suspected cause; healing
+        /// covers the damage class regardless of the trigger.
+        ///
+        /// The repair is a single field write (re-pointing the proxy at the
+        /// orphaned UdonBehaviour whose program matches the proxy's class)
+        /// followed by an explicit CopyProxyToUdon so the heap is correct even
+        /// when UdonSharp's own copy pass for this cycle already ran. Scene-wide
+        /// and asset-agnostic: protects ProTV, AudioLink, Enigma, and any other
+        /// UdonSharp asset in the scene. Behaviours with a broken pairing and NO
+        /// surviving UdonBehaviour on the GameObject are reported but left
+        /// untouched (synthesizing components is riskier than warning).
+        /// </summary>
+        internal static void HealUdonSharpPairings(string trigger)
+        {
+            var backingField = GetUsbBackingField();
+            if (backingField == null) return;
+
+            int healed = 0, unhealable = 0;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded) continue;
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    foreach (var proxy in root.GetComponentsInChildren<UdonSharpBehaviour>(true))
+                    {
+                        if (proxy == null) continue;
+
+                        VRC.Udon.UdonBehaviour backing;
+                        try { backing = backingField.GetValue(proxy) as VRC.Udon.UdonBehaviour; }
+                        catch { continue; }
+
+                        // Healthy: resolves to a live UdonBehaviour on the same
+                        // GameObject. (A dangling ref to a destroyed object is
+                        // Unity-fake-null and fails the first check.)
+                        if (backing != null && backing.gameObject == proxy.gameObject) continue;
+
+                        try
+                        {
+                            var candidate = FindOrphanBackingBehaviour(proxy, backingField);
+                            if (candidate == null)
+                            {
+                                unhealable++;
+                                Debug.LogWarning(
+                                    $"[EnigmaOS] {trigger}: '{GetScenePath(proxy.gameObject)}' " +
+                                    $"({proxy.GetType().Name}) has a broken UdonSharp pairing and no " +
+                                    "surviving UdonBehaviour to re-pair with — this behaviour will run " +
+                                    "with default values. Recreate the object (or re-import its asset) to fix it.",
+                                    proxy);
+                                continue;
+                            }
+
+                            Undo.RecordObject(proxy, "Repair UdonSharp pairing");
+                            backingField.SetValue(proxy, candidate);
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(proxy);
+                            EditorUtility.SetDirty(proxy);
+                            // Push the proxy's real data into the heap now — U#'s
+                            // own copy pass for this play/build may already have
+                            // run (and skipped this proxy while it was broken).
+                            UdonSharpEditor.UdonSharpEditorUtility.CopyProxyToUdon(proxy);
+                            healed++;
+                            Debug.LogWarning(
+                                $"[EnigmaOS] {trigger}: repaired a broken UdonSharp pairing on " +
+                                $"'{GetScenePath(proxy.gameObject)}' ({proxy.GetType().Name}). Without the " +
+                                "repair this behaviour would have run with default (empty) values.",
+                                proxy);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError(
+                                $"[EnigmaOS] {trigger}: pairing self-heal failed on " +
+                                $"'{GetScenePath(proxy.gameObject)}' ({proxy.GetType().Name}): {ex.Message}",
+                                proxy);
+                        }
+                    }
+                }
+            }
+
+            if (healed > 0 || unhealable > 0)
+                Debug.Log($"[EnigmaOS] {trigger}: UdonSharp pairing self-heal — {healed} repaired, {unhealable} unrepairable.");
+        }
+
+        /// <summary>
+        /// Finds an UdonBehaviour on the proxy's own GameObject that (a) runs a
+        /// UdonSharp program whose source class matches the proxy's type and
+        /// (b) is not already claimed as the backing behaviour of a sibling
+        /// proxy. Returns null when no such orphan exists.
+        /// </summary>
+        private static VRC.Udon.UdonBehaviour FindOrphanBackingBehaviour(
+            UdonSharpBehaviour proxy, System.Reflection.FieldInfo backingField)
+        {
+            var go = proxy.gameObject;
+
+            // UdonBehaviours already claimed by sibling proxies must not be stolen.
+            var claimed = new System.Collections.Generic.HashSet<VRC.Udon.UdonBehaviour>();
+            foreach (var sibling in go.GetComponents<UdonSharpBehaviour>())
+            {
+                if (sibling == null || sibling == proxy) continue;
+                var sb = backingField.GetValue(sibling) as VRC.Udon.UdonBehaviour;
+                if (sb != null) claimed.Add(sb);
+            }
+
+            foreach (var ub in go.GetComponents<VRC.Udon.UdonBehaviour>())
+            {
+                if (ub == null || claimed.Contains(ub)) continue;
+                var programAsset = ub.programSource as UdonSharp.UdonSharpProgramAsset;
+                if (programAsset == null || programAsset.sourceCsScript == null) continue;
+                if (programAsset.sourceCsScript.GetClass() == proxy.GetType()) return ub;
+            }
+            return null;
+        }
+
+        private static string GetScenePath(GameObject go)
+        {
+            if (go == null) return "(null)";
+            var t = go.transform;
+            var sb = new System.Text.StringBuilder(t.name);
+            while (t.parent != null)
+            {
+                t = t.parent;
+                sb.Insert(0, "/").Insert(0, t.name);
+            }
+            return sb.ToString();
+        }
+
         /// <summary>
         /// Walks every loaded scene's EnigmaControllerBoundary components and
         /// populates each one's <c>otherControllers</c> array with every
@@ -386,6 +612,114 @@ namespace Cozen.EnigmaOS.Editor
             for (int i = 0; i < a.Length; i++)
                 if (a[i] != b[i]) return false;
             return true;
+        }
+
+        /// <summary>
+        /// Populates the `audioLink` reference on the Mixer's bundled
+        /// AudioLink.AudioLinkController (and the AutoLink auto-gain adjuster
+        /// beside it) with the scene's AudioLink instance, when it is unassigned.
+        /// AudioLink is a required Enigma dependency so its type is hard-referenced;
+        /// AutoLink (lackofbindings) is treated as optional (see
+        /// EnigmaAutoLinkInstaller) so it is reached by type name via a
+        /// SerializedProperty write, keeping this code compilable if AutoLink is
+        /// absent. Only ever fills a null field — a manual assignment is left alone.
+        /// </summary>
+        private static void RebuildAudioLinkReferences(
+            System.Collections.Generic.List<EnigmaController> allControllers)
+        {
+            // Is there even a controller with an AudioLink panel to wire?
+            bool anyTarget = false;
+            foreach (var ctrl in allControllers)
+                if (ctrl != null && ctrl.GetComponentInChildren<AudioLink.AudioLinkController>(true) != null)
+                { anyTarget = true; break; }
+            if (!anyTarget) return;
+
+            // Resolve the scene's AudioLink instance(s), skipping EditorOnly ones
+            // (they are stripped at build, so a reference to them would break).
+            var audioLinks = new System.Collections.Generic.List<AudioLink.AudioLink>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded) continue;
+                foreach (var root in scene.GetRootGameObjects())
+                    foreach (var al in root.GetComponentsInChildren<AudioLink.AudioLink>(true))
+                    {
+                        if (al == null || IsUnderEditorOnlyTag(al.gameObject)) continue;
+                        audioLinks.Add(al);
+                    }
+            }
+
+            if (audioLinks.Count == 0)
+            {
+                Debug.LogWarning(
+                    "[EnigmaOS] AudioLink auto-wire: a Mixer AudioLink controller is present " +
+                    "but no AudioLink instance was found in the loaded scene(s). Add an AudioLink " +
+                    "prefab, or the mixer's AudioLink panel won't function.");
+                return;
+            }
+
+            Object target = audioLinks[0];
+            if (audioLinks.Count > 1)
+                Debug.LogWarning(
+                    $"[EnigmaOS] AudioLink auto-wire: {audioLinks.Count} AudioLink instances found; " +
+                    $"wiring the mixer to '{audioLinks[0].name}'. AudioLink is a single global system " +
+                    "— consider removing the extras.");
+
+            int wired = 0;
+            foreach (var ctrl in allControllers)
+            {
+                if (ctrl == null) continue;
+
+                // AudioLinkController(s) — hard type (AudioLink is a required dep).
+                foreach (var alc in ctrl.GetComponentsInChildren<AudioLink.AudioLinkController>(true))
+                    if (alc != null && TryFillAudioLinkField(alc, target)) wired++;
+
+                // AutoLink auto-gain adjuster(s) — matched by type name so we keep
+                // no hard reference to lackofbindings/AutoLink (it may be absent).
+                foreach (var comp in ctrl.GetComponentsInChildren<Component>(true))
+                    if (comp != null && comp.GetType().Name == "AutoLink"
+                        && TryFillAudioLinkField(comp, target)) wired++;
+            }
+
+            if (wired > 0)
+                Debug.Log($"[EnigmaOS] AudioLink auto-wire: populated {wired} unassigned AudioLink reference(s) with '{target.name}'.");
+        }
+
+        /// <summary>
+        /// Sets a UdonSharp behaviour's serialized <c>audioLink</c> object
+        /// reference to <paramref name="audioLink"/> IFF it is currently null,
+        /// then force-copies the proxy into the Udon heap so the value is live
+        /// this same play/build cycle (Start() reads it before UdonSharp's own
+        /// sync would otherwise run — see the class header note). Never overwrites
+        /// a manual assignment. Returns true when it wrote.
+        /// </summary>
+        private static bool TryFillAudioLinkField(Component comp, Object audioLink)
+        {
+            var so = new SerializedObject(comp);
+            var prop = so.FindProperty("audioLink");
+            if (prop == null || prop.propertyType != SerializedPropertyType.ObjectReference)
+                return false;
+            if (prop.objectReferenceValue != null) return false; // respect manual wiring
+            prop.objectReferenceValue = audioLink;
+            so.ApplyModifiedProperties(); // registers undo + marks the proxy dirty
+
+            // Force the proxy → Udon heap copy now; the AudioLink controller reads
+            // `audioLink` in Start(), which can run before UdonSharp's own sync.
+            var usb = comp as UdonSharpBehaviour;
+            if (usb != null) UdonSharpEditor.UdonSharpEditorUtility.CopyProxyToUdon(usb);
+            return true;
+        }
+
+        /// <summary>True if the GameObject or any ancestor is tagged EditorOnly.</summary>
+        private static bool IsUnderEditorOnlyTag(GameObject go)
+        {
+            var t = go != null ? go.transform : null;
+            while (t != null)
+            {
+                if (t.CompareTag("EditorOnly")) return true;
+                t = t.parent;
+            }
+            return false;
         }
 
         /// <summary>
