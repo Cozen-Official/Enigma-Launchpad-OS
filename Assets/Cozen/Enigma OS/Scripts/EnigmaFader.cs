@@ -444,12 +444,30 @@ namespace Cozen.EnigmaOS
         //  FADER MODE
         // ────────────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Whether the local player is allowed to move this fader. Controller-
+        /// managed faders defer to the linked controller's whitelist; standalone
+        /// faders are unmanaged and always interactable. Used to gate the
+        /// pickup-mode path — hand-collider mode is already gated via the
+        /// controller's OnFaderTriggerEnter / hand-collider tracking flag.
+        /// </summary>
+        private bool LocalCanInteract()
+        {
+            return controller == null || controller.CanLocalUserInteract();
+        }
+
         public void SetFaderMode(int mode)
         {
             if (mode == 1) // Pickup mode
             {
-                if (vrcPickup != null) vrcPickup.pickupable = true;
-                if (faderRigidbody != null) faderRigidbody.isKinematic = false;
+                // Whitelist gate: only authorized local players get a grabbable
+                // pickup. SetFaderMode runs per-client (on toggle and in
+                // OnDeserialization), so each client evaluates its OWN
+                // authorization — unauthorized players keep a frozen,
+                // non-pickupable handle even while the world is in pickup mode.
+                bool authorized = LocalCanInteract();
+                if (vrcPickup != null) vrcPickup.pickupable = authorized;
+                if (faderRigidbody != null) faderRigidbody.isKinematic = !authorized;
                 // Disable whichever hand colliders this fader owns (could be own or none)
                 if (leftHandCollider  != null) leftHandCollider.SetActive(false);
                 if (rightHandCollider != null) rightHandCollider.SetActive(false);
@@ -600,7 +618,14 @@ namespace Cozen.EnigmaOS
         //  PICKUP EVENTS
         // ────────────────────────────────────────────────────────────────────────
 
-        public override void OnPickup() { _isPickupHeld = true; }
+        public override void OnPickup()
+        {
+            // Whitelist gate: an unauthorized player who somehow grabs the handle
+            // (e.g. a race, or was de-authorized after SetFaderMode ran) never
+            // drives the fader — Update() only runs the pickup loop when held.
+            if (!LocalCanInteract()) return;
+            _isPickupHeld = true;
+        }
 
         public override void OnDrop()
         {
@@ -611,6 +636,17 @@ namespace Cozen.EnigmaOS
             {
                 faderRigidbody.velocity        = Vector3.zero;
                 faderRigidbody.angularVelocity = Vector3.zero;
+            }
+
+            // Whitelist gate: unauthorized players never broadcast a value. Snap
+            // the handle back to the last authoritative synced position (so their
+            // local drag leaves no trace) and skip the ownership steal + sync.
+            if (!LocalCanInteract())
+            {
+                if (_syncedSliderPosition != Vector3.zero)
+                    transform.localPosition = _syncedSliderPosition;
+                transform.localRotation = Quaternion.identity;
+                return;
             }
 
             // Constrain final position to the fader axis and reset rotation
@@ -684,6 +720,12 @@ namespace Cozen.EnigmaOS
 
         private void UpdatePickupModePosition()
         {
+            // Authoritative whitelist gate for the continuous pickup-drag sync:
+            // even if an unauthorized client forced _isPickupHeld, it never takes
+            // ownership or serializes a value change. Re-checked per frame so a
+            // player de-authorized mid-hold stops affecting the fader immediately.
+            if (!LocalCanInteract()) return;
+
             float curAxisPos = GetAxisPosition(transform.localPosition);
             float clampedPos = Mathf.Clamp(curAxisPos, _bottomBound, _topBound);
             Vector3 constrained = SetAxisValue(_initialLocalPosition, clampedPos);
