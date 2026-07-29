@@ -2361,23 +2361,6 @@ namespace Cozen.EnigmaOS.Editor
         /// Enables all shader_feature_local keywords required by the given set of
         /// property names on the material. Returns the number of keywords enabled.
         /// </summary>
-        /// <summary>
-        /// Sections whose rendering is gated by the shader keyword ALONE — no
-        /// property the runtime (or our baseline fixups) writes can hide them.
-        /// Mochie fog is the confirmed case: ApplyFog sits behind
-        /// <c>#if FOG_ENABLED</c> (= _FOG_ON) and nothing in the shader ever
-        /// reads the <c>_Fog</c> toggle property, so a material shipped with
-        /// _FOG_ON hot renders a permanent fog sphere in the uploaded world that
-        /// play mode never shows (play-mode entry runs the value-honest Mochie
-        /// keyword sync; builds intentionally skip it for variant preservation).
-        /// For these sections the material author's toggle value is the only
-        /// safe authority: the keyword ships exactly as the toggle says, both
-        /// directions. Effects buttons for such sections adjust values (e.g.
-        /// fog radius) and only function when the author enabled the section.
-        /// </summary>
-        private static readonly HashSet<string> kKeywordOnlySectionKeywords =
-            new HashSet<string> { "_FOG_ON" };
-
         public static int EnableRequiredKeywords(Material material, HashSet<string> usedPropertyNames)
         {
             if (material == null || material.shader == null || usedPropertyNames == null)
@@ -2386,40 +2369,17 @@ namespace Cozen.EnigmaOS.Editor
             var map = GetShaderFeatureMap(material.shader);
             if (map == null || map.Count == 0) return 0;
 
-            var processed = new HashSet<string>();
-            int enabledCount = 0;
+            var enabled = new HashSet<string>();
             foreach (string prop in usedPropertyNames)
             {
                 if (map.TryGetValue(prop, out var info) && info.keyword != null
-                    && !processed.Contains(info.keyword))
+                    && !enabled.Contains(info.keyword))
                 {
-                    processed.Add(info.keyword);
-
-                    if (kKeywordOnlySectionKeywords.Contains(info.keyword))
-                    {
-                        // Keyword-only section: honor the author's toggle value
-                        // in BOTH directions (also strips a stale hot keyword
-                        // that the build-skipped sync would otherwise ship).
-                        bool authorEnabled = info.toggle != null
-                            && material.HasProperty(info.toggle)
-                            && material.GetFloat(info.toggle) >= 0.5f;
-                        if (authorEnabled)
-                        {
-                            material.EnableKeyword(info.keyword);
-                            enabledCount++;
-                        }
-                        else
-                        {
-                            material.DisableKeyword(info.keyword);
-                        }
-                        continue;
-                    }
-
                     material.EnableKeyword(info.keyword);
-                    enabledCount++;
+                    enabled.Add(info.keyword);
                 }
             }
-            return enabledCount;
+            return enabled.Count;
         }
 
         /// <summary>
@@ -2513,6 +2473,55 @@ namespace Cozen.EnigmaOS.Editor
                 if (overlayManaged && material.GetTexture("_ScreenTex") != null)
                 {
                     material.SetTexture("_ScreenTex", null);
+                    changed = true;
+                }
+
+                // (1b/2c) Fog. Unlike the value-gated sections, Mochie fog
+                //     renders on its keyword ALONE: ApplyFog sits behind
+                //     #if FOG_ENABLED (= _FOG_ON) and nothing in the shader
+                //     reads the _Fog toggle at render time, so no property
+                //     write can switch it off once the keyword is compiled in.
+                //     Visibility is values-only — and _FogColor.a is the one
+                //     value the blend math fully respects (col.a lerps toward
+                //     fogAlpha; the pass blends SrcAlpha OneMinusSrcAlpha, so
+                //     alpha 0 renders nothing).
+                //
+                //     Managed (fog buttons exist on the controller): enable the
+                //     keyword so the variant ships and the buttons work on an
+                //     untouched user material, and baseline _FogColor.a to 0 so
+                //     fog renders nothing before the runtime executor applies
+                //     the entries' values at Start(). Unmanaged: strip a stale
+                //     hot keyword unless the user authored a permanent fog on
+                //     the material themselves (_Fog == 1), mirroring the
+                //     "user-enabled permanent Zoom keeps its pass" rule.
+                bool fogManaged = managedToggles == null
+                    || managedToggles.Contains("_Fog")
+                    || managedToggles.Contains("_FogRadius")
+                    || managedToggles.Contains("_FogFade")
+                    || managedToggles.Contains("_FogColor");
+                if (fogManaged)
+                {
+                    if (!material.IsKeywordEnabled("_FOG_ON"))
+                    {
+                        material.EnableKeyword("_FOG_ON");
+                        changed = true;
+                    }
+                    if (material.HasProperty("_FogColor"))
+                    {
+                        Color fogCol = material.GetColor("_FogColor");
+                        if (fogCol.a != 0f)
+                        {
+                            fogCol.a = 0f;
+                            material.SetColor("_FogColor", fogCol);
+                            changed = true;
+                        }
+                    }
+                }
+                else if (material.IsKeywordEnabled("_FOG_ON")
+                         && material.HasProperty("_Fog")
+                         && material.GetFloat("_Fog") == 0f)
+                {
+                    material.DisableKeyword("_FOG_ON");
                     changed = true;
                 }
 
