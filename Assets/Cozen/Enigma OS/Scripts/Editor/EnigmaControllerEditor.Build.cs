@@ -263,6 +263,7 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionDefaultColorValues  = new Color[totalActions];
             for (int dc = 0; dc < totalActions; dc++) rtActionDefaultColorValues[dc] = Color.white;
             var rtActionDefaultVectorValues = new Vector4[totalActions];
+            var rtActionDefaultTextures     = new Texture[totalActions];
             var rtActionPropertyTypes    = new int[totalActions];
             var rtActionUdonTargets              = new UdonSharp.UdonSharpBehaviour[totalActions];
             var rtActionUdonEventNames           = new string[totalActions];
@@ -1164,6 +1165,9 @@ namespace Cozen.EnigmaOS.Editor
             WriteArray(so, "rtEntryActionCount",         rtEntryActionCount);
             WriteArray(so, "rtEntryIsPreset",            rtEntryIsPreset);
 
+            BakeDefaultOffTextures(rtActionDefaultTextures, rtActionPropertyTypes,
+                rtActionPropertyNames, rtActionTargetRenderers, rtActionMaterialIndices);
+
             // ── Write action arrays to executor component ──
             var executor = FindOrCreateExecutor(ctrl.gameObject);
             if (executor != null)
@@ -1185,6 +1189,7 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionDefaultFloatValues",          rtActionDefaultFloatValues);
                 WriteColorArray(exeSo, "rtActionDefaultColorValues",     rtActionDefaultColorValues);
                 WriteVector4Array(exeSo, "rtActionDefaultVectorValues",  rtActionDefaultVectorValues);
+                WriteObjectArray(exeSo, "rtActionDefaultTextures",        rtActionDefaultTextures);
                 WriteArray(exeSo, "rtActionPropertyTypes",                rtActionPropertyTypes);
                 WriteObjectArray(exeSo, "rtActionUdonTargets",            rtActionUdonTargets);
                 WriteArray(exeSo, "rtActionUdonEventNames",               rtActionUdonEventNames);
@@ -1850,6 +1855,29 @@ namespace Cozen.EnigmaOS.Editor
         }
 
         /// <summary>
+        /// Fills the OFF-state texture for every type-2 texture action: the
+        /// transparent placeholder for Mochie's _ScreenTex (ApplySST is
+        /// keyword-gated only and an unbound sampler falls back to "white",
+        /// so a null revert paints the screen white whenever another gate
+        /// effect holds the "Always" pass), null for everything else. See
+        /// EnigmaShaderHelper.GetOffTexture.
+        /// </summary>
+        private static void BakeDefaultOffTextures(Texture[] defaults, int[] propTypes,
+            string[] propNames, Renderer[] renderers, int[] matIndices)
+        {
+            for (int i = 0; i < defaults.Length; i++)
+            {
+                defaults[i] = null;
+                if (propTypes[i] != 3 || renderers[i] == null
+                    || string.IsNullOrEmpty(propNames[i])) continue;
+                Material[] mats = renderers[i].sharedMaterials;
+                int mi = matIndices[i];
+                if (mats == null || mi < 0 || mi >= mats.Length || mats[mi] == null) continue;
+                defaults[i] = EnigmaShaderHelper.GetOffTexture(mats[mi], propNames[i]);
+            }
+        }
+
+        /// <summary>
         /// Clears all rt* arrays on the executor to zero length via SerializedObject.
         /// Must be called before writing new arrays so that stale data from a previous
         /// build (e.g. deleted folders) doesn't linger.
@@ -1861,7 +1889,7 @@ namespace Cozen.EnigmaOS.Editor
                 "rtActionMaterialIndices", "rtActionMaterials", "rtActionDefaultMaterials", "rtActionPropertyNames",
                 "rtActionFloatValues", "rtActionColorValues", "rtActionVectorValues",
                 "rtActionTextures", "rtActionDefaultFloatValues", "rtActionDefaultColorValues",
-                "rtActionDefaultVectorValues", "rtActionPropertyTypes", "rtActionUdonTargets",
+                "rtActionDefaultVectorValues", "rtActionDefaultTextures", "rtActionPropertyTypes", "rtActionUdonTargets",
                 "rtActionUdonEventNames", "rtActionUdonVariableNames", "rtActionUdonVariableTypes",
                 "rtActionUdonVariableStringValues", "rtActionDelaySeconds", "rtActionDelayOnDeactivate",
                 "rtActionLerpSeconds", "rtActionLerpOnDeactivate",
@@ -1999,6 +2027,7 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionDefaultColorValues  = new Color[totalActions];
             for (int dc = 0; dc < totalActions; dc++) rtActionDefaultColorValues[dc] = Color.white;
             var rtActionDefaultVectorValues = new Vector4[totalActions];
+            var rtActionDefaultTextures     = new Texture[totalActions];
             var rtActionPropertyTypes    = new int[totalActions];
             var rtActionUdonTargets              = new UdonSharp.UdonSharpBehaviour[totalActions];
             var rtActionUdonEventNames           = new string[totalActions];
@@ -2261,6 +2290,9 @@ namespace Cozen.EnigmaOS.Editor
             else
                 rtButtonType = 4;
 
+            BakeDefaultOffTextures(rtActionDefaultTextures, rtActionPropertyTypes,
+                rtActionPropertyNames, rtActionTargetRenderers, rtActionMaterialIndices);
+
             // ── Write action arrays to executor component ──
             var executor = FindOrCreateExecutor(btn.gameObject);
             if (executor != null)
@@ -2282,6 +2314,7 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionDefaultFloatValues",          rtActionDefaultFloatValues);
                 WriteColorArray(exeSo, "rtActionDefaultColorValues",     rtActionDefaultColorValues);
                 WriteVector4Array(exeSo, "rtActionDefaultVectorValues",  rtActionDefaultVectorValues);
+                WriteObjectArray(exeSo, "rtActionDefaultTextures",        rtActionDefaultTextures);
                 WriteArray(exeSo, "rtActionPropertyTypes",                rtActionPropertyTypes);
                 WriteObjectArray(exeSo, "rtActionUdonTargets",            rtActionUdonTargets);
                 WriteArray(exeSo, "rtActionUdonEventNames",               rtActionUdonEventNames);
