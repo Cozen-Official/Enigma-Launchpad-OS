@@ -1783,7 +1783,13 @@ namespace Cozen.EnigmaOS.Editor
                     else if (propType == 2)
                         mat.SetVector(action.propertyName, active ? action.propertyVectorValue : action.defaultVectorValue);
                     else if (propType == 3)
-                        mat.SetTexture(action.propertyName, active ? action.targetTexture : null);
+                        // Off state binds the transparent placeholder for
+                        // Mochie _ScreenTex (unbound samplers fall back to
+                        // "white" and ApplySST is keyword-gated only), null
+                        // for every other property.
+                        mat.SetTexture(action.propertyName, active
+                            ? action.targetTexture
+                            : EnigmaShaderHelper.GetOffTexture(mat, action.propertyName));
 
                     // Enable keyword when the toggle property goes non-zero.
                     // Never disable — shader_feature_local variants may be

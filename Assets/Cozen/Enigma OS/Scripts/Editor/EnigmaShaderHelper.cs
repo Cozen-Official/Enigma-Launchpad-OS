@@ -2455,13 +2455,18 @@ namespace Cozen.EnigmaOS.Editor
                     changed = true;
                 }
 
-                // (2) Baseline: "Always" pass off, _SST off, no texture bound.
-                //     The runtime executor flips the pass + _SST on when an
-                //     Overlay button is pressed. If any of these is left in a
-                //     "hot" state (pass enabled + keyword enabled + texture
-                //     bound), Mochie's ApplySST runs unconditionally and paints
-                //     the screen in the sampled texture color even when _SST=0,
-                //     because the shader does not value-gate ApplySST on _SST.
+                // (2) Baseline: "Always" pass off, _SST off, transparent
+                //     placeholder bound to _ScreenTex. The runtime executor
+                //     flips the pass + _SST on when an Overlay button is
+                //     pressed. Mochie's ApplySST runs on the keyword ALONE
+                //     (the shader does not value-gate it on _SST), and an
+                //     UNBOUND _ScreenTex samples the shader's "white" default
+                //     — so with the keyword shipped enabled (see (1)), any
+                //     OTHER gate effect enabling the shared pass (a Zoom
+                //     button, a Letterbox fader) would paint the screen solid
+                //     white. The placeholder's alpha is 0, which zeroes
+                //     ApplySST's blend weight and makes it a no-op no matter
+                //     what state the pass and keyword are in.
                 //     Skipped entirely when Enigma manages no gate effect on
                 //     this material — a user-enabled permanent Zoom/Letterbox
                 //     keeps its pass.
@@ -2470,10 +2475,14 @@ namespace Cozen.EnigmaOS.Editor
                     material.SetShaderPassEnabled("Always", false);
                     changed = true;
                 }
-                if (overlayManaged && material.GetTexture("_ScreenTex") != null)
+                if (overlayManaged)
                 {
-                    material.SetTexture("_ScreenTex", null);
-                    changed = true;
+                    Texture clearTex = GetClearTexture();
+                    if (material.GetTexture("_ScreenTex") != clearTex)
+                    {
+                        material.SetTexture("_ScreenTex", clearTex);
+                        changed = true;
+                    }
                 }
 
                 // (1b/2c) Fog. Unlike the value-gated sections, Mochie fog
@@ -2523,6 +2532,40 @@ namespace Cozen.EnigmaOS.Editor
                 {
                     material.DisableKeyword("_FOG_ON");
                     changed = true;
+                }
+
+                // (1c) Zoom. The Always-pass zoom feature is keyword-gated
+                //     (_ZOOM_ON / _ZOOM_RGB_ON) but — unlike overlay — fully
+                //     value-gated inside the pass (GetZoom scales by _ZoomStr,
+                //     which the zeroed baseline keeps at 0), so the keyword is
+                //     safe to ship enabled. Enable the Basic variant when
+                //     Enigma manages zoom so it survives build-time stripping
+                //     and the buttons work on an untouched user material.
+                //
+                //     Zoom is also the one Mochie section whose distance
+                //     falloff DEFAULTS to the local 3–4.5 m range
+                //     (_ZoomUseGlobal=0) — a fresh material would only zoom
+                //     within a few meters of the FX object. Switch a managed
+                //     material to the global range so zoom reaches as far as
+                //     every sibling effect.
+                bool zoomManaged = material.HasProperty("_ZoomStr")
+                    && (managedToggles == null
+                        || managedToggles.Contains("_Zoom")
+                        || managedToggles.Contains("_ZoomStr"));
+                if (zoomManaged)
+                {
+                    if (!material.IsKeywordEnabled("_ZOOM_ON")
+                        && !material.IsKeywordEnabled("_ZOOM_RGB_ON"))
+                    {
+                        material.EnableKeyword("_ZOOM_ON");
+                        changed = true;
+                    }
+                    if (material.HasProperty("_ZoomUseGlobal")
+                        && material.GetInt("_ZoomUseGlobal") != 1)
+                    {
+                        material.SetInt("_ZoomUseGlobal", 1);
+                        changed = true;
+                    }
                 }
 
                 // (2b) Zero the Enigma-managed Mochie section master-toggles.
@@ -2576,6 +2619,44 @@ namespace Cozen.EnigmaOS.Editor
                     Debug.Log($"[EnigmaShaderHelper] Reset Mochie SFX baseline on '{material.name}' (managed toggles=0, Always pass off where gate-managed; section keywords stay enabled for variant inclusion — call SyncMochieKeywordsToValues post-build to clean up).", material);
                 }
             }
+        }
+
+        /// <summary>
+        /// The shipped 100% transparent 4×4 placeholder texture
+        /// (Textures/EnigmaClear.png). Bound to Mochie's _ScreenTex whenever
+        /// the overlay is off: ApplySST blends by the sampled ALPHA, so an
+        /// all-zero texture makes it a no-op even while the keyword and the
+        /// shared "Always" pass are hot (which zoom/letterbox legitimately
+        /// cause). Null when the asset is missing — callers degrade to the
+        /// pre-placeholder null-bind behaviour.
+        /// </summary>
+        private static Texture2D _clearTexture;
+        public static Texture2D GetClearTexture()
+        {
+            if (_clearTexture != null) return _clearTexture;
+            foreach (string guid in AssetDatabase.FindAssets("EnigmaClear t:Texture2D"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (Path.GetFileNameWithoutExtension(path) != "EnigmaClear") continue;
+                _clearTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (_clearTexture != null) return _clearTexture;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The texture a type-2 texture action should write in its OFF state:
+        /// the transparent placeholder for Mochie's _ScreenTex (see
+        /// <see cref="GetClearTexture"/>), null for every other property.
+        /// Shared by the edit-mode default-state pass and the build bake of
+        /// EnigmaExecutor.rtActionDefaultTextures.
+        /// </summary>
+        public static Texture GetOffTexture(Material material, string propertyName)
+        {
+            if (material == null || material.shader == null) return null;
+            if (propertyName != "_ScreenTex") return null;
+            if (!IsMochieScreenFX(material.shader.name)) return null;
+            return GetClearTexture();
         }
 
         /// <summary>

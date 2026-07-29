@@ -55,6 +55,14 @@ namespace Cozen.EnigmaOS
         [HideInInspector] public float[]  rtActionDefaultFloatValues  = new float[0];
         [HideInInspector] public Color[]  rtActionDefaultColorValues  = new Color[0];
         [HideInInspector] public Vector4[] rtActionDefaultVectorValues = new Vector4[0];
+        // Off-state texture for type 2 texture actions. Null for almost every
+        // property — the exception is Mochie's _ScreenTex, where the build
+        // bakes a 100% transparent placeholder: the overlay's ApplySST is
+        // keyword-gated only (never value-gated), and an UNBOUND sampler
+        // falls back to the shader's "white" default. Reverting to None while
+        // another gate effect (Zoom/Letterbox) holds the "Always" pass would
+        // paint the whole screen white.
+        [HideInInspector] public Texture[] rtActionDefaultTextures = new Texture[0];
         [HideInInspector] public int[]   rtActionPropertyTypes       = new int[0];
         [HideInInspector] public UdonSharpBehaviour[] rtActionUdonTargets = new UdonSharpBehaviour[0];
         [HideInInspector] public string[] rtActionUdonEventNames     = new string[0];
@@ -770,7 +778,12 @@ namespace Cozen.EnigmaOS
                         {
                             Texture tex = rtActionTextures != null && a < rtActionTextures.Length
                                           ? rtActionTextures[a] : null;
-                            mat.SetTexture(propName, active ? tex : null);
+                            // Off state uses the baked default texture — the
+                            // transparent placeholder for Mochie _ScreenTex
+                            // (see rtActionDefaultTextures), null elsewhere.
+                            Texture offTex = rtActionDefaultTextures != null && a < rtActionDefaultTextures.Length
+                                          ? rtActionDefaultTextures[a] : null;
+                            mat.SetTexture(propName, active ? tex : offTex);
                         }
 
                         // If this action IS the keyword toggle for its group,
