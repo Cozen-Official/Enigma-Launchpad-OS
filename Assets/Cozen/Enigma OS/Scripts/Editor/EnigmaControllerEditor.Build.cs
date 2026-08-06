@@ -286,6 +286,7 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionKeywords       = new string[totalActions];
             var rtActionKeywordToggles = new string[totalActions];
             var rtActionIsKeywordToggle = new bool[totalActions];
+            var rtActionKeywordHard    = new bool[totalActions];
             var rtActionNonStateful    = new bool[totalActions];
             var rtActionUseStep        = new bool[totalActions];
             var rtActionAlwaysGate     = new int[totalActions];
@@ -697,6 +698,8 @@ namespace Cozen.EnigmaOS.Editor
                                         rtActionKeywords[actionIdx]       = vkw != null ? vkw : kwInfo.keyword;
                                         rtActionKeywordToggles[actionIdx] = kwInfo.toggleProp;
                                         rtActionIsKeywordToggle[actionIdx] = true;
+                                        rtActionKeywordHard[actionIdx] = EnigmaShaderHelper.IsHardGatedKeyword(
+                                            mats[mi].shader, rtActionKeywords[actionIdx]);
                                     }
                                 }
 
@@ -787,7 +790,7 @@ namespace Cozen.EnigmaOS.Editor
                                 rtActionPropertyNames, rtActionFloatValues, rtActionDefaultFloatValues,
                                 rtActionPropertyTypes, rtActionNonStateful,
                                 rtActionKeywords, rtActionKeywordToggles, rtActionIsKeywordToggle,
-                                rtActionAlwaysGate);
+                                rtActionAlwaysGate, rtActionKeywordHard);
                             actionIdx++;
                         }
                     }
@@ -1216,6 +1219,7 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionKeywords",              rtActionKeywords);
                 WriteArray(exeSo, "rtActionKeywordToggles",        rtActionKeywordToggles);
                 WriteArray(exeSo, "rtActionIsKeywordToggle",       rtActionIsKeywordToggle);
+                WriteArray(exeSo, "rtActionKeywordHard",           rtActionKeywordHard);
                 WriteArray(exeSo, "rtActionNonStateful",           rtActionNonStateful);
                 WriteArray(exeSo, "rtActionUseStep",               rtActionUseStep);
                 WriteArray(exeSo, "rtActionAlwaysGate",            rtActionAlwaysGate);
@@ -1628,7 +1632,8 @@ namespace Cozen.EnigmaOS.Editor
             float[] rtActionFloatValues, float[] rtActionDefaultFloatValues,
             int[] rtActionPropertyTypes, bool[] rtActionNonStateful,
             string[] rtActionKeywords, string[] rtActionKeywordToggles,
-            bool[] rtActionIsKeywordToggle, int[] rtActionAlwaysGate)
+            bool[] rtActionIsKeywordToggle, int[] rtActionAlwaysGate,
+            bool[] rtActionKeywordHard)
         {
             rtActionTypes[idx]              = 2;
             rtActionTargetRenderers[idx]    = renderer;
@@ -1657,6 +1662,11 @@ namespace Cozen.EnigmaOS.Editor
                 rtActionKeywords[idx]        = vkw != null ? vkw : kwInfo.keyword;
                 rtActionKeywordToggles[idx]  = kwInfo.toggleProp;
                 rtActionIsKeywordToggle[idx] = true;
+                // Hard-gated keywords (Mochie _FOG_ON) get released by the
+                // runtime when this synthetic's entry deactivates — the flag
+                // is what routes the deactivation through ReleaseHardKeyword.
+                rtActionKeywordHard[idx] = EnigmaShaderHelper.IsHardGatedKeyword(
+                    mat.shader, rtActionKeywords[idx]);
             }
         }
 
@@ -1897,7 +1907,7 @@ namespace Cozen.EnigmaOS.Editor
                 "rtActionTeleportRotations", "rtActionTeleportDestinations",
                 "rtActionStatMetrics", "rtActionHasCondition", "rtActionConditionEntryIndex",
                 "rtActionConditionRequireActive", "rtActionColorSelectorRoles",
-                "rtActionVariantSelectorRoles", "rtActionKeywords", "rtActionKeywordToggles", "rtActionIsKeywordToggle", "rtActionNonStateful", "rtActionUseStep", "rtActionAlwaysGate",
+                "rtActionVariantSelectorRoles", "rtActionKeywords", "rtActionKeywordToggles", "rtActionIsKeywordToggle", "rtActionKeywordHard", "rtActionNonStateful", "rtActionUseStep", "rtActionAlwaysGate",
                 "rtActionAutoChangeGroupIds",
                 "rtActionAutoChangeIntervals", "rtAutoChangeGroupRandom",
                 "rtCondColorStart", "rtCondColorCount", "rtCondColorConditions",
@@ -2053,6 +2063,7 @@ namespace Cozen.EnigmaOS.Editor
             var rtActionKeywords                 = new string[totalActions];
             var rtActionKeywordToggles           = new string[totalActions];
             var rtActionIsKeywordToggle          = new bool[totalActions];
+            var rtActionKeywordHard              = new bool[totalActions];
             var rtActionNonStateful              = new bool[totalActions];
             var rtActionUseStep                  = new bool[totalActions];
             var rtActionAlwaysGate               = new int[totalActions];
@@ -2125,6 +2136,8 @@ namespace Cozen.EnigmaOS.Editor
                             rtActionKeywords[idx]       = vkw != null ? vkw : kwInfo.keyword;
                             rtActionKeywordToggles[idx] = kwInfo.toggleProp;
                             rtActionIsKeywordToggle[idx] = true;
+                            rtActionKeywordHard[idx] = EnigmaShaderHelper.IsHardGatedKeyword(
+                                mats[mi].shader, rtActionKeywords[idx]);
                         }
 
                         // Mochie "Always" pass gate (_Zoom/_SST/_Letterbox).
@@ -2223,7 +2236,7 @@ namespace Cozen.EnigmaOS.Editor
                         rtActionPropertyNames, rtActionFloatValues, rtActionDefaultFloatValues,
                         rtActionPropertyTypes, rtActionNonStateful,
                         rtActionKeywords, rtActionKeywordToggles, rtActionIsKeywordToggle,
-                        rtActionAlwaysGate);
+                        rtActionAlwaysGate, rtActionKeywordHard);
                     syntheticIdx++;
                 }
             }
@@ -2337,6 +2350,7 @@ namespace Cozen.EnigmaOS.Editor
                 WriteArray(exeSo, "rtActionKeywords",                     rtActionKeywords);
                 WriteArray(exeSo, "rtActionKeywordToggles",               rtActionKeywordToggles);
                 WriteArray(exeSo, "rtActionIsKeywordToggle",              rtActionIsKeywordToggle);
+                WriteArray(exeSo, "rtActionKeywordHard",                  rtActionKeywordHard);
                 WriteArray(exeSo, "rtActionNonStateful",                  rtActionNonStateful);
                 WriteArray(exeSo, "rtActionUseStep",                      rtActionUseStep);
                 WriteArray(exeSo, "rtActionAlwaysGate",                   rtActionAlwaysGate);
