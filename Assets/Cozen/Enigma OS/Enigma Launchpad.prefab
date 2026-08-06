@@ -132,7 +132,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6211973296792291580
 Transform:
@@ -363,7 +363,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2369501793474862719
 Transform:
@@ -898,6 +898,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -982,6 +985,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 04000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -995,6 +999,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -1012,6 +1018,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -1431,7 +1438,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3476332238446847105
 Transform:
@@ -1546,7 +1553,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &523134570657262384
 Transform:
@@ -1849,6 +1856,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -1933,6 +1943,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 06000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -1946,6 +1957,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -1963,6 +1976,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -2238,6 +2252,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -2322,6 +2339,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 01000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -2335,6 +2353,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -2352,6 +2372,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -2577,6 +2598,14 @@ MonoBehaviour:
   rtFaderLinkTargetsUdon: 
   rtFaderLinkUdonBehaviours: []
   rtFaderLinkUdonVariableNames: []
+  rtFaderLinkPropertyIsInt: 
+  rtFaderLinkAlwaysGate: 
+  rtFaderLinkKeywords: []
+  rtStaticFaderPropertyIsInt: 
+  rtStaticFaderAlwaysGate: 
+  rtStaticFaderKeywords: []
+  rtOtherControllers: []
+  rtGateHolderButtons: []
   rtStepAmounts: []
   rtStepMinValues: []
   rtStepMaxValues: []
@@ -2595,6 +2624,7 @@ MonoBehaviour:
   rtVariantItemColorValues: []
   rtVariantItemVectorValues: []
   rtVariantItemTextures: []
+  rtVariantItemKeywords: []
   rtVariantLinkedEntry: 
   rtEntryIsPreset: 
   rtPresetScopes: 
@@ -2706,6 +2736,7 @@ MonoBehaviour:
   rtActionDefaultFloatValues: []
   rtActionDefaultColorValues: []
   rtActionDefaultVectorValues: []
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 
   rtActionUdonTargets: []
   rtActionUdonEventNames: []
@@ -2714,6 +2745,8 @@ MonoBehaviour:
   rtActionUdonVariableStringValues: []
   rtActionDelaySeconds: []
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 
   rtActionTransformSpaces: 
   rtActionTeleportRotations: []
@@ -2727,6 +2760,7 @@ MonoBehaviour:
   rtActionKeywords: []
   rtActionKeywordToggles: []
   rtActionIsKeywordToggle: 
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 
   rtActionVariantSelectorRoles: 
@@ -2777,7 +2811,441 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5dd8c80393a92941a11e8e6a983f514, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  folders: []
+  folders:
+  - name: New Folder 1
+    entries:
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
+    - isEmpty: 1
+      label: New Entry
+      buttonType: 0
+      onByDefault: 0
+      useExclusiveGroup: 0
+      exclusiveGroup: 
+      exclusiveOff: 0
+      useAutoChangeGroup: 0
+      autoChangeGroup: 
+      useExpire: 0
+      expireSeconds: 5
+      actions: []
+      assignFader: 0
+      faderLink:
+        faderName: 
+        targetRenderer: {fileID: 0}
+        materialIndex: 0
+        propertyName: 
+        propertyType: 0
+        minValue: 0
+        maxValue: 1
+        defaultValue: 0
+        defaultColor: {r: 1, g: 1, b: 1, a: 1}
+        colorIndicatorEnabled: 0
+        indicatorColor: {r: 1, g: 1, b: 1, a: 1}
+        indicatorConditional: 0
+        targetsSlider: 0
+        targetSliders: []
+        sliderDirectionsReversed: 
+        targetsSkybox: 0
+        skyboxMaterial: {fileID: 0}
+        targetsUdon: 0
+        targetUdonBehaviours: []
+        udonVariableName: 
+        faderLinkId: 0
+      faderLinks: []
+      useCustomColor: 0
+      customColor: {r: 1, g: 1, b: 1, a: 1}
+      useConditionalColor: 0
+      condColorSourceType: 0
+      condColorRenderer: {fileID: 0}
+      condColorMaterialIndex: 0
+      condColorPropertyName: 
+      condColorTargetsSkybox: 0
+      condColorSkyboxMaterial: {fileID: 0}
+      condColorUdonTarget: {fileID: 0}
+      condColorUdonVariableName: 
+      condColorRules: []
 --- !u!1 &3310722331982392980
 GameObject:
   m_ObjectHideFlags: 0
@@ -2794,7 +3262,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &8871126723792257285
 Transform:
@@ -3393,7 +3861,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3524520826733048998
 Transform:
@@ -3894,6 +4362,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -3964,6 +4435,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -4059,6 +4533,7 @@ MonoBehaviour:
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0000000000000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -4077,6 +4552,8 @@ MonoBehaviour:
   - 0
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 0000000000000000
   rtActionTransformSpaces: 0000000000000000
   rtActionTeleportRotations:
@@ -4098,6 +4575,7 @@ MonoBehaviour:
   - 
   - 
   rtActionIsKeywordToggle: 0000
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 0000000000000000
   rtActionVariantSelectorRoles: 0000000000000000
@@ -4350,6 +4828,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -4434,6 +4915,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -4447,6 +4929,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -4464,6 +4948,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -4519,7 +5004,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &1700359752296048853
 Transform:
@@ -4634,7 +5119,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &8184474834331759056
 Transform:
@@ -4883,7 +5368,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &5357950368717218696
 Transform:
@@ -5270,6 +5755,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -5354,6 +5842,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -5367,6 +5856,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -5384,6 +5875,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -5480,7 +5972,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3093632070750759066
 Transform:
@@ -6086,6 +6578,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -6170,6 +6665,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 03000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -6183,6 +6679,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -6200,6 +6698,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -7265,7 +7764,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6985013884459570370
 Transform:
@@ -7980,7 +8479,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &7516577222546476582
 Transform:
@@ -8063,7 +8562,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2101790588044999887
 Transform:
@@ -8146,7 +8645,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2726509080253248764
 Transform:
@@ -8427,7 +8926,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6094026049838910465
 Transform:

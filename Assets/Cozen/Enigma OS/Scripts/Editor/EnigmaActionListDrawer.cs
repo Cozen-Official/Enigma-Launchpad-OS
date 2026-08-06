@@ -1374,9 +1374,21 @@ namespace Cozen.EnigmaOS.Editor
                                     "enabling the effect itself (e.g. Outline power-level buttons)."),
                                 action.alsoSetEffectToggle);
                             if (action.alsoSetEffectToggle)
+                            {
+                                // Hard-gated toggles (Mochie _Fog) render on
+                                // their keyword alone — the runtime releases
+                                // the keyword when the entry turns off, so
+                                // the hint reflects the two-way behaviour.
+                                var togKw = EnigmaShaderHelper.GetPropertyKeywordInfo(autoMat, togProp);
+                                bool hardTog = togKw.keyword != null
+                                    && EnigmaShaderHelper.IsHardGatedKeyword(
+                                        autoMat.shader, togKw.keyword);
                                 EditorGUILayout.LabelField(" ",
-                                    $"→ Will also set: {togProp} = 1",
+                                    hardTog
+                                        ? $"→ Will also set: {togProp} = 1 (effect keyword released on off)"
+                                        : $"→ Will also set: {togProp} = 1",
                                     EditorStyles.miniLabel);
+                            }
                         }
                     }
                     break;

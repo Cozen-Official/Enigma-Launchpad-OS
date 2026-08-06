@@ -708,7 +708,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &1398234593417344522
 Transform:
@@ -1073,7 +1073,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6028128636019491139
 Transform:
@@ -3589,6 +3589,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -3695,6 +3698,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -3708,6 +3712,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -3725,6 +3731,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -5032,7 +5039,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6389795147209224099
 Transform:
@@ -7001,7 +7008,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2869504321082725252
 Transform:
@@ -8951,6 +8958,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -9035,6 +9045,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 06000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -9048,6 +9059,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -9065,6 +9078,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -9957,6 +9971,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -10041,6 +10058,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -10054,6 +10072,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -10071,6 +10091,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -10665,6 +10686,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -10749,6 +10773,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -10762,6 +10787,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -10779,6 +10806,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -16091,6 +16119,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -16175,6 +16206,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 01000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -16188,6 +16220,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -16205,6 +16239,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -16919,6 +16954,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -17003,6 +17041,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -17016,6 +17055,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -17033,6 +17074,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -18650,7 +18692,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &9054564259874472108
 Transform:
@@ -19525,7 +19567,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6740102354558547754
 Transform:
@@ -22466,7 +22508,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &430330225534420283
 Transform:
@@ -23643,7 +23685,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2812063182079737040
 Transform:
@@ -25246,6 +25288,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -25636,7 +25681,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &4852816905062760443
 Transform:
@@ -28303,7 +28348,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &567135711031467089
 Transform:
@@ -34978,6 +35023,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -35084,6 +35132,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -35097,6 +35146,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -35114,6 +35165,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -35901,6 +35953,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -36155,6 +36210,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -37140,6 +37198,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -38843,6 +38904,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -38949,6 +39013,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -38962,6 +39027,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -38979,6 +39046,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -39396,6 +39464,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -39502,6 +39573,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -39515,6 +39587,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -39532,6 +39606,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -40880,7 +40955,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &4224582909874727650
 Transform:
@@ -44560,6 +44635,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -44644,6 +44722,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 04000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -44657,6 +44736,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -44674,6 +44755,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -45357,6 +45439,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -46483,7 +46568,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &7741784940752317795
 Transform:
@@ -50192,7 +50277,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &7409019309550880234
 Transform:
@@ -53436,6 +53521,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -53542,6 +53630,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -53555,6 +53644,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -53572,6 +53663,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -54552,7 +54644,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6676327780519137726
 Transform:
@@ -55714,7 +55806,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &4952624302195823491
 Transform:
@@ -60212,6 +60304,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -60318,6 +60413,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -60331,6 +60427,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -60348,6 +60446,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -61365,6 +61464,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -61777,6 +61879,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -61883,6 +61988,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -61896,6 +62002,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -61913,6 +62021,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -62491,6 +62600,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -62747,7 +62859,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6047881620087862047
 Transform:
@@ -63192,6 +63304,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -63298,6 +63413,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -63311,6 +63427,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -63328,6 +63446,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -64682,6 +64801,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -64766,6 +64888,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -64779,6 +64902,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -64796,6 +64921,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -65183,7 +65309,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2401878932690376107
 Transform:
@@ -65748,7 +65874,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &5106050479220020761
 Transform:
@@ -66211,6 +66337,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -66295,6 +66424,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 00000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -66308,6 +66438,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -66325,6 +66457,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -67290,7 +67423,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3677995870136003460
 Transform:
@@ -69124,7 +69257,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3508618905285561414
 Transform:
@@ -70331,6 +70464,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -70437,6 +70573,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 0c000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -70450,6 +70587,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -70467,6 +70606,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -71305,6 +71445,14 @@ MonoBehaviour:
   rtFaderLinkTargetsUdon: 
   rtFaderLinkUdonBehaviours: []
   rtFaderLinkUdonVariableNames: []
+  rtFaderLinkPropertyIsInt: 
+  rtFaderLinkAlwaysGate: 
+  rtFaderLinkKeywords: []
+  rtStaticFaderPropertyIsInt: 
+  rtStaticFaderAlwaysGate: 
+  rtStaticFaderKeywords: []
+  rtOtherControllers: []
+  rtGateHolderButtons: []
   rtStepAmounts: []
   rtStepMinValues: []
   rtStepMaxValues: []
@@ -71323,6 +71471,7 @@ MonoBehaviour:
   rtVariantItemColorValues: []
   rtVariantItemVectorValues: []
   rtVariantItemTextures: []
+  rtVariantItemKeywords: []
   rtVariantLinkedEntry: 
   rtEntryIsPreset: 
   rtPresetScopes: 
@@ -71446,6 +71595,7 @@ MonoBehaviour:
   rtActionDefaultFloatValues: []
   rtActionDefaultColorValues: []
   rtActionDefaultVectorValues: []
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 
   rtActionUdonTargets: []
   rtActionUdonEventNames: []
@@ -71454,6 +71604,8 @@ MonoBehaviour:
   rtActionUdonVariableStringValues: []
   rtActionDelaySeconds: []
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 
   rtActionTransformSpaces: 
   rtActionTeleportRotations: []
@@ -71467,6 +71619,7 @@ MonoBehaviour:
   rtActionKeywords: []
   rtActionKeywordToggles: []
   rtActionIsKeywordToggle: 
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 
   rtActionVariantSelectorRoles: 
@@ -72225,6 +72378,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -72309,6 +72465,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 07000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -72322,6 +72479,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -72339,6 +72498,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -73966,6 +74126,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -75713,6 +75876,9 @@ MonoBehaviour:
   defaultValue: 0
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   isBound: 0
+  boundPropertyIsInt: 0
+  boundAlwaysGate: -1
+  boundGateKeyword: 
   sliderDirectionsReversed: 
   targetUdonBehaviours: []
   udonVariableName: 
@@ -78463,6 +78629,7 @@ MonoBehaviour:
   rtActionDefaultFloatValues: []
   rtActionDefaultColorValues: []
   rtActionDefaultVectorValues: []
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 
   rtActionUdonTargets: []
   rtActionUdonEventNames: []
@@ -78471,6 +78638,8 @@ MonoBehaviour:
   rtActionUdonVariableStringValues: []
   rtActionDelaySeconds: []
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 
   rtActionTransformSpaces: 
   rtActionTeleportRotations: []
@@ -78484,6 +78653,7 @@ MonoBehaviour:
   rtActionKeywords: []
   rtActionKeywordToggles: []
   rtActionIsKeywordToggle: 
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 
   rtActionVariantSelectorRoles: 
@@ -81144,6 +81314,9 @@ MonoBehaviour:
     useDelay: 0
     delaySeconds: 1
     delayOnDeactivate: 0
+    useLerp: 0
+    lerpSeconds: 1
+    lerpOnDeactivate: 0
     paletteColors: []
     colorTargetRenderer: {fileID: 0}
     colorMaterialIndex: 0
@@ -81228,6 +81401,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 1, a: 1}
   rtActionDefaultVectorValues:
   - {x: 0, y: 0, z: 0, w: 0}
+  rtActionDefaultTextures: []
   rtActionPropertyTypes: 03000000
   rtActionUdonTargets:
   - {fileID: 0}
@@ -81241,6 +81415,8 @@ MonoBehaviour:
   rtActionDelaySeconds:
   - 0
   rtActionDelayOnDeactivate: 
+  rtActionLerpSeconds: []
+  rtActionLerpOnDeactivate: 
   rtActionUdonEventScopes: 00000000
   rtActionTransformSpaces: 00000000
   rtActionTeleportRotations:
@@ -81258,6 +81434,7 @@ MonoBehaviour:
   rtActionKeywordToggles:
   - 
   rtActionIsKeywordToggle: 00
+  rtActionKeywordHard: 
   rtActionAlwaysGate: 
   rtActionColorSelectorRoles: 00000000
   rtActionVariantSelectorRoles: 00000000
@@ -81345,7 +81522,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3931026486680911000
 Transform:

@@ -399,6 +399,67 @@ namespace Cozen.EnigmaOS
         }
 
         /// <summary>
+        /// True when any currently-active entry on this controller or a peer
+        /// controller owns an action whose baked keyword is <paramref name="kw"/>
+        /// on the same renderer/material — the hard-gated-keyword mirror of
+        /// <see cref="ComputeAlwaysPassHeld"/>. Consulted by the executor
+        /// before releasing a hard keyword (Mochie _FOG_ON) so one fog entry
+        /// turning off doesn't strip the keyword while another still needs
+        /// it. Standalone buttons are not consulted: a standalone
+        /// hard-keyword button's own executor handles its own deactivation,
+        /// and sharing one hard-gated effect between a controller and a
+        /// standalone button on the same material is out of scope.
+        /// </summary>
+        public bool ComputeKeywordHeld(Renderer rend, int matIdx, string kw)
+        {
+            if (GetKeywordHeldLocal(rend, matIdx, kw)) return true;
+            if (rtOtherControllers != null)
+            {
+                for (int c = 0; c < rtOtherControllers.Length; c++)
+                {
+                    var oc = rtOtherControllers[c];
+                    if (oc == null) continue;
+                    if (oc.GetKeywordHeldLocal(rend, matIdx, kw)) return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Local-entries-only hard-keyword holder scan, callable from peer
+        /// controllers. Deactivation paths clear entryStates before executing
+        /// actions, so a deactivating entry excludes itself — same guarantee
+        /// <see cref="GetAlwaysGateStateLocal"/> relies on.
+        /// </summary>
+        public bool GetKeywordHeldLocal(Renderer rend, int matIdx, string kw)
+        {
+            if (executor == null || rend == null || kw == null || kw.Length == 0) return false;
+            var exe = executor;
+            if (exe.rtActionKeywords == null) return false;
+            if (entryStates == null || rtEntryActionStart == null || rtEntryActionCount == null) return false;
+
+            for (int e = 0; e < entryStates.Length; e++)
+            {
+                if (!entryStates[e]) continue;
+                if (e >= rtEntryActionStart.Length || e >= rtEntryActionCount.Length) continue;
+                int aStart = rtEntryActionStart[e];
+                int aCount = rtEntryActionCount[e];
+                for (int a = aStart; a < aStart + aCount; a++)
+                {
+                    if (a >= exe.rtActionKeywords.Length) break;
+                    if (exe.rtActionKeywords[a] != kw) continue;
+                    if (exe.rtActionTargetRenderers == null || a >= exe.rtActionTargetRenderers.Length
+                        || exe.rtActionTargetRenderers[a] != rend) continue;
+                    int mi = exe.rtActionMaterialIndices != null && a < exe.rtActionMaterialIndices.Length
+                             ? exe.rtActionMaterialIndices[a] : 0;
+                    if (mi != matIdx) continue;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Material-keyed Always-pass recompute for callers that hold a
         /// Material but not the (renderer, material index) pair — faders.
         /// Resolves the first gate action whose material matches and defers to

@@ -870,6 +870,7 @@ namespace Cozen.EnigmaOS.Editor
             // for the full contract.
             Debug.Log($"[EnigmaOS] PrepareShaderLocking: {materialProps.Count} material(s) collected, {keywordsToEnable.Count} keyword(s) to enable.");
             var keeperByMatId = new System.Collections.Generic.Dictionary<int, Material>();
+            var offKeepers = new System.Collections.Generic.List<Material>();
             foreach (var kvp in materialProps)
             {
                 EnigmaShaderHelper.UnlockMaterial(kvp.Value.mat);
@@ -907,6 +908,43 @@ namespace Cozen.EnigmaOS.Editor
                             keeper.EnableKeyword(groupKws[gk]);
                     }
                     EditorUtility.SetDirty(keeper);
+                }
+
+                // HARD-gated keywords (Mochie _FOG_ON) get RELEASED by the
+                // runtime executor when their entry deactivates — which is
+                // only safe if the keyword-OFF variant shipped. The live
+                // material and the hot keeper both carry the keyword enabled,
+                // so ship a second "off" keeper: the same hot superset minus
+                // the hard keywords. Unity's runtime keyword matching then
+                // finds an exact off-combination instead of best-fitting back
+                // onto a fog-enabled variant. The matching section-toggle
+                // values are zeroed so a Mochie-style value→keyword sync on
+                // the keeper can't re-enable what it exists to keep off.
+                var hardKws = EnigmaShaderHelper.GetHardGatedKeywords(kvp.Value.mat.shader);
+                if (hardKws.Length > 0)
+                {
+                    var offKeeper = CreateOrUpdateVariantKeeper(kvp.Value.mat, " Off");
+                    if (offKeeper != null)
+                    {
+                        foreach (string usedProp in kvp.Value.props)
+                        {
+                            var groupKws = EnigmaShaderHelper.GetGroupKeywords(kvp.Value.mat, usedProp);
+                            for (int gk = 0; gk < groupKws.Count; gk++)
+                                offKeeper.EnableKeyword(groupKws[gk]);
+                        }
+                        for (int hk = 0; hk < hardKws.Length; hk++)
+                        {
+                            offKeeper.DisableKeyword(hardKws[hk].keyword);
+                            if (!string.IsNullOrEmpty(hardKws[hk].toggle)
+                                && offKeeper.HasProperty(hardKws[hk].toggle))
+                            {
+                                offKeeper.SetFloat(hardKws[hk].toggle, 0f);
+                                offKeeper.SetInt(hardKws[hk].toggle, 0);
+                            }
+                        }
+                        EditorUtility.SetDirty(offKeeper);
+                        offKeepers.Add(offKeeper);
+                    }
                 }
 
                 // Re-apply shader-specific baseline AFTER the lock pass. PrepareAndLock
@@ -955,9 +993,10 @@ namespace Cozen.EnigmaOS.Editor
             // rtVariantKeeperMaterials). Copy to the backing UdonBehaviour
             // explicitly — PrepareShaderLocking runs after the controllers'
             // own build pass, so the standard proxy→Udon copy already happened.
-            if (keeperByMatId.Count > 0 && controllers != null)
+            if ((keeperByMatId.Count > 0 || offKeepers.Count > 0) && controllers != null)
             {
                 var keeperList = new System.Collections.Generic.List<Material>(keeperByMatId.Values);
+                keeperList.AddRange(offKeepers);
                 foreach (var ctrl in controllers)
                 {
                     if (ctrl == null) continue;
@@ -1083,7 +1122,7 @@ namespace Cozen.EnigmaOS.Editor
         /// post-PrepareAndLock "hot" state. Returns null on failure (keeper
         /// is an optimization for build robustness, never a hard requirement).
         /// </summary>
-        private static Material CreateOrUpdateVariantKeeper(Material src)
+        private static Material CreateOrUpdateVariantKeeper(Material src, string variant = "")
         {
             try
             {
@@ -1101,18 +1140,19 @@ namespace Cozen.EnigmaOS.Editor
                 string keeperKey = !string.IsNullOrEmpty(guid)
                     ? guid.Substring(0, System.Math.Min(12, guid.Length))
                     : src.GetInstanceID().ToString("X8");
-                string path = $"{KeeperFolder}/{src.name}.{keeperKey} Keeper.mat";
+                string path = $"{KeeperFolder}/{src.name}.{keeperKey} Keeper{variant}.mat";
 
                 // Clean up a legacy name-keyed keeper (regenerated under the
                 // new scheme on this and every future build).
                 string legacyPath = $"{KeeperFolder}/{src.name} Keeper.mat";
-                if (AssetDatabase.LoadAssetAtPath<Material>(legacyPath) != null)
+                if (variant.Length == 0
+                    && AssetDatabase.LoadAssetAtPath<Material>(legacyPath) != null)
                     AssetDatabase.DeleteAsset(legacyPath);
 
                 var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (existing == null)
                 {
-                    var clone = new Material(src) { name = src.name + " Keeper" };
+                    var clone = new Material(src) { name = src.name + " Keeper" + variant };
                     AssetDatabase.CreateAsset(clone, path);
                     return clone;
                 }

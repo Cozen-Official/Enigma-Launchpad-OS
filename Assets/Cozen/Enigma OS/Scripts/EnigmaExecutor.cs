@@ -108,6 +108,16 @@ namespace Cozen.EnigmaOS
         [HideInInspector] public string[] rtActionKeywordToggles = new string[0]; // toggle property name, or "" if none
         [HideInInspector] public bool[] rtActionIsKeywordToggle = new bool[0]; // pre-baked: true when action targets the keyword's toggle property
 
+        // True when the action's baked keyword is HARD-gated: the effect
+        // renders on the keyword alone (Mochie fog / _FOG_ON — the shader
+        // never reads _Fog at render time), so entry deactivation must
+        // release the keyword itself or the effect can never turn off.
+        // Runtime DisableKeyword is safe for these because the build ships
+        // the keyword-off variant via an "off" variant keeper (see
+        // EnigmaPlayModeHook.PrepareShaderLocking) — the same both-variants
+        // contract type-27 keyword actions rely on.
+        [HideInInspector] public bool[] rtActionKeywordHard = new bool[0];
+
         // Mochie "Always" pass gate id for type 2 actions: 0=_Zoom, 1=_SST,
         // 2=_Letterbox, -1=not a gate. Mochie renders Zoom/Image Overlay/
         // Letterbox in a dedicated "Always" pass that the shader does NOT
@@ -474,9 +484,18 @@ namespace Cozen.EnigmaOS
             if (value == (float)intVal)
                 mat.SetInt(propName, intVal);
 
-            // Enable-only keyword policy — matches the type-2 branch.
+            // Enable-only keyword policy — matches the type-2 branch. The
+            // one exception is HARD-gated keywords (Mochie fog), which render
+            // on the keyword alone and must be released when their toggle
+            // property is written off.
             if (keyword != null && keyword.Length > 0 && value > 0.5f)
                 mat.EnableKeyword(keyword);
+            else if (keyword != null && keyword.Length > 0
+                && rtActionKeywordHard != null && a < rtActionKeywordHard.Length
+                && rtActionKeywordHard[a]
+                && rtActionIsKeywordToggle != null && a < rtActionIsKeywordToggle.Length
+                && rtActionIsKeywordToggle[a])
+                ReleaseHardKeyword(a, rend, matIdx, mat, keyword);
 
             // Mochie "Always" pass gate (_Zoom / _SST / _Letterbox).
             if (rtActionAlwaysGate != null && a < rtActionAlwaysGate.Length
@@ -509,6 +528,34 @@ namespace Cozen.EnigmaOS
             if (mat.HasProperty("_Zoom") && mat.GetFloat("_Zoom") > 0.5f) return true;
             if (mat.HasProperty("_Letterbox") && mat.GetFloat("_Letterbox") > 0.5f) return true;
             return false;
+        }
+
+        /// <summary>
+        /// Releases a HARD-gated keyword (see <see cref="rtActionKeywordHard"/>)
+        /// when no other active entry still needs it. Hard-gated effects
+        /// (Mochie fog) render on the keyword alone — no property write can
+        /// switch them off — so entry deactivation must disable the keyword
+        /// itself. Safe at runtime because the build ships the keyword-off
+        /// variant via the "off" variant keeper.
+        ///
+        /// Standalone buttons with no linked controller have no peers to
+        /// consult; their own deactivation is authoritative. Also zeroes the
+        /// section-toggle property so Mochie-style value→keyword syncs agree
+        /// with the released state.
+        /// </summary>
+        public void ReleaseHardKeyword(int a, Renderer rend, int matIdx, Material mat, string kw)
+        {
+            if (mat == null || kw == null || kw.Length == 0) return;
+            if (linkedController != null
+                && linkedController.ComputeKeywordHeld(rend, matIdx, kw)) return;
+            mat.DisableKeyword(kw);
+            string tog = rtActionKeywordToggles != null && a < rtActionKeywordToggles.Length
+                         ? rtActionKeywordToggles[a] : null;
+            if (tog != null && tog.Length > 0 && mat.HasProperty(tog))
+            {
+                mat.SetFloat(tog, 0f);
+                mat.SetInt(tog, 0);
+            }
         }
 
         /// <summary>
@@ -576,25 +623,39 @@ namespace Cozen.EnigmaOS
                 if (!active && rtActionNonStateful != null && a < rtActionNonStateful.Length
                     && rtActionNonStateful[a])
                 {
-                    // …with one exception: actions that gate Mochie's "Always"
-                    // shader pass (_Zoom / _SST / _Letterbox — including the
-                    // synthetic section-toggle actions emitted for
-                    // alsoSetEffectToggle). That pass is NOT value-gated by _SST —
-                    // the overlay draws whenever the pass is enabled — so skipping
-                    // deactivation entirely leaves the pass running after the
-                    // entry's primary texture action reverts _ScreenTex to None,
-                    // which renders the shader's "white" fallback texture
-                    // fullscreen. Mirror Mochie's own inspector and recompute the
-                    // pass from what still holds it: another active entry with a
-                    // gate action on this material (e.g. a default-on sibling
-                    // during init's ApplyDefaultsOff sweep, an active Zoom button
-                    // while an overlay deactivates), or an honestly-valued gate
-                    // property. Exclusive-group switches stay correct because
-                    // peers deactivate BEFORE the pressed entry activates, so the
-                    // incoming overlay re-enables the pass in the same frame.
+                    // …with two exceptions:
+                    //
+                    // 1. Actions that gate Mochie's "Always" shader pass
+                    // (_Zoom / _SST / _Letterbox — including the synthetic
+                    // section-toggle actions emitted for alsoSetEffectToggle).
+                    // That pass is NOT value-gated by _SST — the overlay draws
+                    // whenever the pass is enabled — so skipping deactivation
+                    // entirely leaves the pass running after the entry's
+                    // primary texture action reverts _ScreenTex, which renders
+                    // the shader's "white" fallback texture fullscreen. Mirror
+                    // Mochie's own inspector and recompute the pass from what
+                    // still holds it: another active entry with a gate action
+                    // on this material (e.g. a default-on sibling during
+                    // init's ApplyDefaultsOff sweep, an active Zoom button
+                    // while an overlay deactivates), or an honestly-valued
+                    // gate property. Exclusive-group switches stay correct
+                    // because peers deactivate BEFORE the pressed entry
+                    // activates, so the incoming overlay re-enables the pass
+                    // in the same frame.
+                    //
+                    // 2. Actions whose keyword is HARD-gated (Mochie fog): the
+                    // effect renders on the keyword alone, so the keyword must
+                    // be released here or the effect can never turn off — no
+                    // property value the entry reverts does anything. Guarded
+                    // by the same holder scan pattern so a sibling entry that
+                    // still needs the effect keeps the keyword enabled.
                     bool nsIsGate = rtActionAlwaysGate != null && a < rtActionAlwaysGate.Length
                         && rtActionAlwaysGate[a] >= 0;
-                    if (nsIsGate)
+                    bool nsHardKw = rtActionKeywordHard != null && a < rtActionKeywordHard.Length
+                        && rtActionKeywordHard[a]
+                        && rtActionKeywords != null && a < rtActionKeywords.Length
+                        && !string.IsNullOrEmpty(rtActionKeywords[a]);
+                    if (nsIsGate || nsHardKw)
                     {
                         Renderer nsRend = rtActionTargetRenderers != null && a < rtActionTargetRenderers.Length
                                           ? rtActionTargetRenderers[a] : null;
@@ -614,13 +675,18 @@ namespace Cozen.EnigmaOS
                             }
                             if (nsMat != null)
                             {
-                                // Standalone buttons (no linked controller) fall back to
-                                // honest gate values — _Zoom/_Letterbox only, never _SST
-                                // (the synthetic toggle leaves _SST=1 after deactivation).
-                                bool held = linkedController != null
-                                    ? linkedController.ComputeAlwaysPassHeld(nsRend, nsMatIdx, nsMat)
-                                    : ComputeHeldFallback(nsMat);
-                                nsMat.SetShaderPassEnabled("Always", held);
+                                if (nsIsGate)
+                                {
+                                    // Standalone buttons (no linked controller) fall back to
+                                    // honest gate values — _Zoom/_Letterbox only, never _SST
+                                    // (the synthetic toggle leaves _SST=1 after deactivation).
+                                    bool held = linkedController != null
+                                        ? linkedController.ComputeAlwaysPassHeld(nsRend, nsMatIdx, nsMat)
+                                        : ComputeHeldFallback(nsMat);
+                                    nsMat.SetShaderPassEnabled("Always", held);
+                                }
+                                if (nsHardKw)
+                                    ReleaseHardKeyword(a, nsRend, nsMatIdx, nsMat, rtActionKeywords[a]);
                             }
                         }
                     }
@@ -788,11 +854,17 @@ namespace Cozen.EnigmaOS
 
                         // If this action IS the keyword toggle for its group,
                         // enable the keyword when the property goes non-zero.
-                        // IMPORTANT: Only ENABLE, never disable. shader_feature_local
-                        // variants may be unloaded by DisableKeyword at runtime, making
-                        // them impossible to re-enable. Effect visibility is controlled
-                        // purely by the property value (e.g., _OutlineType=0 hides the
-                        // outline even with _OUTLINE_ON enabled).
+                        // IMPORTANT: Only ENABLE, never disable — with one
+                        // exception. shader_feature_local variants may be
+                        // unloaded by DisableKeyword at runtime, making them
+                        // impossible to re-enable. Effect visibility is
+                        // controlled purely by the property value (e.g.,
+                        // _OutlineType=0 hides the outline even with
+                        // _OUTLINE_ON enabled). The exception is HARD-gated
+                        // keywords (Mochie fog), whose effect renders on the
+                        // keyword alone: those are released on an off write —
+                        // safe because the build ships their off variant via
+                        // the "off" variant keeper.
                         bool kwToggle = rtActionIsKeywordToggle != null && a < rtActionIsKeywordToggle.Length
                             && rtActionIsKeywordToggle[a];
                         bool kwValid = rtActionKeywords != null && a < rtActionKeywords.Length
@@ -804,6 +876,9 @@ namespace Cozen.EnigmaOS
                                     ? rtActionDefaultFloatValues[a] : 0f);
                             if (val > 0.5f)
                                 mat.EnableKeyword(rtActionKeywords[a]);
+                            else if (rtActionKeywordHard != null && a < rtActionKeywordHard.Length
+                                && rtActionKeywordHard[a])
+                                ReleaseHardKeyword(a, rend, matIdx, mat, rtActionKeywords[a]);
 
                             // The Mochie "Always" pass toggle (Zoom/Image Overlay/
                             // Letterbox) is handled by the rtActionAlwaysGate hook in

@@ -3046,6 +3046,49 @@ namespace Cozen.EnigmaOS.Editor
             };
         }
 
+        // ════════════════════════════════════════════════════════════════════════
+        //  HARD-GATED SECTION TOGGLES
+        //  Effects that render on their shader_feature keyword ALONE — the
+        //  shader never reads the section-toggle property at render time, so
+        //  no value write can switch the effect off once the keyword is
+        //  enabled. Mochie fog is the archetype: ApplyFog sits behind
+        //  #if FOG_ENABLED (= defined(_FOG_ON)) and nothing samples _Fog.
+        //  For these, the runtime executor RELEASES the keyword when the
+        //  owning entry deactivates (EnigmaExecutor.ReleaseHardKeyword), and
+        //  PrepareShaderLocking ships an extra "off" variant keeper so the
+        //  keyword-off variant survives build-time stripping — the same
+        //  both-variants contract type-27 keyword actions rely on.
+        //  Value-gated sections (e.g. _FilterModel / _COLOR_ON, where the
+        //  effect is inert at value 0) must NOT be listed here — for them the
+        //  enable-only keyword policy stays correct and cheaper.
+        // ════════════════════════════════════════════════════════════════════════
+
+        private static readonly Dictionary<string, (string keyword, string toggle)[]> _hardGatedKeywords =
+            new Dictionary<string, (string keyword, string toggle)[]>
+        {
+            // Free Mochie SFX has no fog section; SFX X is the only shader
+            // with a keyword-only-gated effect Enigma manages today.
+            { "Mochie/Screen FX X", new[] { ("_FOG_ON", "_Fog") } },
+        };
+
+        /// <summary>Hard-gated (keyword, toggleProp) pairs for a shader, or empty.</summary>
+        public static (string keyword, string toggle)[] GetHardGatedKeywords(Shader shader)
+        {
+            if (shader != null && _hardGatedKeywords.TryGetValue(shader.name, out var kws))
+                return kws;
+            return System.Array.Empty<(string, string)>();
+        }
+
+        /// <summary>True when <paramref name="keyword"/> is hard-gated on this shader.</summary>
+        public static bool IsHardGatedKeyword(Shader shader, string keyword)
+        {
+            if (string.IsNullOrEmpty(keyword)) return false;
+            var kws = GetHardGatedKeywords(shader);
+            for (int i = 0; i < kws.Length; i++)
+                if (kws[i].keyword == keyword) return true;
+            return false;
+        }
+
         private static Dictionary<string, (string keyword, string toggle)> GetShaderFeatureMap(Shader shader)
         {
             string shaderPath = AssetDatabase.GetAssetPath(shader);
